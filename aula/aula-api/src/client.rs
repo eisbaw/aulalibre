@@ -179,6 +179,33 @@ impl AulaClient {
         })
     }
 
+    /// Create a client pointing at a custom base URL (for testing with mock servers).
+    ///
+    /// The URL must end with a trailing slash (e.g., `http://127.0.0.1:9090/api/v19/`).
+    /// No basic auth is applied and the environment is set to Production.
+    pub fn with_base_url(base_url: &str) -> crate::Result<Self> {
+        let base_url = Url::parse(base_url).expect("valid base URL");
+
+        let cookie_jar = Arc::new(Jar::default());
+
+        let mut default_headers = HeaderMap::new();
+        default_headers.insert(header::ACCEPT, HeaderValue::from_static("application/json"));
+
+        let http = reqwest::Client::builder()
+            .cookie_provider(Arc::clone(&cookie_jar))
+            .default_headers(default_headers)
+            .user_agent("AulaNative/2.15.4")
+            .build()?;
+
+        Ok(Self {
+            http,
+            cookie_jar,
+            base_url,
+            environment: Environment::Production,
+            use_basic_auth: false,
+        })
+    }
+
     /// The environment this client targets.
     pub fn environment(&self) -> &Environment {
         &self.environment
@@ -314,6 +341,15 @@ impl AulaClient {
         // The keep-alive endpoint returns an AulaServiceResponse with empty data.
         let _: serde_json::Value = self.post_empty("profiles/keepAlive").await?;
         Ok(())
+    }
+
+    // -- Test helpers -------------------------------------------------------
+
+    /// Add a cookie string to the client's cookie jar for the base URL.
+    ///
+    /// Useful in tests to simulate the server setting cookies (e.g., CSRF tokens).
+    pub fn set_cookie(&self, cookie_str: &str) {
+        self.cookie_jar.add_cookie_str(cookie_str, &self.base_url);
     }
 
     // -- Response handling --------------------------------------------------

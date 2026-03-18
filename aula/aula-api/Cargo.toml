@@ -19,3 +19,4 @@ url = "2"
 
 [dev-dependencies]
 http = "1"
+wiremock = "0.6"

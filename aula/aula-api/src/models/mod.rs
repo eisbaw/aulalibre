@@ -6,5 +6,6 @@
 
 pub mod groups;
 pub mod institutions;
+pub mod messaging;
 pub mod profiles;
 pub mod users;

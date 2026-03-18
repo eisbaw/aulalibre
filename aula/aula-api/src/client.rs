@@ -291,6 +291,19 @@ impl AulaClient {
         self.handle_response(resp).await
     }
 
+    /// Send a DELETE request with a JSON body and deserialize the envelope payload.
+    pub async fn delete_with_body<T: DeserializeOwned, B: Serialize>(
+        &self,
+        path: &str,
+        body: &B,
+    ) -> crate::Result<T> {
+        let resp = self
+            .decorate(self.http.delete(self.url(path)).json(body))
+            .send()
+            .await?;
+        self.handle_response(resp).await
+    }
+
     // -- Keep-alive ---------------------------------------------------------
 
     /// Send a keep-alive ping to extend the current session.

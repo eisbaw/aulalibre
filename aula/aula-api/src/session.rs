@@ -259,6 +259,22 @@ impl Session {
         }
     }
 
+    /// Execute a DELETE request with a JSON body and automatic token refresh.
+    pub async fn delete_with_body<T: DeserializeOwned, B: Serialize + Sync>(
+        &mut self,
+        path: &str,
+        body: &B,
+    ) -> crate::Result<T> {
+        self.pre_refresh().await;
+        match self.client.delete_with_body(path, body).await {
+            Err(AulaError::Unauthorized | AulaError::InvalidAccessToken) => {
+                self.refresh_token().await?;
+                self.client.delete_with_body(path, body).await
+            }
+            other => other,
+        }
+    }
+
     // -- Session keep-alive -------------------------------------------------
 
     /// Send a keep-alive ping to extend the backend session.

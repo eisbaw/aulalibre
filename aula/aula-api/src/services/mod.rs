@@ -9,4 +9,5 @@
 
 pub mod additional_master_data;
 pub mod configuration;
+pub mod messaging;
 pub mod profiles;

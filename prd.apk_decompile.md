@@ -100,6 +100,13 @@ This project aims to decompile and analyze the Aula Android APK to understand it
 - Data model extraction from ORM configurations
 - Documentation with diagrams and code examples
 
+## Project Management
+- Tasks are tracked using `backlog` CLI tool (already in `$PATH`)
+- Use `backlog task` to list, create, and update tasks
+- Use `backlog board --plain` to view Kanban board
+- Use `backlog milestone` to track milestone progress
+- Always use `--plain` flag for non-interactive output
+
 ## Non-Functional Requirements
 
 ### Environment Setup
@@ -111,7 +118,7 @@ This project aims to decompile and analyze the Aula Android APK to understand it
 ### Documentation Standards
 - Clear, technical documentation with examples
 - Code snippets and file paths referenced
-- Progress tracking and milestone validation
+- Progress tracked via `backlog` tasks aligned to milestones
 - Error cases and limitations documented
 
 ### Tool Selection Criteria

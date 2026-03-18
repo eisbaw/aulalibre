@@ -4,12 +4,14 @@
 //! including authentication, messaging, calendar, and other endpoints
 //! discovered through APK reverse engineering.
 
+pub mod client;
 pub mod enums;
 pub mod error;
 pub mod models;
 pub mod response;
 
 // Re-export key types at crate root for convenience.
+pub use client::{AulaClient, AulaClientConfig, Environment};
 pub use error::{AulaError, Result};
 pub use response::{
     AulaErrorResponse, AulaServiceResponse, DataArrayResponse, WebResponseStatus,

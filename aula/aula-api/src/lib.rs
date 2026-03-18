@@ -4,6 +4,7 @@
 //! including authentication, messaging, calendar, and other endpoints
 //! discovered through APK reverse engineering.
 
+pub mod enums;
 pub mod error;
 pub mod response;
 

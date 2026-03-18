@@ -1,7 +1,7 @@
 {
   "status": {
     "httpCode": 403,
-    "backendErrorCode": 100,
+    "code": 100,
     "message": "ACCESS_DENIED",
     "presentedMessage": "Du har ikke adgang til denne funktion.",
     "subCode": 5,

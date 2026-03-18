@@ -7,6 +7,8 @@
 //! decompiled `AulaNative.Services.Web` namespace
 //! (see `api_endpoints.md` Section 3).
 
+pub mod query;
+
 pub mod additional_master_data;
 pub mod calendar;
 pub mod comments;

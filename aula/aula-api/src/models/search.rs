@@ -313,6 +313,8 @@ pub struct SearchResultProfileItemBase {
     pub address: Option<Address>,
     pub portal_role: Option<String>,
     pub institution_role: Option<InstitutionRole>,
+    /// C# `SearchResultProfileItemBase.InstitutionProfileId` has `[JsonProperty("id")]`.
+    #[serde(rename = "id")]
     pub institution_profile_id: Option<i64>,
     pub home_phone_number: Option<String>,
     pub mobile_phone_number: Option<String>,
@@ -321,6 +323,8 @@ pub struct SearchResultProfileItemBase {
     pub last_name: Option<String>,
     pub gender: Option<String>,
     pub aula_email: Option<String>,
+    /// C# `SearchResultProfileItemBase.ExternalEmail` has `[JsonProperty("email")]`.
+    #[serde(rename = "email")]
     pub external_email: Option<String>,
     pub role_definitions: Option<Vec<SearchRoleDefinition>>,
     pub main_group: Option<MainGroup>,

@@ -187,7 +187,9 @@ impl Session {
     /// request. On 401/InvalidAccessToken, refresh and retry once.
     async fn pre_refresh(&mut self) {
         if self.login_data.is_some() {
-            let _ = self.ensure_valid_token().await;
+            if let Err(e) = self.ensure_valid_token().await {
+                eprintln!("pre_refresh: proactive token refresh failed: {e}");
+            }
         }
     }
 

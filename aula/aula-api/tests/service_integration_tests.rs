@@ -39,7 +39,7 @@ fn aula_envelope(data: serde_json::Value) -> serde_json::Value {
     serde_json::json!({
         "status": {
             "httpCode": 200,
-            "backendErrorCode": 0,
+            "code": 0,
             "message": null,
             "presentedMessage": null,
             "subCode": null,
@@ -53,7 +53,7 @@ fn aula_error_envelope(sub_code: i32) -> serde_json::Value {
     serde_json::json!({
         "status": {
             "httpCode": 200,
-            "backendErrorCode": 0,
+            "code": 0,
             "subCode": sub_code
         },
         "data": {}
@@ -68,12 +68,6 @@ fn fixture(name: &str) -> String {
 fn json_response(data: serde_json::Value) -> ResponseTemplate {
     ResponseTemplate::new(200)
         .set_body_json(aula_envelope(data))
-        .insert_header("content-type", "application/json")
-}
-
-fn fixture_response(name: &str) -> ResponseTemplate {
-    ResponseTemplate::new(200)
-        .set_body_string(fixture(name))
         .insert_header("content-type", "application/json")
 }
 
@@ -2231,7 +2225,7 @@ mod error_handling_extended {
         let body = serde_json::json!({
             "status": {
                 "httpCode": 200,
-                "backendErrorCode": 42,
+                "code": 42,
                 "message": "forbidden action"
             },
             "data": {}

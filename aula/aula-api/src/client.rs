@@ -658,7 +658,7 @@ mod tests {
         let body = json!({
             "status": {
                 "httpCode": 200,
-                "backendErrorCode": 0
+                "code": 0
             },
             "data": {"greeting": "hello"}
         });
@@ -684,7 +684,7 @@ mod tests {
         let body = json!({
             "status": {
                 "httpCode": 200,
-                "backendErrorCode": 0,
+                "code": 0,
                 "subCode": 13
             },
             "data": null
@@ -711,7 +711,7 @@ mod tests {
         let body = json!({
             "status": {
                 "httpCode": 403,
-                "backendErrorCode": 0,
+                "code": 0,
                 "subCode": 8
             },
             "data": null
@@ -768,7 +768,7 @@ mod tests {
         let body = json!({
             "status": {
                 "httpCode": 200,
-                "backendErrorCode": 42,
+                "code": 42,
                 "message": "something broke"
             },
             "data": null
@@ -824,7 +824,7 @@ mod tests {
         let body = json!({
             "status": {
                 "httpCode": 403,
-                "backendErrorCode": 0,
+                "code": 0,
                 "subCode": 7
             },
             "data": null
@@ -851,7 +851,7 @@ mod tests {
         let body = json!({
             "status": {
                 "httpCode": 200,
-                "backendErrorCode": 0,
+                "code": 0,
                 "subCode": 9
             },
             "data": null

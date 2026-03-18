@@ -16,4 +16,3 @@ open = "5"
 reqwest = { version = "0.12", features = ["json"] }
 url = "2"
 chrono = "0.4"
-libc = "0.2"

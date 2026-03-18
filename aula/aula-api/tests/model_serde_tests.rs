@@ -628,7 +628,7 @@ mod profiles {
             "groups": null,
             "municipalGroups": null,
             "phonenumber": null,
-            "externalEmail": null,
+            "email": null,
             "workPhonenumber": null,
             "homePhonenumber": null,
             "mobilePhonenumber": null,

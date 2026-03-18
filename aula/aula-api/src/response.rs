@@ -17,7 +17,8 @@ pub struct WebResponseStatus {
     pub http_code: i32,
 
     /// Backend-specific error code (0 typically means success).
-    #[serde(default)]
+    /// C# `WebResponseStatus.BackendErrorCode` has `[JsonProperty("code")]`.
+    #[serde(default, rename = "code")]
     pub backend_error_code: i32,
 
     /// Machine-readable error message.
@@ -153,7 +154,7 @@ mod tests {
         let json = r#"{
             "status": {
                 "httpCode": 200,
-                "backendErrorCode": 0,
+                "code": 0,
                 "message": null,
                 "presentedMessage": null,
                 "subCode": null,
@@ -184,7 +185,7 @@ mod tests {
     fn deserialize_status_with_sub_code() {
         let json = r#"{
             "httpCode": 403,
-            "backendErrorCode": 100,
+            "code": 100,
             "message": "access denied",
             "subCode": 8
         }"#;

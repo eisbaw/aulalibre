@@ -1,7 +1,7 @@
 {
   "status": {
     "httpCode": 200,
-    "backendErrorCode": 0,
+    "code": 0,
     "message": null,
     "presentedMessage": null,
     "subCode": null,
@@ -110,7 +110,7 @@
       ],
       "municipalGroups": [],
       "phonenumber": "28456789",
-      "externalEmail": "henrik.jensen@mail.dk",
+      "email": "henrik.jensen@mail.dk",
       "workPhonenumber": null,
       "homePhonenumber": null,
       "mobilePhonenumber": "28456789",

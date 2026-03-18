@@ -61,6 +61,7 @@ use crate::models::calendar::{
     RespondToVacationRegistrationRequestDto, UpdateCalendarSynchronizationConfigurationRequest,
     UpdateLessonRequest, VacationOverviewListItemResultDto, VacationWeekResultDto,
 };
+use crate::services::query::{encode_value, param_num};
 use crate::session::Session;
 
 // ---------------------------------------------------------------------------
@@ -119,7 +120,7 @@ pub type UpdateSyncConsentResponse = serde_json::Value;
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/events`
+/// `GET ?method=calendar.getEventsByProfileIdsAndResourceIds`
 pub async fn get_events(
     session: &mut Session,
     params: &GetEventsParameters,
@@ -127,28 +128,31 @@ pub async fn get_events(
     let mut query = Vec::new();
     if let Some(ref ids) = params.inst_profile_ids {
         for id in ids {
-            query.push(format!("instProfileIds={id}"));
+            query.push(param_num("instProfileIds", id));
         }
     }
     if let Some(ref ids) = params.resource_ids {
         for id in ids {
-            query.push(format!("resourceIds={id}"));
+            query.push(param_num("resourceIds", id));
         }
     }
     if let Some(ref start) = params.start {
-        query.push(format!("start={start}"));
+        query.push(format!("start={}", encode_value(start)));
     }
     if let Some(ref end) = params.end {
-        query.push(format!("end={end}"));
+        query.push(format!("end={}", encode_value(end)));
     }
     if let Some(ref types) = params.specific_types {
         for t in types {
-            query.push(format!("specificTypes={t}"));
+            query.push(format!("specificTypes={}", encode_value(t)));
         }
     }
     if let Some(ref codes) = params.school_calendar_institution_codes {
         for c in codes {
-            query.push(format!("schoolCalendarInstitutionCodes={c}"));
+            query.push(format!(
+                "schoolCalendarInstitutionCodes={}",
+                encode_value(c)
+            ));
         }
     }
     let path = if query.is_empty() {
@@ -168,7 +172,7 @@ pub async fn get_events(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/events/{event_id}`
+/// `GET ?method=calendar.getEventById&eventId={event_id}`
 pub async fn get_event_detail(
     session: &mut Session,
     event_id: i64,
@@ -184,7 +188,7 @@ pub async fn get_event_detail(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/events/daily`
+/// `GET ?method=calendar.getDailyAggregatedEvents`
 pub async fn get_daily_aggregated_events(
     session: &mut Session,
     params: &GetEventsParameters,
@@ -192,23 +196,26 @@ pub async fn get_daily_aggregated_events(
     let mut query = Vec::new();
     if let Some(ref ids) = params.inst_profile_ids {
         for id in ids {
-            query.push(format!("instProfileIds={id}"));
+            query.push(param_num("instProfileIds", id));
         }
     }
     if let Some(ref start) = params.start {
-        query.push(format!("start={start}"));
+        query.push(format!("start={}", encode_value(start)));
     }
     if let Some(ref end) = params.end {
-        query.push(format!("end={end}"));
+        query.push(format!("end={}", encode_value(end)));
     }
     if let Some(ref types) = params.specific_types {
         for t in types {
-            query.push(format!("specificTypes={t}"));
+            query.push(format!("specificTypes={}", encode_value(t)));
         }
     }
     if let Some(ref codes) = params.school_calendar_institution_codes {
         for c in codes {
-            query.push(format!("schoolCalendarInstitutionCodes={c}"));
+            query.push(format!(
+                "schoolCalendarInstitutionCodes={}",
+                encode_value(c)
+            ));
         }
     }
     let path = if query.is_empty() {
@@ -228,7 +235,7 @@ pub async fn get_daily_aggregated_events(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/events/dailyGroupCount`
+/// `GET ?method=calendar.getDailyEventCountForGroup`
 pub async fn get_daily_group_event_count(
     session: &mut Session,
     group_id: i64,
@@ -237,7 +244,9 @@ pub async fn get_daily_group_event_count(
 ) -> crate::Result<Vec<DailyEventCountResultModel>> {
     session
         .get(&format!(
-            "?method=calendar.getDailyEventCountForGroup&groupId={group_id}&start={start}&end={end}"
+            "?method=calendar.getDailyEventCountForGroup&groupId={group_id}&start={}&end={}",
+            encode_value(start),
+            encode_value(end)
         ))
         .await
 }
@@ -248,7 +257,7 @@ pub async fn get_daily_group_event_count(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/events/group/{group_id}`
+/// `GET ?method=calendar.geteventsbygroupid&groupId={group_id}`
 pub async fn get_event_for_group(
     session: &mut Session,
     group_id: i64,
@@ -257,10 +266,10 @@ pub async fn get_event_for_group(
 ) -> crate::Result<Vec<EventSimpleDto>> {
     let mut query = Vec::new();
     if let Some(s) = start {
-        query.push(format!("start={s}"));
+        query.push(format!("start={}", encode_value(s)));
     }
     if let Some(e) = end {
-        query.push(format!("end={e}"));
+        query.push(format!("end={}", encode_value(e)));
     }
     let path = if query.is_empty() {
         format!("?method=calendar.geteventsbygroupid&groupId={group_id}")
@@ -279,21 +288,21 @@ pub async fn get_event_for_group(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/schoolEvents`
+/// `GET ?method=calendar.getEventsForInstitutions`
 pub async fn get_school_events(
     session: &mut Session,
     params: &GetEventsForInstitutionRequestModel,
 ) -> crate::Result<Vec<EventSimpleDto>> {
     let mut query = Vec::new();
     if let Some(ref start) = params.start {
-        query.push(format!("start={start}"));
+        query.push(format!("start={}", encode_value(start)));
     }
     if let Some(ref end) = params.end {
-        query.push(format!("end={end}"));
+        query.push(format!("end={}", encode_value(end)));
     }
     if let Some(ref codes) = params.inst_codes {
         for c in codes {
-            query.push(format!("instCodes={c}"));
+            query.push(format!("instCodes={}", encode_value(c)));
         }
     }
     let path = if query.is_empty() {
@@ -313,14 +322,14 @@ pub async fn get_school_events(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/eventTypes`
+/// `GET ?method=calendar.getEventTypes`
 pub async fn get_event_types(
     session: &mut Session,
     filter_institution_codes: &[String],
 ) -> crate::Result<GetEventTypesByPortalRoleResultModel> {
     let mut query = Vec::new();
     for code in filter_institution_codes {
-        query.push(format!("filterInstitutionCodes={code}"));
+        query.push(format!("filterInstitutionCodes={}", encode_value(code)));
     }
     let path = if query.is_empty() {
         "?method=calendar.getEventTypes".to_string()
@@ -336,7 +345,7 @@ pub async fn get_event_types(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/eventTypes/feed`
+/// `GET ?method=CalendarFeed.getEventTypesRelevantForPortalRole`
 pub async fn get_event_types_for_calendar_feed(
     session: &mut Session,
 ) -> crate::Result<GetEventTypesByPortalRoleResultModel> {
@@ -351,7 +360,7 @@ pub async fn get_event_types_for_calendar_feed(
 ///
 /// # Endpoint
 ///
-/// `DELETE /calendar/events/{event_id}`
+/// `POST ?method=calendar.deleteEvent`
 pub async fn delete_event(
     session: &mut Session,
     event_id: i64,
@@ -374,12 +383,11 @@ pub async fn delete_event(
 ///
 /// # Endpoint
 ///
-/// `POST /calendar/events/{event_id}/respond`
+/// `POST ?method=calendar.respondToSimpleEvent`
 pub async fn respond_simple_event(
     session: &mut Session,
     args: &RespondSimpleEventRequest,
 ) -> crate::Result<EventRespondResponse> {
-    let _event_id = args.event_id.unwrap_or(0);
     session
         .post("?method=calendar.respondToSimpleEvent", args)
         .await
@@ -411,12 +419,11 @@ pub async fn respond_timeslot_event(
 ///
 /// # Endpoint
 ///
-/// `PUT /calendar/timeslots/{event_id}`
+/// `POST ?method=calendar.updateResponseToTimeSlotEvent`
 pub async fn edit_timeslot_event(
     session: &mut Session,
     args: &CreateTimeslotEventRequest,
 ) -> crate::Result<EditTimeslotResponse> {
-    let _event_id = args.event_id.unwrap_or(0);
     session
         .post("?method=calendar.updateResponseToTimeSlotEvent", args)
         .await
@@ -428,7 +435,7 @@ pub async fn edit_timeslot_event(
 ///
 /// # Endpoint
 ///
-/// `POST /calendar/timeslots/block`
+/// `POST ?method=calendar.blockTimeSlot`
 pub async fn block_time_slot(
     session: &mut Session,
     args: &BlockTimeSlotRequest,
@@ -442,11 +449,7 @@ pub async fn block_time_slot(
 ///
 /// # Endpoint
 ///
-/// `DELETE /calendar/timeslots/{event_id}`
-///
-/// NOTE: The timeslot ID and index are likely sent as query parameters
-/// or in a request body. Since DELETE with body is unusual, query
-/// parameters are used here.
+/// `POST ?method=calendar.removeBlockingOrResponseToTimeSlot`
 pub async fn delete_time_slot(
     session: &mut Session,
     args: &DeleteTimeslotRequest,
@@ -479,12 +482,11 @@ pub async fn delete_time_slot(
 ///
 /// # Endpoint
 ///
-/// `PUT /calendar/lessons/{event_id}`
+/// `POST ?method=calendar.updateLessonEvent`
 pub async fn update_lesson_event(
     session: &mut Session,
     args: &UpdateLessonRequest,
 ) -> crate::Result<UpdateLessonResponse> {
-    let _event_id = args.event_id.unwrap_or(0);
     session
         .post("?method=calendar.updateLessonEvent", args)
         .await
@@ -500,7 +502,7 @@ pub async fn update_lesson_event(
 ///
 /// # Endpoint
 ///
-/// `POST /calendar/vacations`
+/// `POST ?method=calendar.addVacation`
 ///
 /// NOTE: The request body likely uses a `CreateSimpleEventRequest`-derived
 /// structure for the vacation event. Using the simple event request type
@@ -518,7 +520,7 @@ pub async fn add_vacation(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/vacations/{vacation_id}`
+/// `GET ?method=calendar.getVacationById&vacationId={vacation_id}`
 pub async fn get_vacation(
     session: &mut Session,
     vacation_id: i64,
@@ -536,7 +538,7 @@ pub async fn get_vacation(
 ///
 /// # Endpoint
 ///
-/// `DELETE /calendar/vacations/{vacation_id}`
+/// `POST ?method=calendar.deleteVacation`
 pub async fn delete_vacation(
     session: &mut Session,
     vacation_id: i64,
@@ -555,14 +557,17 @@ pub async fn delete_vacation(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/vacations/future`
+/// `GET ?method=calendar.getFutureVacationRequests`
 pub async fn get_future_vacation_request(
     session: &mut Session,
     filter_institution_codes: &[String],
 ) -> crate::Result<Vec<VacationOverviewListItemResultDto>> {
     let mut query = Vec::new();
     for code in filter_institution_codes {
-        query.push(format!("filterInstitutionCalendarCodes={code}"));
+        query.push(format!(
+            "filterInstitutionCalendarCodes={}",
+            encode_value(code)
+        ));
     }
     let path = if query.is_empty() {
         "?method=calendar.getFutureVacationRequests".to_string()
@@ -581,7 +586,7 @@ pub async fn get_future_vacation_request(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/vacations/{vacation_id}/response`
+/// `GET ?method=calendar.getVacationRequestResponses`
 pub async fn get_vacation_request_response(
     session: &mut Session,
     args: &GetVacationRequestResponseRequestModel,
@@ -590,12 +595,12 @@ pub async fn get_vacation_request_response(
     let mut query = Vec::new();
     if let Some(ref ids) = args.filter_department_group_ids {
         for id in ids {
-            query.push(format!("filterDepartmentGroupIds={id}"));
+            query.push(param_num("filterDepartmentGroupIds", id));
         }
     }
     if let Some(ref ids) = args.filter_department_filtering_group_ids {
         for id in ids {
-            query.push(format!("filterDepartmentFilteringGroupIds={id}"));
+            query.push(param_num("filterDepartmentFilteringGroupIds", id));
         }
     }
     let path = if query.is_empty() {
@@ -615,13 +620,11 @@ pub async fn get_vacation_request_response(
 ///
 /// # Endpoint
 ///
-/// `POST /calendar/vacations/{vacation_id}/respond`
+/// `POST ?method=calendar.respondToVacationRegistrationRequest`
 pub async fn respond_to_vacation_registration_request(
     session: &mut Session,
-    vacation_id: i64,
     args: &RespondToVacationRegistrationRequestDto,
 ) -> crate::Result<RespondVacationResponse> {
-    let _ = vacation_id; // included in args
     session
         .post(
             "?method=calendar.respondToVacationRegistrationRequest",
@@ -640,7 +643,7 @@ pub async fn respond_to_vacation_registration_request(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/sync/configurations`
+/// `GET ?method=CalendarFeed.getFeedConfigurations`
 pub async fn get_calendar_synchronisation_configurations(
     session: &mut Session,
 ) -> crate::Result<Vec<CalendarSynchronisationConfigurationItem>> {
@@ -655,7 +658,7 @@ pub async fn get_calendar_synchronisation_configurations(
 ///
 /// # Endpoint
 ///
-/// `POST /calendar/sync/configurations`
+/// `POST ?method=CalendarFeed.createFeedConfiguration`
 pub async fn create_calendar_synchronisation_configuration(
     session: &mut Session,
     args: &CreateCalendarSynchronizationConfigurationRequest,
@@ -671,13 +674,11 @@ pub async fn create_calendar_synchronisation_configuration(
 ///
 /// # Endpoint
 ///
-/// `PUT /calendar/sync/configurations/{config_id}`
+/// `POST ?method=CalendarFeed.updateFeedConfiguration`
 pub async fn update_calendar_synchronisation_configuration(
     session: &mut Session,
-    config_id: i64,
     args: &UpdateCalendarSynchronizationConfigurationRequest,
 ) -> crate::Result<SyncConfigMutationResponse> {
-    let _ = config_id; // included in args
     session
         .post("?method=CalendarFeed.updateFeedConfiguration", args)
         .await
@@ -689,7 +690,7 @@ pub async fn update_calendar_synchronisation_configuration(
 ///
 /// # Endpoint
 ///
-/// `DELETE /calendar/sync/configurations/{config_id}`
+/// `POST ?method=CalendarFeed.removeFeedConfiguration`
 pub async fn delete_calendar_synchronisation_configuration(
     session: &mut Session,
     config_id: i64,
@@ -708,7 +709,7 @@ pub async fn delete_calendar_synchronisation_configuration(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/sync/consent`
+/// `GET ?method=CalendarFeed.getPolicyAnswer`
 pub async fn get_calendar_synchronisation_consent(
     session: &mut Session,
 ) -> crate::Result<CalendarSynchronisationModel> {
@@ -721,7 +722,7 @@ pub async fn get_calendar_synchronisation_consent(
 ///
 /// # Endpoint
 ///
-/// `PUT /calendar/sync/consent`
+/// `POST ?method=CalendarFeed.setPolicyAnswer`
 pub async fn update_calendar_synchronisation_consent(
     session: &mut Session,
     args: &CalendarSynchronisationModel,
@@ -741,7 +742,7 @@ pub async fn update_calendar_synchronisation_consent(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/delegatedAccesses`
+/// `GET ?method=calendar.getDelegatedAccesses`
 pub async fn get_delegated_accesses(
     session: &mut Session,
     inst_profile_id: Option<i64>,
@@ -759,7 +760,7 @@ pub async fn get_delegated_accesses(
 ///
 /// # Endpoint
 ///
-/// `POST /calendar/delegatedAccesses`
+/// `POST ?method=calendar.setDelegatedAccesses`
 pub async fn set_delegated_accesses(
     session: &mut Session,
     args: &DelegateAccessesInput,
@@ -775,7 +776,7 @@ pub async fn set_delegated_accesses(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/delegatedAccesses/profiles`
+/// `GET ?method=calendar.getInstitutionProfilesWithDelegatedAccess`
 pub async fn get_institution_profiles_with_delegated_accesses(
     session: &mut Session,
     inst_profile_id: Option<i64>,
@@ -795,7 +796,7 @@ pub async fn get_institution_profiles_with_delegated_accesses(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/birthdays/group/{group_id}`
+/// `GET ?method=calendar.getBirthdayEventsForGroup`
 pub async fn get_birthdays_for_group(
     session: &mut Session,
     group_id: i64,
@@ -804,7 +805,9 @@ pub async fn get_birthdays_for_group(
 ) -> crate::Result<Vec<BirthdayEventDto>> {
     session
         .get(&format!(
-            "?method=calendar.getBirthdayEventsForGroup&groupId={group_id}&start={start}&end={end}"
+            "?method=calendar.getBirthdayEventsForGroup&groupId={group_id}&start={}&end={}",
+            encode_value(start),
+            encode_value(end)
         ))
         .await
 }
@@ -815,7 +818,7 @@ pub async fn get_birthdays_for_group(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/birthdays/institution/{institution_id}`
+/// `GET ?method=calendar.getBirthdayEventsForInstitutions`
 pub async fn get_birthdays_for_institution(
     session: &mut Session,
     institution_id: i64,
@@ -824,7 +827,9 @@ pub async fn get_birthdays_for_institution(
 ) -> crate::Result<Vec<BirthdayEventDto>> {
     session
         .get(&format!(
-            "?method=calendar.getBirthdayEventsForInstitutions&institutionId={institution_id}&start={start}&end={end}"
+            "?method=calendar.getBirthdayEventsForInstitutions&institutionId={institution_id}&start={}&end={}",
+            encode_value(start),
+            encode_value(end)
         ))
         .await
 }
@@ -835,14 +840,14 @@ pub async fn get_birthdays_for_institution(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/importantDates/top`
+/// `GET ?method=calendar.getImportantDates`
 pub async fn get_top_important_date(
     session: &mut Session,
     inst_profile_ids: &[i64],
 ) -> crate::Result<Vec<ImportantDateItem>> {
     let mut query = Vec::new();
     for id in inst_profile_ids {
-        query.push(format!("instProfileIds={id}"));
+        query.push(param_num("instProfileIds", id));
     }
     let path = if query.is_empty() {
         "?method=calendar.getImportantDates".to_string()
@@ -858,7 +863,7 @@ pub async fn get_top_important_date(
 ///
 /// # Endpoint
 ///
-/// `POST /calendar/events/conflicts`
+/// `POST ?method=calendar.checkConflictEventForAttendees`
 pub async fn check_conflict_event_for_attendees(
     session: &mut Session,
     args: &CheckEventConflictInput,
@@ -874,7 +879,7 @@ pub async fn check_conflict_event_for_attendees(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/feed/municipality/{municipality_id}/enabled`
+/// `GET ?method=MunicipalConfiguration.getCalendarFeedEnabled`
 pub async fn get_is_calendar_feed_enabled_for_municipality(
     session: &mut Session,
     municipality_id: i64,
@@ -892,7 +897,7 @@ pub async fn get_is_calendar_feed_enabled_for_municipality(
 ///
 /// # Endpoint
 ///
-/// `GET /calendar/feed/configuration/{config_id}`
+/// `GET ?method=CalendarFeed.getFeedConfigurationById`
 pub async fn get_feed_configuration_by_id(
     session: &mut Session,
     config_id: i64,

@@ -267,7 +267,8 @@ pub struct MainGroup {
     pub id: Option<i64>,
     pub name: Option<String>,
     pub institution_code: Option<InstitutionCode>,
-    #[serde(default)]
+    /// C# `MainGroup.IsMainGroup` has `[JsonProperty("MainGroup")]`.
+    #[serde(default, rename = "MainGroup")]
     pub is_main_group: bool,
 }
 
@@ -367,6 +368,8 @@ pub struct Profile {
     pub groups: Option<Vec<Group>>,
     pub municipal_groups: Option<Vec<Group>>,
     pub phonenumber: Option<String>,
+    /// C# `Profile.ExternalEmail` has `[JsonProperty("email")]`.
+    #[serde(rename = "email")]
     pub external_email: Option<String>,
     pub work_phonenumber: Option<String>,
     pub home_phonenumber: Option<String>,
@@ -531,7 +534,7 @@ mod tests {
             "groups": null,
             "municipalGroups": null,
             "phonenumber": null,
-            "externalEmail": null,
+            "email": null,
             "workPhonenumber": null,
             "homePhonenumber": null,
             "mobilePhonenumber": null,

@@ -26,6 +26,7 @@ use crate::models::gallery::{
     MediasInAlbumDto,
 };
 use crate::models::posts::ReportApiParameter;
+use crate::services::query::encode_value;
 use crate::session::Session;
 
 // ---------------------------------------------------------------------------
@@ -38,14 +39,17 @@ use crate::session::Session;
 ///
 /// # Endpoint
 ///
-/// `GET /gallery/albums?<query params>`
+/// `GET ?method=gallery.getAlbums`
 pub async fn get_albums(
     session: &mut Session,
     filter: &GalleryViewFilter,
 ) -> crate::Result<Vec<AlbumDto>> {
     let mut query = Vec::new();
     if let Some(ref code) = filter.selected_institution_code_for_filter {
-        query.push(format!("selectedInstitutionCodeForFilter={code}"));
+        query.push(format!(
+            "selectedInstitutionCodeForFilter={}",
+            encode_value(code)
+        ));
     }
     if let Some(album_id) = filter.album_id {
         query.push(format!("albumId={album_id}"));
@@ -60,13 +64,13 @@ pub async fn get_albums(
         query.push(format!("index={index}"));
     }
     if let Some(ref sort_on) = filter.sort_on {
-        query.push(format!("sortOn={sort_on}"));
+        query.push(format!("sortOn={}", encode_value(sort_on)));
     }
     if let Some(ref order) = filter.order_direction {
-        query.push(format!("orderDirection={order}"));
+        query.push(format!("orderDirection={}", encode_value(order)));
     }
     if let Some(ref filter_by) = filter.filter_by {
-        query.push(format!("filterBy={filter_by}"));
+        query.push(format!("filterBy={}", encode_value(filter_by)));
     }
 
     let path = if query.is_empty() {
@@ -88,7 +92,7 @@ pub async fn get_albums(
 ///
 /// # Endpoint
 ///
-/// `GET /gallery/albums?<query params>`
+/// `GET ?method=gallery.getAlbums` (client-side caching)
 pub async fn get_albums_cached(
     session: &mut Session,
     filter: &GalleryViewFilter,
@@ -102,7 +106,7 @@ pub async fn get_albums_cached(
 ///
 /// # Endpoint
 ///
-/// `GET /gallery/albums/{albumId}/media?<query params>`
+/// `GET ?method=gallery.getMedia&albumId={albumId}`
 pub async fn get_medias_in_album(
     session: &mut Session,
     filter: &GetMediaInAlbumFilter,
@@ -119,19 +123,19 @@ pub async fn get_medias_in_album(
         query.push(format!("index={index}"));
     }
     if let Some(ref sort_on) = filter.sort_on {
-        query.push(format!("sortOn={sort_on}"));
+        query.push(format!("sortOn={}", encode_value(sort_on)));
     }
     if let Some(ref order) = filter.order_direction {
-        query.push(format!("orderDirection={order}"));
+        query.push(format!("orderDirection={}", encode_value(order)));
     }
     if let Some(ref filter_by) = filter.filter_by {
-        query.push(format!("filterBy={filter_by}"));
+        query.push(format!("filterBy={}", encode_value(filter_by)));
     }
     if filter.is_selection_mode {
         query.push("isSelectionMode=true".to_string());
     }
     if let Some(ref code) = filter.selected_institution_code {
-        query.push(format!("selectedInstitutionCode={code}"));
+        query.push(format!("selectedInstitutionCode={}", encode_value(code)));
     }
 
     let path = if query.is_empty() {
@@ -153,7 +157,7 @@ pub async fn get_medias_in_album(
 ///
 /// # Endpoint
 ///
-/// `GET /gallery/albums/{albumId}/media?<query params>`
+/// `GET ?method=gallery.getMedia&albumId={albumId}` (client-side caching)
 pub async fn get_medias_in_album_cached(
     session: &mut Session,
     filter: &GetMediaInAlbumFilter,
@@ -167,7 +171,7 @@ pub async fn get_medias_in_album_cached(
 ///
 /// # Endpoint
 ///
-/// `GET /gallery/media/{id}`
+/// `GET ?method=gallery.getMediaById&id={id}`
 pub async fn get_media_by_id(session: &mut Session, media_id: i64) -> crate::Result<MediaListDto> {
     session
         .get(&format!("?method=gallery.getMediaById&id={media_id}"))
@@ -180,7 +184,7 @@ pub async fn get_media_by_id(session: &mut Session, media_id: i64) -> crate::Res
 ///
 /// # Endpoint
 ///
-/// `POST /gallery/albums`
+/// `POST ?method=gallery.createAlbum`
 pub async fn create_album(
     session: &mut Session,
     params: &CreateAlbumParameters,
@@ -194,7 +198,7 @@ pub async fn create_album(
 ///
 /// # Endpoint
 ///
-/// `PUT /gallery/albums/{id}`
+/// `POST ?method=gallery.updateAlbum`
 pub async fn update_album(
     session: &mut Session,
     _album_id: i64,
@@ -209,7 +213,7 @@ pub async fn update_album(
 ///
 /// # Endpoint
 ///
-/// `DELETE /gallery/albums/{id}`
+/// `POST ?method=gallery.deleteAlbums`
 pub async fn delete_album(
     session: &mut Session,
     album_id: i64,
@@ -228,7 +232,7 @@ pub async fn delete_album(
 ///
 /// # Endpoint
 ///
-/// `DELETE /gallery/media/{id}`
+/// `POST ?method=gallery.deleteMedia`
 pub async fn delete_media(
     session: &mut Session,
     media_id: i64,
@@ -247,7 +251,7 @@ pub async fn delete_media(
 ///
 /// # Endpoint
 ///
-/// `POST /gallery/media/{id}/tags`
+/// `POST ?method=gallery.addTag`
 pub async fn add_tag(
     session: &mut Session,
     _media_id: i64,
@@ -262,7 +266,7 @@ pub async fn add_tag(
 ///
 /// # Endpoint
 ///
-/// `DELETE /gallery/media/{mediaId}/tags/{tagId}`
+/// `POST ?method=gallery.removeTag`
 pub async fn remove_tag(
     session: &mut Session,
     media_id: i64,
@@ -282,7 +286,7 @@ pub async fn remove_tag(
 ///
 /// # Endpoint
 ///
-/// `POST /gallery/media/{id}/report`
+/// `POST ?method=gallery.reportMedia`
 pub async fn report_media(
     session: &mut Session,
     _media_id: i64,

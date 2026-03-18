@@ -46,7 +46,7 @@ fn aula_envelope(data: serde_json::Value) -> serde_json::Value {
     serde_json::json!({
         "status": {
             "httpCode": 200,
-            "backendErrorCode": 0,
+            "code": 0,
             "message": null,
             "presentedMessage": null,
             "subCode": null,
@@ -64,7 +64,7 @@ fn aula_error_envelope(sub_code: i32) -> serde_json::Value {
     serde_json::json!({
         "status": {
             "httpCode": 200,
-            "backendErrorCode": 0,
+            "code": 0,
             "subCode": sub_code
         },
         "data": {}
@@ -604,7 +604,7 @@ mod error_conditions {
         let body = serde_json::json!({
             "status": {
                 "httpCode": 200,
-                "backendErrorCode": 99,
+                "code": 99,
                 "message": "internal server error"
             },
             "data": {}

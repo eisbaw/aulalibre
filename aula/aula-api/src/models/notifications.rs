@@ -148,6 +148,8 @@ pub struct NotificationSettings {
     // Nested settings
     pub come_go_notification_settings: Option<Vec<ComeGoNotificationSettings>>,
     pub device_list: Option<Vec<SimpleDevice>>,
+    /// C# `NotificationSettings.WidgetSettings` has `[JsonProperty("widgetNotificationSettingDtos")]`.
+    #[serde(rename = "widgetNotificationSettingDtos")]
     pub widget_settings: Option<Vec<WidgetNotificationSettings>>,
 }
 
@@ -305,7 +307,7 @@ mod tests {
                 {"comeGoType": "Arrival", "activated": true}
             ],
             "deviceList": [{"deviceId": "dev-001"}],
-            "widgetSettings": [
+            "widgetNotificationSettingDtos": [
                 {"title": "Skoleintra", "widgetId": 5, "isActive": true}
             ]
         }"#;

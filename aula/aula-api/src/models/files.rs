@@ -283,14 +283,26 @@ pub struct UploadFileInfo {
 #[serde(rename_all = "camelCase")]
 pub struct UploadFileData {
     pub policy: Option<String>,
+    /// C# has `[JsonProperty("X-Amz-Algorithm")]`.
+    #[serde(rename = "X-Amz-Algorithm")]
     pub amz_algorithm: Option<String>,
+    /// C# has `[JsonProperty("X-Amz-Credential")]`.
+    #[serde(rename = "X-Amz-Credential")]
     pub amz_credential: Option<String>,
+    /// C# has `[JsonProperty("X-Amz-Date")]`.
+    #[serde(rename = "X-Amz-Date")]
     pub amz_date: Option<String>,
+    /// C# has `[JsonProperty("X-Amz-Security-Token")]`.
+    #[serde(rename = "X-Amz-Security-Token")]
     pub amz_security_token: Option<String>,
+    /// C# has `[JsonProperty("X-Amz-Signature")]`.
+    #[serde(rename = "X-Amz-Signature")]
     pub amz_signature: Option<String>,
     pub acl: Option<String>,
     pub key: Option<String>,
     pub bucket: Option<String>,
+    /// C# has `[JsonProperty("Cache-Control")]`.
+    #[serde(rename = "Cache-Control")]
     pub cache_control: Option<String>,
 }
 
@@ -490,6 +502,8 @@ pub struct CreateAttachmentsArguments {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetUploadLinksArguments {
+    /// C# has `[JsonProperty("upload_names")]` (snake_case, not camelCase).
+    #[serde(rename = "upload_names")]
     pub upload_names: Option<Vec<String>>,
     pub institution_code: Option<String>,
 }
@@ -690,15 +704,15 @@ mod tests {
             "file": {"key": {"key": "files/new.jpg", "bucket": "aula-prod"}},
             "data": {
                 "policy": "abc",
-                "amzAlgorithm": "AWS4-HMAC-SHA256",
-                "amzCredential": "cred",
-                "amzDate": "20240115T100000Z",
-                "amzSecurityToken": "tok",
-                "amzSignature": "sig",
+                "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+                "X-Amz-Credential": "cred",
+                "X-Amz-Date": "20240115T100000Z",
+                "X-Amz-Security-Token": "tok",
+                "X-Amz-Signature": "sig",
                 "acl": "private",
                 "key": "files/new.jpg",
                 "bucket": "aula-prod",
-                "cacheControl": "max-age=31536000"
+                "Cache-Control": "max-age=31536000"
             }
         }"#;
         let ul: UploadLink = serde_json::from_str(json).unwrap();

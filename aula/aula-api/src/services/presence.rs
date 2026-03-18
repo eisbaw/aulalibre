@@ -71,6 +71,7 @@ use crate::models::presence::{
     UpdateStatusByInstitutionProfileIds, VacationAnnouncementsByChildren, VacationEntry,
     VacationRegistrationResponseForGuardian, VacationRegistrationsByChildren,
 };
+use crate::services::query::encode_value;
 use crate::session::Session;
 
 // ---------------------------------------------------------------------------
@@ -145,7 +146,7 @@ pub async fn get_presence_registrations(
         query.push(format!("instProfileIds={id}"));
     }
     if let Some(d) = date {
-        query.push(format!("date={d}"));
+        query.push(format!("date={}", encode_value(d)));
     }
     let path = if query.is_empty() {
         "?method=presence.getPresenceRegistrations".to_string()
@@ -247,10 +248,10 @@ pub async fn get_presence_schedules(
         }
     }
     if let Some(ref from) = args.from_date {
-        query.push(format!("fromDate={from}"));
+        query.push(format!("fromDate={}", encode_value(from)));
     }
     if let Some(ref to) = args.to_date {
-        query.push(format!("toDate={to}"));
+        query.push(format!("toDate={}", encode_value(to)));
     }
     let path = if query.is_empty() {
         "?method=presence.getPresenceTemplates".to_string()
@@ -280,14 +281,14 @@ pub async fn get_presence_week_overview(
     }
     if let Some(ref filters) = args.status_filters {
         for f in filters {
-            query.push(format!("statusFilters={f}"));
+            query.push(format!("statusFilters={}", encode_value(f)));
         }
     }
     if let Some(ref start) = args.start_date {
-        query.push(format!("startDate={start}"));
+        query.push(format!("startDate={}", encode_value(start)));
     }
     if let Some(ref end) = args.end_date {
-        query.push(format!("endDate={end}"));
+        query.push(format!("endDate={}", encode_value(end)));
     }
     query.push(format!("offset={}", args.offset));
     query.push(format!("limit={}", args.limit));
@@ -344,7 +345,7 @@ pub async fn delete_repeated_presence_template(
     let template_id = args.present_template_id.unwrap_or(0);
     let mut query = Vec::new();
     if let Some(ref day) = args.delete_from_day {
-        query.push(format!("deleteFromDay={day}"));
+        query.push(format!("deleteFromDay={}", encode_value(day)));
     }
     let path = if query.is_empty() {
         format!("?method=presence.deleteRepeatingPresenceTemplate&templateId={template_id}")
@@ -374,10 +375,10 @@ pub async fn get_overlapping_presence_templates(
         args.institution_profile_id
     ));
     if let Some(ref start) = args.start_date {
-        query.push(format!("startDate={start}"));
+        query.push(format!("startDate={}", encode_value(start)));
     }
     if let Some(ref end) = args.end_date {
-        query.push(format!("endDate={end}"));
+        query.push(format!("endDate={}", encode_value(end)));
     }
     if let Some(ref pattern) = args.repeat_pattern {
         query.push(format!("repeatPattern={pattern:?}"));
@@ -406,7 +407,7 @@ pub async fn get_suggestions_for_pickup(
 ) -> crate::Result<GetExitWithSuggestionsResult> {
     let mut query = Vec::new();
     if let Some(ref name) = args.pickup_name {
-        query.push(format!("pickupName={name}"));
+        query.push(format!("pickupName={}", encode_value(name)));
     }
     if let Some(ref ids) = args.uni_student_ids {
         for id in ids {
@@ -594,7 +595,7 @@ pub async fn get_activity_list(
         }
     }
     if let Some(ref sort) = args.sort_on {
-        query.push(format!("sortOn={sort}"));
+        query.push(format!("sortOn={}", encode_value(sort)));
     }
     let path = format!("?method=presence.getActivityList&{}", query.join("&"));
     session.get(&path).await
@@ -710,7 +711,7 @@ pub async fn get_children_vacation(
         }
     }
     if let Some(ref date) = args.date {
-        query.push(format!("date={date}"));
+        query.push(format!("date={}", encode_value(date)));
     }
     query.push(format!("offset={}", args.offset));
     query.push(format!("limit={}", args.limit));
@@ -764,7 +765,7 @@ pub async fn get_vacation_registration_overview(
     }
     if let Some(ref filters) = args.status_filters {
         for f in filters {
-            query.push(format!("statusFilters={f}"));
+            query.push(format!("statusFilters={}", encode_value(f)));
         }
     }
     query.push(format!("offset={}", args.offset));
@@ -901,7 +902,7 @@ pub async fn get_presence_filters(
     let mut query = Vec::new();
     if let Some(ref institutions) = args.institutions {
         for inst in institutions {
-            query.push(format!("institutions={inst}"));
+            query.push(format!("institutions={}", encode_value(inst)));
         }
     }
     let path = if query.is_empty() {
@@ -925,7 +926,7 @@ pub async fn get_closed_days(
 ) -> crate::Result<GetClosedDaysResult> {
     let mut query = Vec::new();
     for code in institution_codes {
-        query.push(format!("institutionCodes={code}"));
+        query.push(format!("institutionCodes={}", encode_value(code)));
     }
     let path = if query.is_empty() {
         "?method=presence.getClosedDays".to_string()
@@ -948,7 +949,7 @@ pub async fn get_general_opening_hours(
 ) -> crate::Result<GetGeneralOpeningHoursResult> {
     let mut query = Vec::new();
     for code in institution_codes {
-        query.push(format!("institutionCodes={code}"));
+        query.push(format!("institutionCodes={}", encode_value(code)));
     }
     let path = if query.is_empty() {
         "?method=presence.getGeneralOpeningHours".to_string()
@@ -975,14 +976,14 @@ pub async fn get_opening_hours_by_institution_codes(
     let mut query = Vec::new();
     if let Some(ref codes) = args.institution_codes {
         for code in codes {
-            query.push(format!("institutionCodes={code}"));
+            query.push(format!("institutionCodes={}", encode_value(code)));
         }
     }
     if let Some(ref start) = args.start_date {
-        query.push(format!("startDate={start}"));
+        query.push(format!("startDate={}", encode_value(start)));
     }
     if let Some(ref end) = args.end_date {
-        query.push(format!("endDate={end}"));
+        query.push(format!("endDate={}", encode_value(end)));
     }
     let path = if query.is_empty() {
         "?method=presence.getOpeningHoursByInstitutionCodes".to_string()
@@ -1008,7 +1009,7 @@ pub async fn get_specific_opening_hour_overview(
 ) -> crate::Result<GetSpecificOpeningHourOverviewResult> {
     let mut query = Vec::new();
     for code in institution_codes {
-        query.push(format!("institutionCodes={code}"));
+        query.push(format!("institutionCodes={}", encode_value(code)));
     }
     let path = if query.is_empty() {
         "?method=presence.getSpecificOpeningHourOverview".to_string()
@@ -1052,7 +1053,7 @@ pub async fn get_institution_with_presence_states(
 ) -> crate::Result<Vec<InstitutionWithPresenceStates>> {
     let mut query = Vec::new();
     for code in institution_codes {
-        query.push(format!("institutionCodes={code}"));
+        query.push(format!("institutionCodes={}", encode_value(code)));
     }
     let path = if query.is_empty() {
         "?method=presence.getPresenceStates".to_string()
@@ -1076,7 +1077,7 @@ pub async fn get_presence_children_distribution(
     let mut query = Vec::new();
     query.push(format!("departmentId={}", args.department_id));
     if let Some(ref date) = args.date {
-        query.push(format!("date={date}"));
+        query.push(format!("date={}", encode_value(date)));
     }
     if let Some(ref ids) = args.group_ids {
         for id in ids {
@@ -1085,7 +1086,7 @@ pub async fn get_presence_children_distribution(
     }
     if let Some(ref filters) = args.status_filters {
         for f in filters {
-            query.push(format!("statusFilters={f}"));
+            query.push(format!("statusFilters={}", encode_value(f)));
         }
     }
     let path = format!(

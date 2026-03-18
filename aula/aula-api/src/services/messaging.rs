@@ -52,7 +52,20 @@ use crate::models::messaging::{
     SetLastMessageRequestArguments, SetSensitivityLevelRequest, StartNewThreadRequestArguments,
     UpdateFolderArguments, UpdateMessageThreadsSubscriptionStatusRequest,
 };
+use crate::services::query::encode_value;
 use crate::session::Session;
+
+/// Convert a serde-serializable enum variant to its string representation for
+/// use in query parameters. Avoids the fragile
+/// `serde_json::to_string(v).unwrap().trim_matches('"')` pattern.
+fn enum_to_query_value<T: serde::Serialize>(value: &T) -> String {
+    // Serialize to a JSON string (e.g., `"FilterAll"`), then strip the quotes.
+    // This is still using serde under the hood, but the unwrap is justified:
+    // these are simple fieldless enum variants that always serialize to strings.
+    let json = serde_json::to_string(value).expect("fieldless enum serialization cannot fail");
+    // Strip surrounding quotes from the JSON string value.
+    json[1..json.len() - 1].to_string()
+}
 
 // ---------------------------------------------------------------------------
 // Response types specific to this service
@@ -142,28 +155,16 @@ pub async fn get_thread_list(
         params.push(format!("folderId={folder_id}"));
     }
     if let Some(ref ft) = args.filter_type {
-        params.push(format!(
-            "filterType={}",
-            serde_json::to_string(ft).unwrap().trim_matches('"')
-        ));
+        params.push(format!("filterType={}", enum_to_query_value(ft)));
     }
     if let Some(ref st) = args.sort_type {
-        params.push(format!(
-            "sortType={}",
-            serde_json::to_string(st).unwrap().trim_matches('"')
-        ));
+        params.push(format!("sortType={}", enum_to_query_value(st)));
     }
     if let Some(ref so) = args.sort_order {
-        params.push(format!(
-            "sortOrder={}",
-            serde_json::to_string(so).unwrap().trim_matches('"')
-        ));
+        params.push(format!("sortOrder={}", enum_to_query_value(so)));
     }
     if let Some(ref mbot) = args.mail_box_owner_type {
-        params.push(format!(
-            "mailBoxOwnerType={}",
-            serde_json::to_string(mbot).unwrap().trim_matches('"')
-        ));
+        params.push(format!("mailBoxOwnerType={}", enum_to_query_value(mbot)));
     }
     if let Some(ref owners) = args.mail_box_owners {
         for id in owners {
@@ -341,7 +342,7 @@ pub async fn get_message_info_light(
 ) -> crate::Result<GetMessageInfoLightDto> {
     let mut params = vec![
         "method=messaging.getMessageInfoLight".to_string(),
-        format!("messageId={message_id}"),
+        format!("messageId={}", encode_value(message_id)),
     ];
     if let Some(cid) = common_inbox_id {
         params.push(format!("commonInboxId={cid}"));

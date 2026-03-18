@@ -125,7 +125,7 @@ mod tests {
         };
         let json = serde_json::to_value(&args).unwrap();
         assert_eq!(
-            json["uploadNames"],
+            json["upload_names"],
             serde_json::json!(["photo.jpg", "doc.pdf"])
         );
         assert_eq!(json["institutionCode"], "101001");
@@ -186,15 +186,15 @@ mod tests {
             "file": {"key": {"key": "files/new.jpg", "bucket": "aula-prod"}},
             "data": {
                 "policy": "abc",
-                "amzAlgorithm": "AWS4-HMAC-SHA256",
-                "amzCredential": "cred",
-                "amzDate": "20240115T100000Z",
-                "amzSecurityToken": "tok",
-                "amzSignature": "sig",
+                "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+                "X-Amz-Credential": "cred",
+                "X-Amz-Date": "20240115T100000Z",
+                "X-Amz-Security-Token": "tok",
+                "X-Amz-Signature": "sig",
                 "acl": "private",
                 "key": "files/new.jpg",
                 "bucket": "aula-prod",
-                "cacheControl": "max-age=31536000"
+                "Cache-Control": "max-age=31536000"
             }
         }"#;
         let ul: UploadLink = serde_json::from_str(json).unwrap();

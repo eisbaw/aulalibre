@@ -8,33 +8,32 @@
 //! Terminal colors respect the `NO_COLOR` environment variable (https://no-color.org/).
 
 use serde::Serialize;
+use std::io::IsTerminal;
+use std::sync::OnceLock;
 
 // ---------------------------------------------------------------------------
 // Color support
 // ---------------------------------------------------------------------------
+
+/// Cached result of the color-support check.
+///
+/// The answer cannot change during a process lifetime, so we compute it once.
+static COLORS_ENABLED: OnceLock<bool> = OnceLock::new();
 
 /// Returns `true` when the terminal supports color output.
 ///
 /// Color is disabled when:
 ///   - `NO_COLOR` env var is set (any value), per <https://no-color.org/>
 ///   - stdout is not a terminal (piped)
+///
+/// The result is cached after the first call.
 pub fn colors_enabled() -> bool {
-    if std::env::var_os("NO_COLOR").is_some() {
-        return false;
-    }
-    atty_stdout()
-}
-
-/// Lightweight isatty check for stdout (avoids pulling in the `atty` crate).
-fn atty_stdout() -> bool {
-    #[cfg(unix)]
-    {
-        unsafe { libc::isatty(libc::STDOUT_FILENO) != 0 }
-    }
-    #[cfg(not(unix))]
-    {
-        false
-    }
+    *COLORS_ENABLED.get_or_init(|| {
+        if std::env::var_os("NO_COLOR").is_some() {
+            return false;
+        }
+        std::io::stdout().is_terminal()
+    })
 }
 
 // ANSI escape helpers -- all return empty strings when color is off.

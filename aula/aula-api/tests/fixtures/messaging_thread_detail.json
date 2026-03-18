@@ -1,7 +1,7 @@
 {
   "status": {
     "httpCode": 200,
-    "backendErrorCode": 0,
+    "code": 0,
     "message": null,
     "presentedMessage": null,
     "subCode": null,

@@ -64,6 +64,8 @@ pub struct RecipientApiModel {
 #[serde(rename_all = "camelCase")]
 pub struct MailBox {
     pub id: Option<i64>,
+    /// C# `MailBox.Email` has `[JsonProperty("address")]`.
+    #[serde(rename = "address")]
     pub email: Option<String>,
     pub display_name: Option<String>,
     pub relation: Option<String>,
@@ -381,6 +383,8 @@ pub struct MessageRecipientRelationDto {
 pub struct MessageParticipantRelationDto {
     #[serde(rename = "type")]
     pub relation_type: Option<String>,
+    /// NOTE: The server-side JSON key is `institutioName` (missing 'n') -- this
+    /// is a typo in the Aula backend API, not a bug on our side.
     #[serde(rename = "institutioName")]
     pub institution_name: Option<String>,
     pub class: Option<String>,
@@ -656,6 +660,8 @@ pub struct MarkThreadsRequest {
 pub struct MuteThreadRequestArguments {
     #[serde(default)]
     pub muted: bool,
+    /// C# `MuteThreadRequestArguments.Owner` has `[JsonProperty("MailBoxOwner")]`.
+    #[serde(rename = "MailBoxOwner")]
     pub owner: Option<RecipientApiModel>,
     pub subscription_ids: Option<Vec<i64>>,
     pub common_inbox_id: Option<i64>,
@@ -837,7 +843,7 @@ mod tests {
     fn deserialize_mailbox() {
         let json = r#"{
             "id": 42,
-            "email": "test@aula.dk",
+            "address": "test@aula.dk",
             "displayName": "Test User",
             "relation": "Teacher",
             "shortName": "TU"

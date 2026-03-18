@@ -22,6 +22,7 @@ use crate::models::search::{
     SearchMessageRequestModel, SearchRecipientParameters, SearchRecipientResponse, SearchResponse,
     SearchResultMessagesResponse, SearchResultProfileItemGlobalSearch,
 };
+use crate::services::query::encode_value;
 use crate::session::Session;
 
 // ---------------------------------------------------------------------------
@@ -41,7 +42,7 @@ pub async fn global_search(
 ) -> crate::Result<SearchResponse> {
     let mut query = Vec::new();
     if let Some(ref text) = params.text {
-        query.push(format!("text={text}"));
+        query.push(format!("text={}", encode_value(text)));
     }
     if let Some(limit) = params.page_limit {
         query.push(format!("pageLimit={limit}"));
@@ -56,7 +57,12 @@ pub async fn global_search(
         query.push("docTypeCount=true".to_string());
     }
     if let Some(ref dt) = params.doc_type {
-        query.push(format!("docType={dt:?}"));
+        // Use serde serialization for enum variant name (e.g. "Post", "Event")
+        let json = serde_json::to_string(dt).expect("fieldless enum serialization cannot fail");
+        query.push(format!(
+            "docType={}",
+            encode_value(&json[1..json.len() - 1])
+        ));
     }
 
     let path = if query.is_empty() {
@@ -87,14 +93,14 @@ pub async fn search_for_messages(
 ///
 /// # Endpoint
 ///
-/// `GET /search/profiles`
+/// `GET ?method=search.findProfiles`
 pub async fn search_for_profiles(
     session: &mut Session,
     params: &SearchForProfilesAndGroupsParameters,
 ) -> crate::Result<Vec<SearchResultProfileItemGlobalSearch>> {
     let mut query = Vec::new();
     if let Some(ref text) = params.text {
-        query.push(format!("text={text}"));
+        query.push(format!("text={}", encode_value(text)));
     }
     if params.only_profiles {
         query.push("onlyProfiles=true".to_string());
@@ -127,7 +133,7 @@ pub async fn search_for_profiles_and_groups(
 ) -> crate::Result<SearchResponse> {
     let mut query = Vec::new();
     if let Some(ref text) = params.text {
-        query.push(format!("text={text}"));
+        query.push(format!("text={}", encode_value(text)));
     }
     if params.only_profiles {
         query.push("onlyProfiles=true".to_string());
@@ -153,20 +159,20 @@ pub async fn search_for_profiles_and_groups(
 ///
 /// # Endpoint
 ///
-/// `GET /search/recipients`
+/// `GET ?method=search.findRecipients`
 pub async fn search_for_recipients(
     session: &mut Session,
     params: &SearchRecipientParameters,
 ) -> crate::Result<SearchRecipientResponse> {
     let mut query = Vec::new();
     if let Some(ref text) = params.text {
-        query.push(format!("text={text}"));
+        query.push(format!("text={}", encode_value(text)));
     }
     if let Some(limit) = params.limit {
         query.push(format!("limit={limit}"));
     }
     if let Some(ref inst) = params.inst_code {
-        query.push(format!("instCode={inst}"));
+        query.push(format!("instCode={}", encode_value(inst)));
     }
 
     let path = if query.is_empty() {
@@ -183,14 +189,14 @@ pub async fn search_for_recipients(
 ///
 /// # Endpoint
 ///
-/// `GET /search/recipients/personalReference`
+/// `GET ?method=search.findRecipientsPersonalReferenceData`
 pub async fn search_for_recipients_for_personal_reference(
     session: &mut Session,
     params: &SearchRecipientParameters,
 ) -> crate::Result<SearchRecipientResponse> {
     let mut query = Vec::new();
     if let Some(ref text) = params.text {
-        query.push(format!("text={text}"));
+        query.push(format!("text={}", encode_value(text)));
     }
     if let Some(limit) = params.limit {
         query.push(format!("limit={limit}"));
@@ -213,14 +219,14 @@ pub async fn search_for_recipients_for_personal_reference(
 ///
 /// # Endpoint
 ///
-/// `GET /search/recipients/secureDocument`
+/// `GET ?method=search.findProfilesAndGroupsToShareDocument`
 pub async fn search_for_recipients_for_secure_document(
     session: &mut Session,
     params: &SearchRecipientParameters,
 ) -> crate::Result<SearchRecipientResponse> {
     let mut query = Vec::new();
     if let Some(ref text) = params.text {
-        query.push(format!("text={text}"));
+        query.push(format!("text={}", encode_value(text)));
     }
     if let Some(limit) = params.limit {
         query.push(format!("limit={limit}"));
@@ -243,18 +249,18 @@ pub async fn search_for_recipients_for_secure_document(
 ///
 /// # Endpoint
 ///
-/// `GET /search/groups/document`
+/// `GET ?method=search.findProfilesAndGroupsToAssociateDocument`
 pub async fn search_for_groups_to_associate_document(
     session: &mut Session,
     params: &SearchForAssociateSecureDocumentsParameter,
 ) -> crate::Result<SearchGroupResultModel> {
     let mut query = Vec::new();
     if let Some(ref text) = params.text {
-        query.push(format!("text={text}"));
+        query.push(format!("text={}", encode_value(text)));
     }
     if let Some(ref codes) = params.institution_codes {
         for code in codes {
-            query.push(format!("institutionCodes={code}"));
+            query.push(format!("institutionCodes={}", encode_value(code)));
         }
     }
 
@@ -275,14 +281,14 @@ pub async fn search_for_groups_to_associate_document(
 ///
 /// # Endpoint
 ///
-/// `GET /search/groups`
+/// `GET ?method=search.findGroups`
 pub async fn search_groups(
     session: &mut Session,
     params: &SearchGroupRequestModel,
 ) -> crate::Result<SearchGroupResultModel> {
     let mut query = Vec::new();
     if let Some(ref text) = params.text {
-        query.push(format!("text={text}"));
+        query.push(format!("text={}", encode_value(text)));
     }
     if let Some(limit) = params.limit {
         query.push(format!("limit={limit}"));
@@ -292,7 +298,7 @@ pub async fn search_groups(
     }
     if let Some(ref codes) = params.institution_codes {
         for code in codes {
-            query.push(format!("institutionCodes={code}"));
+            query.push(format!("institutionCodes={}", encode_value(code)));
         }
     }
 

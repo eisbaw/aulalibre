@@ -10,6 +10,8 @@ pub mod enums;
 pub mod error;
 pub mod models;
 pub mod response;
+pub mod session;
+pub mod token_store;
 
 // Re-export key types at crate root for convenience.
 pub use client::{AulaClient, AulaClientConfig, Environment};
@@ -18,6 +20,8 @@ pub use response::{
     AulaErrorResponse, AulaServiceResponse, DataArrayResponse, WebResponseStatus,
     WebResponseStatusSubCode,
 };
+pub use session::{Session, SessionConfig};
+pub use token_store::TokenStore;
 
 /// Returns the crate version string.
 pub fn version() -> &'static str {

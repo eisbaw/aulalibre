@@ -6,6 +6,7 @@ description = "Rust client library for the Aula school platform API"
 
 [dependencies]
 base64 = "0.22"
+dirs = "6"
 rand = "0.8"
 reqwest = { version = "0.12", features = ["json", "cookies"] }
 serde = { version = "1", features = ["derive"] }

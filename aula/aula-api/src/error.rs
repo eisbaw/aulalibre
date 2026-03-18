@@ -78,6 +78,11 @@ pub enum AulaError {
         description: Option<String>,
     },
 
+    // -- IO --
+    /// File system I/O error (e.g. token storage).
+    #[error("I/O error: {0}")]
+    Io(#[from] std::io::Error),
+
     // -- Serialization --
     /// JSON serialization/deserialization error.
     #[error("JSON error: {0}")]

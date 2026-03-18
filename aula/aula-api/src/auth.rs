@@ -393,6 +393,15 @@ impl LoginData {
     /// Returns `true` if the expiration time is known and has passed.
     /// Returns `false` if expiration is unknown (conservative: assume valid).
     pub fn is_expired(&self) -> bool {
+        self.is_expired_with_buffer(0)
+    }
+
+    /// Check whether the access token has expired or will expire within
+    /// `buffer_secs` seconds.
+    ///
+    /// This mirrors `Conf.BufferOnTokenExpiration` from the APK, which
+    /// triggers proactive refresh before the token actually expires.
+    pub fn is_expired_with_buffer(&self, buffer_secs: u64) -> bool {
         let Some(exp) = self.access_token_expiration else {
             return false;
         };
@@ -400,7 +409,7 @@ impl LoginData {
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);
-        now >= exp
+        now + buffer_secs >= exp
     }
 
     /// Create an error `LoginData` (no tokens, just error info).

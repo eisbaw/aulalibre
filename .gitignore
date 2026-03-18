@@ -22,6 +22,9 @@ credentials.json
 *.pem
 *.key
 
+# Extracted/decompiled assemblies
+extracted_assemblies/
+
 # Rust build artifacts
 target/
 Cargo.lock

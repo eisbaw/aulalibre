@@ -1,0 +1,2 @@
+# E2E auth tokens - NEVER commit these
+.auth-token

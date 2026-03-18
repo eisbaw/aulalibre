@@ -6,6 +6,7 @@
 
 pub mod auth;
 pub mod client;
+pub mod e2e;
 pub mod enums;
 pub mod error;
 pub mod models;

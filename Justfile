@@ -30,3 +30,8 @@ run *ARGS:
 
 # End-to-end tests (build + test + lint + fmt check)
 e2e: build test lint fmt-check
+
+# Run live E2E tests against the real Aula API (requires auth token)
+# See aula/aula-api/src/e2e.rs for setup instructions.
+e2e-live:
+    cargo test --manifest-path aula/Cargo.toml -p aula-api --test e2e_live_tests -- --ignored

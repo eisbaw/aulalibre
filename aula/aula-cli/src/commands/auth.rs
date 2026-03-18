@@ -8,9 +8,11 @@
 use clap::Subcommand;
 
 use aula_api::auth::{self, AuthLevel, AuthorizeParams, LoginData, OidcEndpoints, PkceChallenge};
-use aula_api::client::{AulaClient, AulaClientConfig, Environment};
+use aula_api::client::{AulaClient, AulaClientConfig};
 use aula_api::session::{Session, SessionConfig};
-use aula_api::token_store::TokenStore;
+
+use crate::output::bold;
+use crate::session_util::{resolve_environment, token_store};
 
 /// Authenticate with the Aula platform.
 #[derive(Debug, Subcommand)]
@@ -33,33 +35,12 @@ pub enum AuthCommand {
     Refresh,
 }
 
-/// Resolve CLI environment string to an `Environment`.
-fn resolve_environment(env: Option<&str>) -> Environment {
-    match env {
-        Some("preprod") => Environment::Preprod,
-        Some("hotfix") => Environment::Hotfix,
-        Some("test1") => Environment::Test1,
-        Some("test3") => Environment::Test3,
-        Some("dev1") => Environment::Dev1,
-        Some("dev3") => Environment::Dev3,
-        Some("dev11") => Environment::Dev11,
-        _ => Environment::Production,
-    }
-}
-
 fn parse_auth_level(level: u8) -> Result<AuthLevel, String> {
     match level {
         2 => Ok(AuthLevel::Level2),
         3 => Ok(AuthLevel::Level3),
         _ => Err(format!("invalid auth level {level}: must be 2 or 3")),
     }
-}
-
-fn token_store() -> TokenStore {
-    TokenStore::default_location().unwrap_or_else(|| {
-        eprintln!("warning: could not determine data directory, using ./aula-data");
-        TokenStore::new("./aula-data")
-    })
 }
 
 pub async fn handle(cmd: &AuthCommand, env_override: Option<&str>) {
@@ -110,7 +91,6 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
 
     let authorize_url = auth::build_authorize_url(&endpoints, &params);
 
-    // Print instructions.
     eprintln!("Starting Aula login ({auth_level})...");
     eprintln!();
     eprintln!("Opening your browser for authentication.");
@@ -123,13 +103,11 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
         local_addr.port()
     );
 
-    // Open browser (best-effort).
     if let Err(e) = open::that(authorize_url.as_str()) {
         eprintln!("warning: failed to open browser: {e}");
         eprintln!("Please open the URL above manually.");
     }
 
-    // Wait for the redirect callback.
     let code = match wait_for_callback(&listener, &state, timeout_secs).await {
         Ok(code) => code,
         Err(e) => {
@@ -140,7 +118,6 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
 
     eprintln!("Authorization code received, exchanging for tokens...");
 
-    // Exchange code for tokens.
     let http = reqwest::Client::new();
     let token_response = match auth::exchange_code(
         &http,
@@ -161,7 +138,6 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
 
     let login_data = LoginData::from_token_response(token_response, auth_level);
 
-    // Save tokens.
     let store = token_store();
     if let Err(e) = store.save(&login_data) {
         eprintln!("error: failed to save tokens: {e}");
@@ -169,7 +145,7 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
     }
 
     eprintln!();
-    eprintln!("Login successful!");
+    eprintln!("{}", bold("Login successful!"));
     eprintln!("  Auth level: {auth_level}");
     if let Some(exp) = login_data.access_token_expiration {
         eprintln!("  Token expires: {}", format_unix_timestamp(exp));
@@ -181,11 +157,6 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
 // Callback server
 // ---------------------------------------------------------------------------
 
-/// Wait for the OIDC redirect callback on the local HTTP server.
-///
-/// Parses the `code` and `state` query parameters from the request URI.
-/// Returns the authorization code on success, sends an HTML response to the
-/// browser, and shuts down.
 async fn wait_for_callback(
     listener: &tokio::net::TcpListener,
     expected_state: &str,
@@ -201,7 +172,6 @@ async fn wait_for_callback(
         .map_err(|_| format!("timed out after {timeout_secs}s waiting for browser callback"))?
         .map_err(|e| format!("failed to accept connection: {e}"))?;
 
-    // Read the HTTP request (just need the first line for the URI).
     let mut buf = vec![0u8; 4096];
     let n = stream
         .read(&mut buf)
@@ -209,7 +179,6 @@ async fn wait_for_callback(
         .map_err(|e| format!("failed to read request: {e}"))?;
     let request = String::from_utf8_lossy(&buf[..n]);
 
-    // Parse the request line: "GET /callback?code=...&state=... HTTP/1.1"
     let request_line = request
         .lines()
         .next()
@@ -220,15 +189,12 @@ async fn wait_for_callback(
         .nth(1)
         .ok_or_else(|| "malformed HTTP request line".to_string())?;
 
-    // Parse query parameters from the path.
     let full_url = format!("http://localhost{path}");
     let parsed =
         url::Url::parse(&full_url).map_err(|e| format!("failed to parse callback URL: {e}"))?;
 
-    // Extract code using the existing auth module helper.
     let result = auth::extract_code_from_redirect(&parsed, Some(expected_state));
 
-    // Send response to browser before returning.
     let (status_line, body) = match &result {
         Ok(_) => (
             "HTTP/1.1 200 OK",
@@ -236,7 +202,6 @@ async fn wait_for_callback(
         ),
         Err(_) => (
             "HTTP/1.1 400 Bad Request",
-            // The actual error is returned to the CLI.
             "<html><body><h2>Login failed</h2><p>Check the terminal for details.</p></body></html>",
         ),
     };
@@ -257,7 +222,6 @@ async fn handle_logout(env_override: Option<&str>) {
     let environment = resolve_environment(env_override);
     let store = token_store();
 
-    // Check if there are tokens to clear.
     if !store.exists() {
         eprintln!("No active session found.");
         return;
@@ -310,7 +274,7 @@ fn handle_status() {
         }
     };
 
-    println!("Logged in");
+    println!("{}", bold("Logged in"));
     println!("  Auth level: {}", login_data.auth_level);
     println!(
         "  Has refresh token: {}",
@@ -335,7 +299,7 @@ fn handle_status() {
             let secs = remaining % 60;
             println!("  Time remaining: {mins}m {secs}s");
         } else {
-            println!("  Status: EXPIRED");
+            println!("  Status: {}", crate::output::red("EXPIRED"));
             if login_data.refresh_token.is_some() {
                 println!("  Run 'aula auth refresh' to get a new token.");
             } else {
@@ -347,7 +311,7 @@ fn handle_status() {
     }
 
     if let Some(ref err) = login_data.error {
-        println!("  Error: {err}");
+        println!("  Error: {}", crate::output::red(err));
         if let Some(ref desc) = login_data.error_description {
             println!("  Error detail: {desc}");
         }
@@ -414,11 +378,9 @@ fn format_unix_timestamp(ts: u64) -> String {
     use std::time::{Duration, UNIX_EPOCH};
 
     let dt = UNIX_EPOCH + Duration::from_secs(ts);
-    // Format using the system time display (basic but no extra deps needed).
     let elapsed = dt.duration_since(UNIX_EPOCH).unwrap_or(Duration::ZERO);
     let total_secs = elapsed.as_secs();
 
-    // Manual UTC breakdown.
     let secs_per_day: u64 = 86400;
     let days = total_secs / secs_per_day;
     let day_secs = total_secs % secs_per_day;
@@ -426,7 +388,6 @@ fn format_unix_timestamp(ts: u64) -> String {
     let mins = (day_secs % 3600) / 60;
     let secs = day_secs % 60;
 
-    // Days since epoch to Y-M-D (simplified Gregorian).
     let (year, month, day) = days_to_ymd(days);
 
     format!("{year:04}-{month:02}-{day:02} {hours:02}:{mins:02}:{secs:02} UTC")
@@ -434,7 +395,6 @@ fn format_unix_timestamp(ts: u64) -> String {
 
 /// Convert days since Unix epoch to (year, month, day).
 fn days_to_ymd(days: u64) -> (u64, u64, u64) {
-    // Algorithm from http://howardhinnant.github.io/date_algorithms.html
     let z = days + 719468;
     let era = z / 146097;
     let doe = z - era * 146097;

@@ -2,11 +2,13 @@
 
 use clap::Subcommand;
 
-use aula_api::client::{AulaClient, AulaClientConfig};
 use aula_api::models::documents::GetSecureDocumentsArguments;
 use aula_api::services::documents;
-use aula_api::session::{Session, SessionConfig};
-use aula_api::token_store::TokenStore;
+
+use crate::output::{
+    bold, dim, format_datetime, print_json, strip_html_tags, truncate, Column, Table,
+};
+use crate::session_util::build_session;
 
 /// Browse and download shared documents.
 #[derive(Debug, Subcommand)]
@@ -31,59 +33,6 @@ pub enum DocumentsCommand {
         #[arg(long, default_value = "internal")]
         doc_type: String,
     },
-}
-
-// ---------------------------------------------------------------------------
-// Session helper
-// ---------------------------------------------------------------------------
-
-fn resolve_environment(env: Option<&str>) -> aula_api::client::Environment {
-    match env {
-        Some("preprod") => aula_api::client::Environment::Preprod,
-        Some("hotfix") => aula_api::client::Environment::Hotfix,
-        Some("test1") => aula_api::client::Environment::Test1,
-        Some("test3") => aula_api::client::Environment::Test3,
-        Some("dev1") => aula_api::client::Environment::Dev1,
-        Some("dev3") => aula_api::client::Environment::Dev3,
-        Some("dev11") => aula_api::client::Environment::Dev11,
-        _ => aula_api::client::Environment::Production,
-    }
-}
-
-fn token_store() -> TokenStore {
-    TokenStore::default_location().unwrap_or_else(|| {
-        eprintln!("warning: could not determine data directory, using ./aula-data");
-        TokenStore::new("./aula-data")
-    })
-}
-
-fn build_session(env_override: Option<&str>) -> Session {
-    let environment = resolve_environment(env_override);
-    let store = token_store();
-
-    if !store.exists() {
-        eprintln!("Not logged in. Run 'aula auth login' first.");
-        std::process::exit(1);
-    }
-
-    let client = match AulaClient::with_config(AulaClientConfig {
-        environment,
-        api_version: 19,
-    }) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("error: failed to create client: {e}");
-            std::process::exit(1);
-        }
-    };
-
-    match Session::new(client, store, SessionConfig::default()) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("error: failed to create session: {e}");
-            std::process::exit(1);
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -143,23 +92,21 @@ async fn handle_list(
     match documents::get_secure_documents(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 let docs = result.documents.as_ref();
                 let total = result.total_count.unwrap_or(0);
 
                 match docs {
                     Some(docs) if !docs.is_empty() => {
-                        println!(
-                            "{:<8} {:<30} {:<15} {:<10} {:<16}",
-                            "ID", "TITLE", "CATEGORY", "LOCKED", "UPDATED"
-                        );
-                        println!("{}", "-".repeat(82));
+                        let table = Table::new(vec![
+                            Column::new("ID", 8),
+                            Column::new("TITLE", 30),
+                            Column::new("CATEGORY", 15),
+                            Column::new("LOCKED", 10),
+                            Column::new("UPDATED", 16),
+                        ]);
+                        table.print_header();
                         for doc in docs {
                             let id = doc.id.map(|id| id.to_string()).unwrap_or_default();
                             let title = doc.title.as_deref().unwrap_or("(untitled)");
@@ -167,14 +114,13 @@ async fn handle_list(
                             let locked = if doc.is_locked { "yes" } else { "no" };
                             let updated = doc.updated_at.as_deref().unwrap_or("");
 
-                            println!(
-                                "{:<8} {:<30} {:<15} {:<10} {:<16}",
-                                id,
-                                truncate(title, 30),
-                                truncate(category, 15),
+                            table.print_row(&[
+                                &id,
+                                &truncate(title, 30),
+                                &truncate(category, 15),
                                 locked,
-                                truncate_date(updated)
-                            );
+                                &format_datetime(updated),
+                            ]);
                         }
                         println!("\nTotal: {total} document(s)");
                     }
@@ -202,14 +148,9 @@ async fn handle_show(document_id: i64, doc_type: &str, json: bool, env_override:
         match documents::get_external_document_details(&mut session, document_id).await {
             Ok(doc) => {
                 if json {
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(&doc).unwrap_or_else(|e| format!(
-                            "{{\"error\": \"serialization failed: {e}\"}}"
-                        ))
-                    );
+                    print_json(&doc);
                 } else {
-                    println!("External Document #{document_id}");
+                    println!("{}", bold(&format!("External Document #{document_id}")));
                     println!(
                         "{}",
                         serde_json::to_string_pretty(&doc)
@@ -226,16 +167,10 @@ async fn handle_show(document_id: i64, doc_type: &str, json: bool, env_override:
         match documents::get_internal_document_details(&mut session, document_id).await {
             Ok(doc) => {
                 if json {
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(&doc).unwrap_or_else(|e| format!(
-                            "{{\"error\": \"serialization failed: {e}\"}}"
-                        ))
-                    );
+                    print_json(&doc);
                 } else {
-                    // Display structured output for internal documents
                     let title = doc.title.as_deref().unwrap_or("(untitled)");
-                    println!("Document: {title}");
+                    println!("{}", bold(&format!("Document: {title}")));
                     if let Some(ref category) = doc.category {
                         println!("  Category: {category}");
                     }
@@ -245,15 +180,15 @@ async fn handle_show(document_id: i64, doc_type: &str, json: bool, env_override:
                         }
                     }
                     if let Some(ref created) = doc.created_at {
-                        println!("  Created: {created}");
+                        println!("  Created: {}", format_datetime(created));
                     }
                     if let Some(ref updated) = doc.updated_at {
-                        println!("  Updated: {updated}");
+                        println!("  Updated: {}", format_datetime(updated));
                     }
                     if let Some(version) = doc.version {
                         println!("  Version: {version}");
                     }
-                    println!("{}", "=".repeat(72));
+                    println!("{}", dim(&"=".repeat(72)));
                     if let Some(ref content) = doc.content {
                         if let Some(ref html) = content.html {
                             let plain = strip_html_tags(html);
@@ -268,46 +203,4 @@ async fn handle_show(document_id: i64, doc_type: &str, json: bool, env_override:
             }
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        s.to_string()
-    } else {
-        format!("{}...", &s[..max.saturating_sub(3)])
-    }
-}
-
-fn truncate_date(s: &str) -> String {
-    if s.len() >= 16 {
-        s[..16].replace('T', " ")
-    } else {
-        s.to_string()
-    }
-}
-
-fn strip_html_tags(html: &str) -> String {
-    let mut result = String::with_capacity(html.len());
-    let mut in_tag = false;
-
-    for ch in html.chars() {
-        match ch {
-            '<' => in_tag = true,
-            '>' => in_tag = false,
-            _ if !in_tag => result.push(ch),
-            _ => {}
-        }
-    }
-
-    result
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&nbsp;", " ")
 }

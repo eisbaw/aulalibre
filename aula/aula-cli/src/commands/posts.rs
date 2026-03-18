@@ -2,11 +2,13 @@
 
 use clap::Subcommand;
 
-use aula_api::client::{AulaClient, AulaClientConfig};
 use aula_api::models::posts::{CreatePostApiParameter, GetPostApiParameters, PostApiDto};
 use aula_api::services::posts;
-use aula_api::session::{Session, SessionConfig};
-use aula_api::token_store::TokenStore;
+
+use crate::output::{
+    bold, dim, format_datetime, print_json, strip_html_tags, truncate, Column, Table,
+};
+use crate::session_util::build_session;
 
 /// View and manage posts in the institution feed.
 #[derive(Debug, Subcommand)]
@@ -55,59 +57,6 @@ pub enum PostsCommand {
         #[arg(long)]
         important: bool,
     },
-}
-
-// ---------------------------------------------------------------------------
-// Session helper
-// ---------------------------------------------------------------------------
-
-fn resolve_environment(env: Option<&str>) -> aula_api::client::Environment {
-    match env {
-        Some("preprod") => aula_api::client::Environment::Preprod,
-        Some("hotfix") => aula_api::client::Environment::Hotfix,
-        Some("test1") => aula_api::client::Environment::Test1,
-        Some("test3") => aula_api::client::Environment::Test3,
-        Some("dev1") => aula_api::client::Environment::Dev1,
-        Some("dev3") => aula_api::client::Environment::Dev3,
-        Some("dev11") => aula_api::client::Environment::Dev11,
-        _ => aula_api::client::Environment::Production,
-    }
-}
-
-fn token_store() -> TokenStore {
-    TokenStore::default_location().unwrap_or_else(|| {
-        eprintln!("warning: could not determine data directory, using ./aula-data");
-        TokenStore::new("./aula-data")
-    })
-}
-
-fn build_session(env_override: Option<&str>) -> Session {
-    let environment = resolve_environment(env_override);
-    let store = token_store();
-
-    if !store.exists() {
-        eprintln!("Not logged in. Run 'aula auth login' first.");
-        std::process::exit(1);
-    }
-
-    let client = match AulaClient::with_config(AulaClientConfig {
-        environment,
-        api_version: 19,
-    }) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("error: failed to create client: {e}");
-            std::process::exit(1);
-        }
-    };
-
-    match Session::new(client, store, SessionConfig::default()) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("error: failed to create session: {e}");
-            std::process::exit(1);
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -191,12 +140,7 @@ async fn handle_list(
     match posts::get_posts(&mut session, &params).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 print_post_list(&result, limit);
             }
@@ -222,11 +166,13 @@ fn print_post_list(result: &aula_api::models::posts::GetPostApiResult, limit: u3
         return;
     }
 
-    println!(
-        "{:<8} {:<30} {:<20} {:<20}",
-        "ID", "TITLE", "AUTHOR", "DATE"
-    );
-    println!("{}", "-".repeat(80));
+    let table = Table::new(vec![
+        Column::new("ID", 8),
+        Column::new("TITLE", 30),
+        Column::new("AUTHOR", 20),
+        Column::new("DATE", 20),
+    ]);
+    table.print_header();
 
     for (i, post) in posts.iter().enumerate() {
         if i >= limit as usize {
@@ -240,7 +186,7 @@ fn print_post_list(result: &aula_api::models::posts::GetPostApiResult, limit: u3
             .and_then(|p| p.full_name.as_deref())
             .unwrap_or("(unknown)");
         let date = post.time_stamp.as_deref().unwrap_or("");
-        let date_display = truncate_date(date);
+        let date_display = format_datetime(date);
 
         let flags = format!(
             "{}{}",
@@ -248,13 +194,12 @@ fn print_post_list(result: &aula_api::models::posts::GetPostApiResult, limit: u3
             if post.is_bookmarked { "*" } else { "" }
         );
 
-        println!(
-            "{:<8} {:<30} {:<20} {:<20}",
-            format!("{id}{flags}"),
-            truncate(title, 30),
-            truncate(author, 20),
-            date_display
-        );
+        table.print_row(&[
+            &format!("{id}{flags}"),
+            &truncate(title, 30),
+            &truncate(author, 20),
+            &date_display,
+        ]);
     }
 
     if result.has_more_posts {
@@ -272,12 +217,7 @@ async fn handle_show(post_id: i64, json: bool, env_override: Option<&str>) {
     match posts::get_post_by_id(&mut session, post_id).await {
         Ok(post) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&post).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&post);
             } else {
                 print_post_detail(&post);
             }
@@ -298,12 +238,12 @@ fn print_post_detail(post: &PostApiDto) {
         .unwrap_or("(unknown)");
     let date = post.time_stamp.as_deref().unwrap_or("");
 
-    println!("Post: {title}");
+    println!("{}", bold(&format!("Post: {title}")));
     println!("  Author: {author}");
-    println!("  Date: {date}");
+    println!("  Date: {}", format_datetime(date));
 
     if post.is_important {
-        print!("  [IMPORTANT]");
+        print!("  {}", crate::output::yellow("[IMPORTANT]"));
     }
     if post.is_bookmarked {
         print!("  [BOOKMARKED]");
@@ -317,7 +257,7 @@ fn print_post_detail(post: &PostApiDto) {
         }
     }
 
-    println!("{}", "=".repeat(72));
+    println!("{}", dim(&"=".repeat(72)));
 
     if let Some(ref content) = post.content {
         if let Some(ref html) = content.html {
@@ -328,13 +268,16 @@ fn print_post_detail(post: &PostApiDto) {
 
     if let Some(ref attachments) = post.attachments {
         if !attachments.is_empty() {
-            println!("\n  [{} attachment(s)]", attachments.len());
+            println!(
+                "\n  {}",
+                dim(&format!("[{} attachment(s)]", attachments.len()))
+            );
         }
     }
 
     if let Some(count) = post.comment_count {
         if count > 0 {
-            println!("\n  [{count} comment(s)]");
+            println!("\n  {}", dim(&format!("[{count} comment(s)]")));
         }
     }
 }
@@ -375,12 +318,7 @@ async fn handle_create(
     match posts::create_post(&mut session, &params).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 println!("Post created.");
             }
@@ -390,46 +328,4 @@ async fn handle_create(
             std::process::exit(1);
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        s.to_string()
-    } else {
-        format!("{}...", &s[..max.saturating_sub(3)])
-    }
-}
-
-fn truncate_date(s: &str) -> String {
-    if s.len() >= 16 {
-        s[..16].replace('T', " ")
-    } else {
-        s.to_string()
-    }
-}
-
-fn strip_html_tags(html: &str) -> String {
-    let mut result = String::with_capacity(html.len());
-    let mut in_tag = false;
-
-    for ch in html.chars() {
-        match ch {
-            '<' => in_tag = true,
-            '>' => in_tag = false,
-            _ if !in_tag => result.push(ch),
-            _ => {}
-        }
-    }
-
-    result
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&nbsp;", " ")
 }

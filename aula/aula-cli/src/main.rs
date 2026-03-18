@@ -6,6 +6,8 @@
 
 mod commands;
 mod config;
+pub mod output;
+pub mod session_util;
 
 use clap::{Parser, Subcommand};
 

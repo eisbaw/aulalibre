@@ -2,14 +2,16 @@
 
 use clap::Subcommand;
 
-use aula_api::client::{AulaClient, AulaClientConfig};
 use aula_api::enums::calendar::ResponseType;
 use aula_api::models::calendar::{
     EventDetailsDto, EventSimpleDto, GetEventsParameters, RespondSimpleEventRequest,
 };
 use aula_api::services::calendar;
-use aula_api::session::{Session, SessionConfig};
-use aula_api::token_store::TokenStore;
+
+use crate::output::{
+    bold, format_datetime, print_json, split_datetime, strip_html_tags, Column, Table,
+};
+use crate::session_util::build_session;
 
 /// View and manage calendar events.
 #[derive(Debug, Subcommand)]
@@ -70,59 +72,6 @@ pub enum CalendarCommand {
         #[arg(long)]
         to: Option<String>,
     },
-}
-
-// ---------------------------------------------------------------------------
-// Session helper (same pattern as messages.rs)
-// ---------------------------------------------------------------------------
-
-fn resolve_environment(env: Option<&str>) -> aula_api::client::Environment {
-    match env {
-        Some("preprod") => aula_api::client::Environment::Preprod,
-        Some("hotfix") => aula_api::client::Environment::Hotfix,
-        Some("test1") => aula_api::client::Environment::Test1,
-        Some("test3") => aula_api::client::Environment::Test3,
-        Some("dev1") => aula_api::client::Environment::Dev1,
-        Some("dev3") => aula_api::client::Environment::Dev3,
-        Some("dev11") => aula_api::client::Environment::Dev11,
-        _ => aula_api::client::Environment::Production,
-    }
-}
-
-fn token_store() -> TokenStore {
-    TokenStore::default_location().unwrap_or_else(|| {
-        eprintln!("warning: could not determine data directory, using ./aula-data");
-        TokenStore::new("./aula-data")
-    })
-}
-
-fn build_session(env_override: Option<&str>) -> Session {
-    let environment = resolve_environment(env_override);
-    let store = token_store();
-
-    if !store.exists() {
-        eprintln!("Not logged in. Run 'aula auth login' first.");
-        std::process::exit(1);
-    }
-
-    let client = match AulaClient::with_config(AulaClientConfig {
-        environment,
-        api_version: 19,
-    }) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("error: failed to create client: {e}");
-            std::process::exit(1);
-        }
-    };
-
-    match Session::new(client, store, SessionConfig::default()) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("error: failed to create session: {e}");
-            std::process::exit(1);
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -235,12 +184,7 @@ async fn handle_list(
     match calendar::get_events(&mut session, &params).await {
         Ok(events) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&events).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&events);
             } else {
                 print_event_list(&events);
             }
@@ -264,12 +208,7 @@ async fn handle_list_group(
     match calendar::get_event_for_group(&mut session, group_id, Some(start), Some(end)).await {
         Ok(events) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&events).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&events);
             } else {
                 print_event_list(&events);
             }
@@ -287,11 +226,15 @@ fn print_event_list(events: &[EventSimpleDto]) {
         return;
     }
 
-    println!(
-        "{:<8} {:<12} {:<6} {:<30} {:<14} {:<10}",
-        "ID", "DATE", "TIME", "TITLE", "TYPE", "RESPONSE"
-    );
-    println!("{}", "-".repeat(82));
+    let table = Table::new(vec![
+        Column::new("ID", 8),
+        Column::new("DATE", 12),
+        Column::new("TIME", 7),
+        Column::new("TITLE", 30),
+        Column::new("TYPE", 14),
+        Column::new("RESPONSE", 10),
+    ]);
+    table.print_header();
 
     for event in events {
         let id = event
@@ -299,12 +242,12 @@ fn print_event_list(events: &[EventSimpleDto]) {
             .map(|id| id.to_string())
             .unwrap_or_else(|| "-".to_string());
 
-        let (date, time) = extract_date_time(event.start_date_time.as_deref());
+        let (date, time) = split_datetime(event.start_date_time.as_deref());
 
         let all_day = event.all_day.unwrap_or(false);
         let time_display = if all_day { "all-day".to_string() } else { time };
 
-        let title = truncate(event.title.as_deref().unwrap_or("(untitled)"), 30);
+        let title = event.title.as_deref().unwrap_or("(untitled)");
         let event_type = event.event_type.as_deref().unwrap_or("");
         let response = event
             .response_status
@@ -312,10 +255,7 @@ fn print_event_list(events: &[EventSimpleDto]) {
             .map(|r| format!("{r:?}"))
             .unwrap_or_default();
 
-        println!(
-            "{:<8} {:<12} {:<6} {:<30} {:<14} {:<10}",
-            id, date, time_display, title, event_type, response
-        );
+        table.print_row(&[&id, &date, &time_display, title, event_type, &response]);
     }
 
     println!("\n{} event(s) total.", events.len());
@@ -331,12 +271,7 @@ async fn handle_show(event_id: i64, json: bool, env_override: Option<&str>) {
     match calendar::get_event_detail(&mut session, event_id).await {
         Ok(detail) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&detail).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&detail);
             } else {
                 print_event_detail(&detail);
             }
@@ -352,26 +287,24 @@ fn print_event_detail(detail: &EventDetailsDto) {
     let title = detail.title.as_deref().unwrap_or("(untitled)");
     let event_type = detail.event_type.as_deref().unwrap_or("unknown");
 
-    println!("Event: {title}");
+    println!("{}", bold(&format!("Event: {title}")));
     println!("  Type: {event_type}");
 
     if let Some(id) = detail.id {
         println!("  ID: {id}");
     }
 
-    // Date/time
     if let Some(ref start) = detail.start_date_time {
-        print!("  Start: {start}");
+        print!("  Start: {}", format_datetime(start));
     }
     if let Some(ref end) = detail.end_date_time {
-        print!("  End: {end}");
+        print!("  End: {}", format_datetime(end));
     }
     if detail.all_day == Some(true) {
         print!("  (all day)");
     }
     println!();
 
-    // Location / resource
     if let Some(ref text) = detail.primary_resource_text {
         println!("  Location: {text}");
     } else if let Some(ref res) = detail.primary_resource {
@@ -380,12 +313,10 @@ fn print_event_detail(detail: &EventDetailsDto) {
         }
     }
 
-    // Institution
     if let Some(ref code) = detail.institution_code {
         println!("  Institution: {code}");
     }
 
-    // Response status
     if let Some(ref status) = detail.response_status {
         println!("  Your response: {status:?}");
     }
@@ -393,35 +324,32 @@ fn print_event_detail(detail: &EventDetailsDto) {
     if detail.response_required == Some(true) {
         print!("  [Response required]");
         if let Some(ref deadline) = detail.response_deadline {
-            print!("  Deadline: {deadline}");
+            print!("  Deadline: {}", format_datetime(deadline));
         }
         println!();
     }
 
-    // Creator
     if let Some(ref creator) = detail.creator {
         if let Some(ref name) = creator.name {
             println!("  Created by: {name}");
         }
     }
 
-    // Description
     if let Some(ref desc) = detail.description {
         if let Some(ref html) = desc.html {
             let plain = strip_html_tags(html);
             if !plain.trim().is_empty() {
                 println!();
-                println!("Description:");
+                println!("{}:", bold("Description"));
                 println!("{}", plain.trim());
             }
         }
     }
 
-    // Invited groups
     if let Some(ref groups) = detail.invited_groups {
         if !groups.is_empty() {
             println!();
-            println!("Invited groups:");
+            println!("{}:", bold("Invited groups"));
             for g in groups {
                 let name = g.name.as_deref().unwrap_or("(unnamed)");
                 println!("  - {name}");
@@ -429,11 +357,10 @@ fn print_event_detail(detail: &EventDetailsDto) {
         }
     }
 
-    // Invitees
     if let Some(ref invitees) = detail.invitees {
         if !invitees.is_empty() {
             println!();
-            println!("Invitees ({}):", invitees.len());
+            println!("{} ({}):", bold("Invitees"), invitees.len());
             for inv in invitees {
                 let name = inv
                     .inst_profile
@@ -450,11 +377,10 @@ fn print_event_detail(detail: &EventDetailsDto) {
         }
     }
 
-    // Attachments
     if let Some(ref attachments) = detail.attachments {
         if !attachments.is_empty() {
             println!();
-            println!("Attachments:");
+            println!("{}:", bold("Attachments"));
             for att in attachments {
                 let name = att.name.as_deref().unwrap_or("(unnamed)");
                 println!("  - {name}");
@@ -502,12 +428,7 @@ async fn handle_respond(
     match calendar::respond_simple_event(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 println!("Responded to event {event_id}: {response_type:?}");
             }
@@ -548,22 +469,21 @@ async fn handle_birthdays(
     match result {
         Ok(birthdays) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&birthdays).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&birthdays);
             } else if birthdays.is_empty() {
                 println!("No birthdays found.");
             } else {
-                println!("{:<12} {:<25} {:<20}", "DATE", "NAME", "GROUP");
-                println!("{}", "-".repeat(58));
+                let table = Table::new(vec![
+                    Column::new("DATE", 12),
+                    Column::new("NAME", 25),
+                    Column::new("GROUP", 20),
+                ]);
+                table.print_header();
                 for bday in &birthdays {
                     let date = bday.birthday.as_deref().unwrap_or("");
                     let name = bday.name.as_deref().unwrap_or("(unknown)");
                     let group = bday.main_group_name.as_deref().unwrap_or("");
-                    println!("{:<12} {:<25} {:<20}", date, truncate(name, 25), group);
+                    table.print_row(&[date, name, group]);
                 }
                 println!("\n{} birthday(s) total.", birthdays.len());
             }
@@ -573,54 +493,4 @@ async fn handle_birthdays(
             std::process::exit(1);
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/// Extract date and time portions from an ISO datetime string.
-fn extract_date_time(datetime: Option<&str>) -> (String, String) {
-    match datetime {
-        Some(dt) if dt.len() >= 16 => {
-            let date = &dt[..10];
-            let time = &dt[11..16];
-            (date.to_string(), time.to_string())
-        }
-        Some(dt) if dt.len() >= 10 => (dt[..10].to_string(), String::new()),
-        Some(dt) => (dt.to_string(), String::new()),
-        None => (String::new(), String::new()),
-    }
-}
-
-/// Truncate a string to at most `max` characters, appending "..." if needed.
-fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        s.to_string()
-    } else {
-        format!("{}...", &s[..max.saturating_sub(3)])
-    }
-}
-
-/// Very basic HTML tag stripping for terminal display.
-fn strip_html_tags(html: &str) -> String {
-    let mut result = String::with_capacity(html.len());
-    let mut in_tag = false;
-
-    for ch in html.chars() {
-        match ch {
-            '<' => in_tag = true,
-            '>' => in_tag = false,
-            _ if !in_tag => result.push(ch),
-            _ => {}
-        }
-    }
-
-    result
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&nbsp;", " ")
 }

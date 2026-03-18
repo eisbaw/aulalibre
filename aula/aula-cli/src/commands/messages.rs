@@ -2,7 +2,6 @@
 
 use clap::Subcommand;
 
-use aula_api::client::{AulaClient, AulaClientConfig};
 use aula_api::enums::common::FilterAndSortType;
 use aula_api::models::messaging::{
     DeleteThreadArguments, GetFoldersArguments, GetMessagesForThreadArguments,
@@ -11,8 +10,12 @@ use aula_api::models::messaging::{
     StartNewThreadRequestArguments,
 };
 use aula_api::services::messaging;
-use aula_api::session::{Session, SessionConfig};
-use aula_api::token_store::TokenStore;
+
+use crate::output::{
+    self, bold, dim, format_datetime, print_json, print_pagination_hint, strip_html_tags, truncate,
+    unread_marker, Column, Table,
+};
+use crate::session_util::build_session;
 
 /// Read and send messages (threads).
 #[derive(Debug, Subcommand)]
@@ -84,59 +87,6 @@ pub enum MessagesCommand {
         #[arg(long)]
         folder: i64,
     },
-}
-
-// ---------------------------------------------------------------------------
-// Session helper
-// ---------------------------------------------------------------------------
-
-fn resolve_environment(env: Option<&str>) -> aula_api::client::Environment {
-    match env {
-        Some("preprod") => aula_api::client::Environment::Preprod,
-        Some("hotfix") => aula_api::client::Environment::Hotfix,
-        Some("test1") => aula_api::client::Environment::Test1,
-        Some("test3") => aula_api::client::Environment::Test3,
-        Some("dev1") => aula_api::client::Environment::Dev1,
-        Some("dev3") => aula_api::client::Environment::Dev3,
-        Some("dev11") => aula_api::client::Environment::Dev11,
-        _ => aula_api::client::Environment::Production,
-    }
-}
-
-fn token_store() -> TokenStore {
-    TokenStore::default_location().unwrap_or_else(|| {
-        eprintln!("warning: could not determine data directory, using ./aula-data");
-        TokenStore::new("./aula-data")
-    })
-}
-
-fn build_session(env_override: Option<&str>) -> Session {
-    let environment = resolve_environment(env_override);
-    let store = token_store();
-
-    if !store.exists() {
-        eprintln!("Not logged in. Run 'aula auth login' first.");
-        std::process::exit(1);
-    }
-
-    let client = match AulaClient::with_config(AulaClientConfig {
-        environment,
-        api_version: 19,
-    }) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("error: failed to create client: {e}");
-            std::process::exit(1);
-        }
-    };
-
-    match Session::new(client, store, SessionConfig::default()) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("error: failed to create session: {e}");
-            std::process::exit(1);
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -212,12 +162,7 @@ async fn handle_list(
     match messaging::get_thread_list(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 print_thread_list(&result, limit);
             }
@@ -246,12 +191,14 @@ fn print_thread_list(
         return;
     }
 
-    // Header
-    println!(
-        "{:<6} {:<1} {:<20} {:<40} {:<20}",
-        "ID", "", "FROM", "SUBJECT", "DATE"
-    );
-    println!("{}", "-".repeat(90));
+    let table = Table::new(vec![
+        Column::new("ID", 6),
+        Column::new("", 1),
+        Column::new("FROM", 20),
+        Column::new("SUBJECT", 40),
+        Column::new("DATE", 20),
+    ]);
+    table.print_header();
 
     for (i, thread) in threads.iter().enumerate() {
         if i >= limit as usize {
@@ -259,7 +206,7 @@ fn print_thread_list(
         }
 
         let id = thread.id.map(|id| id.to_string()).unwrap_or_default();
-        let unread_marker = if thread.read { " " } else { "*" };
+        let marker = unread_marker(thread.read);
 
         let from = thread
             .latest_message
@@ -277,24 +224,20 @@ fn print_thread_list(
             .and_then(|lm| lm.send_date_time.as_deref())
             .unwrap_or("");
 
-        // Truncate fields for display
-        let from_display = truncate(from, 20);
-        let subject_display = truncate(subject, 40);
-        let date_display = truncate_date(date);
-
-        println!(
-            "{:<6} {:<1} {:<20} {:<40} {:<20}",
-            id, unread_marker, from_display, subject_display, date_display
+        // Build the row -- unread marker may have ANSI codes
+        let row_str = format!(
+            "{:<6} {} {:<20} {:<40} {:<20}",
+            id,
+            marker,
+            truncate(from, 20),
+            truncate(subject, 40),
+            format_datetime(date)
         );
+        println!("{row_str}");
     }
 
     if let Some(page) = list.page {
-        if list.more_messages_exist {
-            eprintln!(
-                "\n(page {page}, more threads available -- use --page {})",
-                page + 1
-            );
-        }
+        print_pagination_hint(Some(page), list.more_messages_exist, "--page");
     }
 }
 
@@ -314,12 +257,7 @@ async fn handle_read(thread_id: i64, page: Option<i32>, json: bool, env_override
     match messaging::get_thread_by_id(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 print_thread_messages(&result);
             }
@@ -332,34 +270,31 @@ async fn handle_read(thread_id: i64, page: Option<i32>, json: bool, env_override
 }
 
 fn print_thread_messages(thread: &aula_api::models::messaging::MessagesInThreadDto) {
-    // Header
     let subject = thread.subject.as_deref().unwrap_or("(no subject)");
-    println!("Thread: {subject}");
+    println!("{}", bold(&format!("Thread: {subject}")));
     if let Some(folder) = thread.folder_name.as_deref() {
         print!("  Folder: {folder}");
     }
     if thread.muted {
-        print!("  [MUTED]");
+        print!("  {}", dim("[MUTED]"));
     }
     if thread.marked {
-        print!("  [MARKED]");
+        print!("  {}", output::yellow("[MARKED]"));
     }
     if thread.sensitive {
-        print!("  [SENSITIVE]");
+        print!("  {}", output::red("[SENSITIVE]"));
     }
     println!();
 
     if let Some(count) = thread.total_message_count {
         println!("  Messages: {count}");
     }
-    println!("{}", "=".repeat(72));
+    println!("{}", dim(&"=".repeat(72)));
 
-    // First message
     if let Some(ref msg) = thread.first_message {
         print_message(msg);
     }
 
-    // Subsequent messages
     if let Some(ref messages) = thread.messages {
         for msg in messages {
             print_message(msg);
@@ -368,7 +303,7 @@ fn print_thread_messages(thread: &aula_api::models::messaging::MessagesInThreadD
 
     if thread.more_messages_exist {
         let next_page = thread.page.unwrap_or(0) + 1;
-        eprintln!("\n(more messages available -- use --page {next_page})");
+        print_pagination_hint(Some(next_page - 1), true, "--page");
     }
 }
 
@@ -383,11 +318,10 @@ fn print_message(msg: &aula_api::models::messaging::MessageDto) {
     let msg_type = msg.message_type.as_deref().unwrap_or("");
 
     println!();
-    println!("--- {sender}  ({date})  [{msg_type}]");
+    println!("--- {}  ({})  [{}]", bold(sender), dim(date), dim(msg_type));
 
     if let Some(ref text) = msg.text {
         if let Some(ref html) = text.html {
-            // Strip HTML tags for terminal display.
             let plain = strip_html_tags(html);
             println!("{plain}");
         }
@@ -395,7 +329,10 @@ fn print_message(msg: &aula_api::models::messaging::MessageDto) {
 
     if let Some(ref attachments) = msg.attachments {
         if !attachments.is_empty() {
-            println!("  [{} attachment(s)]", attachments.len());
+            println!(
+                "  {}",
+                dim(&format!("[{} attachment(s)]", attachments.len()))
+            );
         }
     }
 }
@@ -446,15 +383,9 @@ async fn handle_send(
     match messaging::start_new_thread(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 println!("Message sent.");
-                // Try to extract thread ID from response
                 if let Some(id) = result.get("id").or_else(|| result.get("threadId")) {
                     println!("  Thread: {id}");
                 }
@@ -487,12 +418,7 @@ async fn handle_reply(thread_id: i64, body: &str, json: bool, env_override: Opti
     match messaging::reply_to_thread(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 println!("Reply sent to thread {thread_id}.");
             }
@@ -511,8 +437,6 @@ async fn handle_reply(thread_id: i64, body: &str, json: bool, env_override: Opti
 async fn handle_mark_read(thread_id: i64, json: bool, env_override: Option<&str>) {
     let mut session = build_session(env_override);
 
-    // To mark as read, we set the last read message. We first need to fetch
-    // the thread to find the latest message ID.
     let fetch_args = GetMessagesForThreadArguments {
         thread_id: Some(thread_id),
         page: None,
@@ -527,7 +451,6 @@ async fn handle_mark_read(thread_id: i64, json: bool, env_override: Option<&str>
         }
     };
 
-    // Find the last message ID: check messages list, then first_message.
     let last_msg_id = thread
         .messages
         .as_ref()
@@ -552,12 +475,7 @@ async fn handle_mark_read(thread_id: i64, json: bool, env_override: Option<&str>
     match messaging::set_last_read_message(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 println!("Thread {thread_id} marked as read.");
             }
@@ -585,12 +503,7 @@ async fn handle_delete(thread_id: i64, json: bool, env_override: Option<&str>) {
     match messaging::delete_threads(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 println!("Thread {thread_id} deleted.");
             }
@@ -617,17 +530,16 @@ async fn handle_folders(json: bool, env_override: Option<&str>) {
     match messaging::get_folders(&mut session, &args).await {
         Ok(folders) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&folders).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&folders);
             } else if folders.is_empty() {
                 println!("No folders found.");
             } else {
-                println!("{:<8} {:<20} {:<10}", "ID", "NAME", "TYPE");
-                println!("{}", "-".repeat(40));
+                let table = Table::new(vec![
+                    Column::new("ID", 8),
+                    Column::new("NAME", 20),
+                    Column::new("TYPE", 10),
+                ]);
+                table.print_header();
                 for f in &folders {
                     let id = f.id.map(|id| id.to_string()).unwrap_or_default();
                     let name = f.name.as_deref().unwrap_or("(unnamed)");
@@ -636,7 +548,7 @@ async fn handle_folders(json: bool, env_override: Option<&str>) {
                         .as_ref()
                         .map(|t| format!("{t:?}"))
                         .unwrap_or_default();
-                    println!("{:<8} {:<20} {:<10}", id, name, ftype);
+                    table.print_row(&[&id, name, &ftype]);
                 }
             }
         }
@@ -664,12 +576,7 @@ async fn handle_move(thread_id: i64, folder_id: i64, json: bool, env_override: O
     match messaging::move_threads_to_folder(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 println!("Thread {thread_id} moved to folder {folder_id}.");
             }
@@ -679,53 +586,4 @@ async fn handle_move(thread_id: i64, folder_id: i64, json: bool, env_override: O
             std::process::exit(1);
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/// Truncate a string to at most `max` characters, appending "..." if needed.
-fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        s.to_string()
-    } else {
-        format!("{}...", &s[..max.saturating_sub(3)])
-    }
-}
-
-/// Extract just the date portion (first 16 chars: "YYYY-MM-DDTHH:MM") from a datetime.
-fn truncate_date(s: &str) -> String {
-    if s.len() >= 16 {
-        s[..16].replace('T', " ")
-    } else {
-        s.to_string()
-    }
-}
-
-/// Very basic HTML tag stripping for terminal display.
-fn strip_html_tags(html: &str) -> String {
-    let mut result = String::with_capacity(html.len());
-    let mut in_tag = false;
-
-    for ch in html.chars() {
-        match ch {
-            '<' => in_tag = true,
-            '>' => {
-                in_tag = false;
-                // Add newline for block-level tags that just closed
-            }
-            _ if !in_tag => result.push(ch),
-            _ => {}
-        }
-    }
-
-    // Decode common HTML entities
-    result
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&nbsp;", " ")
 }

@@ -2,11 +2,11 @@
 
 use clap::Subcommand;
 
-use aula_api::client::{AulaClient, AulaClientConfig};
 use aula_api::models::presence::PresenceSchedulesRequest;
 use aula_api::services::presence;
-use aula_api::session::{Session, SessionConfig};
-use aula_api::token_store::TokenStore;
+
+use crate::output::{color_presence_status, extract_time, print_json, truncate, Column, Table};
+use crate::session_util::build_session;
 
 /// View and manage child presence (attendance).
 #[derive(Debug, Subcommand)]
@@ -50,59 +50,6 @@ pub enum PresenceCommand {
 }
 
 // ---------------------------------------------------------------------------
-// Session helper (same pattern as messages/calendar)
-// ---------------------------------------------------------------------------
-
-fn resolve_environment(env: Option<&str>) -> aula_api::client::Environment {
-    match env {
-        Some("preprod") => aula_api::client::Environment::Preprod,
-        Some("hotfix") => aula_api::client::Environment::Hotfix,
-        Some("test1") => aula_api::client::Environment::Test1,
-        Some("test3") => aula_api::client::Environment::Test3,
-        Some("dev1") => aula_api::client::Environment::Dev1,
-        Some("dev3") => aula_api::client::Environment::Dev3,
-        Some("dev11") => aula_api::client::Environment::Dev11,
-        _ => aula_api::client::Environment::Production,
-    }
-}
-
-fn token_store() -> TokenStore {
-    TokenStore::default_location().unwrap_or_else(|| {
-        eprintln!("warning: could not determine data directory, using ./aula-data");
-        TokenStore::new("./aula-data")
-    })
-}
-
-fn build_session(env_override: Option<&str>) -> Session {
-    let environment = resolve_environment(env_override);
-    let store = token_store();
-
-    if !store.exists() {
-        eprintln!("Not logged in. Run 'aula auth login' first.");
-        std::process::exit(1);
-    }
-
-    let client = match AulaClient::with_config(AulaClientConfig {
-        environment,
-        api_version: 19,
-    }) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("error: failed to create client: {e}");
-            std::process::exit(1);
-        }
-    };
-
-    match Session::new(client, store, SessionConfig::default()) {
-        Ok(s) => s,
-        Err(e) => {
-            eprintln!("error: failed to create session: {e}");
-            std::process::exit(1);
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
 // Top-level handler
 // ---------------------------------------------------------------------------
 
@@ -133,31 +80,32 @@ async fn handle_status(children: &[i64], json: bool, env_override: Option<&str>)
     match presence::get_childrens_state(&mut session, children).await {
         Ok(states) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&states).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&states);
             } else if states.is_empty() {
                 println!("No presence status found.");
             } else {
-                println!("{:<12} {:<15} {:<20}", "PROFILE ID", "STATUS", "NAME");
-                println!("{}", "-".repeat(50));
+                let table = Table::new(vec![
+                    Column::new("PROFILE ID", 12),
+                    Column::new("STATUS", 15),
+                    Column::new("NAME", 20),
+                ]);
+                table.print_header();
                 for s in &states {
-                    let status = s
+                    let status_raw = s
                         .state
                         .as_ref()
                         .map(|st| format!("{st:?}"))
                         .unwrap_or_else(|| "(unknown)".to_string());
+                    let status_display = color_presence_status(&status_raw);
                     let name = s
                         .uni_student
                         .as_ref()
                         .and_then(|u| u.name.as_deref())
                         .unwrap_or("(unknown)");
-                    println!(
-                        "{:<12} {:<15} {:<20}",
-                        s.institution_profile_id, status, name
+                    let profile_id = s.institution_profile_id.to_string();
+                    table.print_colored_row(
+                        &[&profile_id, &status_raw, name],
+                        &[&profile_id, &status_display, name],
                     );
                 }
             }
@@ -184,44 +132,47 @@ async fn handle_registrations(
     match presence::get_presence_registrations(&mut session, children, date).await {
         Ok(regs) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&regs).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&regs);
             } else if regs.is_empty() {
                 println!("No presence registrations found.");
             } else {
-                println!(
-                    "{:<8} {:<15} {:<12} {:<12} {:<10}",
-                    "ID", "STATUS", "CHECK-IN", "CHECK-OUT", "COMMENT"
-                );
-                println!("{}", "-".repeat(60));
+                let table = Table::new(vec![
+                    Column::new("ID", 8),
+                    Column::new("STATUS", 15),
+                    Column::new("CHECK-IN", 12),
+                    Column::new("CHECK-OUT", 12),
+                    Column::new("COMMENT", 10),
+                ]);
+                table.print_header();
                 for r in &regs {
-                    let status = r
+                    let status_raw = r
                         .status
                         .as_ref()
                         .map(|s| format!("{s:?}"))
                         .unwrap_or_default();
+                    let status_display = color_presence_status(&status_raw);
                     let checkin = r
                         .check_in_time
                         .as_deref()
-                        .map(truncate_time)
+                        .map(extract_time)
                         .unwrap_or_default();
                     let checkout = r
                         .check_out_time
                         .as_deref()
-                        .map(truncate_time)
+                        .map(extract_time)
                         .unwrap_or_default();
                     let comment = r.comment.as_deref().unwrap_or("");
-                    println!(
-                        "{:<8} {:<15} {:<12} {:<12} {:<10}",
-                        r.id,
-                        status,
-                        checkin,
-                        checkout,
-                        truncate(comment, 10)
+                    let id_str = r.id.to_string();
+                    let comment_trunc = truncate(comment, 10);
+                    table.print_colored_row(
+                        &[&id_str, &status_raw, &checkin, &checkout, &comment_trunc],
+                        &[
+                            &id_str,
+                            &status_display,
+                            &checkin,
+                            &checkout,
+                            &comment_trunc,
+                        ],
                     );
                 }
             }
@@ -259,16 +210,10 @@ async fn handle_schedule(
     match presence::get_presence_schedules(&mut session, &args).await {
         Ok(schedules) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&schedules).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&schedules);
             } else if schedules.is_empty() {
                 println!("No schedules found.");
             } else {
-                // Schedules come as generic JSON since the model is Vec<serde_json::Value>.
                 for (i, sched) in schedules.iter().enumerate() {
                     println!("Schedule #{}", i + 1);
                     println!(
@@ -308,12 +253,7 @@ async fn handle_report_status(
     match presence::update_status_by_institution_profile_ids(&mut session, &args).await {
         Ok(result) => {
             if json {
-                println!(
-                    "{}",
-                    serde_json::to_string_pretty(&result).unwrap_or_else(|e| format!(
-                        "{{\"error\": \"serialization failed: {e}\"}}"
-                    ))
-                );
+                print_json(&result);
             } else {
                 let status_name = match status {
                     0 => "NotPresent",
@@ -323,7 +263,8 @@ async fn handle_report_status(
                     _ => "Unknown",
                 };
                 println!(
-                    "Status updated to {status_name} for {} profile(s).",
+                    "Status updated to {} for {} profile(s).",
+                    color_presence_status(status_name),
                     children.len()
                 );
             }
@@ -333,27 +274,4 @@ async fn handle_report_status(
             std::process::exit(1);
         }
     }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-fn truncate(s: &str, max: usize) -> String {
-    if s.len() <= max {
-        s.to_string()
-    } else {
-        format!("{}...", &s[..max.saturating_sub(3)])
-    }
-}
-
-fn truncate_time(s: &str) -> String {
-    // Extract HH:MM from datetime strings like "2024-01-15T08:30:00"
-    if let Some(t_pos) = s.find('T') {
-        let time_part = &s[t_pos + 1..];
-        if time_part.len() >= 5 {
-            return time_part[..5].to_string();
-        }
-    }
-    s.to_string()
 }

@@ -25,6 +25,12 @@ credentials.json
 # Extracted/decompiled assemblies
 extracted_assemblies/
 
+# monodis managed resource extraction artifacts
+AulaNative.*.html
+AulaNative.*.js
+AulaNative.*.css
+AulaNative.*.json
+
 # Rust build artifacts
 target/
 Cargo.lock

@@ -3,6 +3,7 @@
 *.extracted/
 extracted/
 decompiled/
+*.decompiled.jadx/
 apktool_out/
 apktool_config_*/
 reports/

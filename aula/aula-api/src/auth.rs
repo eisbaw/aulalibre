@@ -176,6 +176,8 @@ pub struct AuthorizeParams {
     pub code_challenge: String,
     /// OIDC state parameter for CSRF protection.
     pub state: String,
+    /// Override redirect URI (defaults to the mobile app's URI if `None`).
+    pub redirect_uri: Option<String>,
 }
 
 /// Build the full authorization URL with all required query parameters.
@@ -183,13 +185,14 @@ pub struct AuthorizeParams {
 /// The returned URL can be opened in a browser to start the login flow.
 pub fn build_authorize_url(endpoints: &OidcEndpoints, params: &AuthorizeParams) -> Url {
     let mut url = endpoints.authorize_url.clone();
+    let redirect = params.redirect_uri.as_deref().unwrap_or(REDIRECT_URI);
 
     {
         let mut q = url.query_pairs_mut();
         q.append_pair("response_type", "code");
         q.append_pair("client_id", params.auth_level.client_id());
         q.append_pair("scope", params.auth_level.scope());
-        q.append_pair("redirect_uri", REDIRECT_URI);
+        q.append_pair("redirect_uri", redirect);
         q.append_pair("code_challenge", &params.code_challenge);
         q.append_pair("code_challenge_method", "S256");
         q.append_pair("state", &params.state);
@@ -253,17 +256,22 @@ pub struct TokenErrorResponse {
 ///
 /// Sends a `POST` with `application/x-www-form-urlencoded` body containing
 /// the authorization code, code verifier, redirect URI, and client ID.
+///
+/// The `redirect_uri` parameter must match the one used in the authorization
+/// request. Pass `None` to use the default mobile app redirect URI.
 pub async fn exchange_code(
     http: &reqwest::Client,
     endpoints: &OidcEndpoints,
     auth_level: AuthLevel,
     code: &str,
     code_verifier: &str,
+    redirect_uri: Option<&str>,
 ) -> crate::Result<TokenResponse> {
+    let redirect = redirect_uri.unwrap_or(REDIRECT_URI);
     let params = [
         ("grant_type", "authorization_code"),
         ("code", code),
-        ("redirect_uri", REDIRECT_URI),
+        ("redirect_uri", redirect),
         ("client_id", auth_level.client_id()),
         ("code_verifier", code_verifier),
     ];
@@ -628,6 +636,7 @@ mod tests {
             auth_level: AuthLevel::Level2,
             code_challenge: "test_challenge".to_string(),
             state: "test_state".to_string(),
+            redirect_uri: None,
         };
         let url = build_authorize_url(&ep, &params);
         let url_str = url.as_str();
@@ -651,6 +660,7 @@ mod tests {
             auth_level: AuthLevel::Level3,
             code_challenge: "challenge_xyz".to_string(),
             state: "state_abc".to_string(),
+            redirect_uri: None,
         };
         let url = build_authorize_url(&ep, &params);
         let url_str = url.as_str();

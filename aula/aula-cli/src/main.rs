@@ -103,7 +103,8 @@ enum Command {
     Config(config_cmd::ConfigCommand),
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cfg = config::Config::load();
     let cli = Cli::parse();
 
@@ -123,8 +124,11 @@ fn main() {
         return;
     }
 
+    // Resolve environment: CLI flag > config file > default (production).
+    let env_str = cli.env.as_deref().or(cfg.default_environment.as_deref());
+
     match cli.command {
-        Some(Command::Auth(ref cmd)) => auth::handle(cmd),
+        Some(Command::Auth(ref cmd)) => auth::handle(cmd, env_str).await,
         Some(Command::Messages(ref cmd)) => messages::handle(cmd),
         Some(Command::Calendar(ref cmd)) => calendar::handle(cmd),
         Some(Command::Presence(ref cmd)) => presence::handle(cmd),

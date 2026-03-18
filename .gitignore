@@ -34,3 +34,4 @@ AulaNative.*.json
 # Rust build artifacts
 target/
 Cargo.lock
+decompiled_csharp/

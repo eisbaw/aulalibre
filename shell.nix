@@ -28,6 +28,7 @@ pkgs.mkShell {
 
     # .NET decompilation (if needed)
     mono          # .NET runtime for Linux
+    ilspycmd      # ILSpy command-line .NET decompiler
 
     # Network and protocol analysis
     wireshark     # Network protocol analyzer (for runtime analysis)

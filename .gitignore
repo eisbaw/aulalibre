@@ -8,3 +8,17 @@ analysis/
 *.log
 extraction_manifest.txt
 extraction_summary.txt
+
+# Secrets, tokens, PII
+secrets/
+*.token
+*.cookie
+auth_token
+session.json
+credentials.json
+*.pem
+*.key
+
+# Rust build artifacts
+target/
+Cargo.lock

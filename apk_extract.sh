@@ -19,21 +19,25 @@ readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly NC='\033[0m' # No Color
 
-# Logging functions
+# Logging functions — write to stderr so stdout stays clean for data flow
 log_info() {
-    echo -e "${BLUE}[INFO]${NC} $*" | tee -a "$LOG_FILE"
+    echo -e "${BLUE}[INFO]${NC} $*" >> "$LOG_FILE"
+    echo -e "${BLUE}[INFO]${NC} $*" >&2
 }
 
 log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $*" | tee -a "$LOG_FILE"
+    echo -e "${GREEN}[SUCCESS]${NC} $*" >> "$LOG_FILE"
+    echo -e "${GREEN}[SUCCESS]${NC} $*" >&2
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $*" | tee -a "$LOG_FILE"
+    echo -e "${YELLOW}[WARNING]${NC} $*" >> "$LOG_FILE"
+    echo -e "${YELLOW}[WARNING]${NC} $*" >&2
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $*" | tee -a "$LOG_FILE"
+    echo -e "${RED}[ERROR]${NC} $*" >> "$LOG_FILE"
+    echo -e "${RED}[ERROR]${NC} $*" >&2
 }
 
 # Initialize log file
@@ -88,9 +92,11 @@ extract_apk() {
         return 1
     fi
 
-    # Extract with error handling
-    if ! unzip -q "$apk_file" -d "$extract_dir" 2>/dev/null; then
+    # Extract with error handling (-o to overwrite without prompting)
+    local unzip_output
+    if ! unzip_output=$(unzip -o -q "$apk_file" -d "$extract_dir" 2>&1); then
         log_error "Failed to extract APK: $apk_file"
+        log_error "unzip output: $unzip_output"
         return 1
     fi
 
@@ -179,7 +185,28 @@ find_apk_files() {
     printf '%s\n' "${apk_files[@]}"
 }
 
-# Generate extraction summary
+# Generate per-file manifest with metadata (type, size, path)
+generate_file_manifest() {
+    log_info "Generating per-file manifest..."
+
+    {
+        echo ""
+        echo "Per-File Manifest"
+        echo "========================================="
+        echo "FORMAT: size_bytes | file_type | path"
+        echo ""
+        find . -path "*.extracted/*" -type f -print0 | while IFS= read -r -d '' f; do
+            local fsize ftype
+            fsize=$(stat --printf='%s' "$f" 2>/dev/null || echo "0")
+            ftype=$(file -b --mime-type "$f" 2>/dev/null || echo "unknown")
+            printf '%s | %s | %s\n' "$fsize" "$ftype" "$f"
+        done | sort -t'|' -k3
+    } >> "$MANIFEST_FILE"
+
+    log_success "Per-file manifest appended to: $MANIFEST_FILE"
+}
+
+# Generate extraction summary with file type counts
 generate_summary() {
     log_info "Generating extraction summary..."
 
@@ -190,15 +217,19 @@ generate_summary() {
         echo
 
         echo "Original APK files processed:"
-        grep "^APK:" "$MANIFEST_FILE" | grep "Depth: 0" | wc -l
+        grep -c "^  Depth: 0" "$MANIFEST_FILE" || echo "0"
         echo
 
         echo "Total APK files extracted (including nested):"
-        grep "^APK:" "$MANIFEST_FILE" | wc -l
+        grep -c "^APK:" "$MANIFEST_FILE" || echo "0"
         echo
 
         echo "Extraction directories created:"
         find . -type d -name "*.extracted" | wc -l
+        echo
+
+        echo "Total files extracted:"
+        find . -path "*.extracted/*" -type f | wc -l
         echo
 
         echo "Total DEX files found:"
@@ -215,11 +246,21 @@ generate_summary() {
 
         echo "Disk space used by extractions:"
         du -sh *.extracted 2>/dev/null || echo "None"
+        echo
+
+        echo "File counts by extension:"
+        echo "---"
+        find . -path "*.extracted/*" -type f | sed 's/.*\.//' | sort | uniq -c | sort -rn
+        echo
+
+        echo "File counts by MIME type:"
+        echo "---"
+        find . -path "*.extracted/*" -type f -print0 | xargs -0 file --mime-type -b 2>/dev/null | sort | uniq -c | sort -rn
 
     } > "$summary_file"
 
     log_success "Summary written to: $summary_file"
-    cat "$summary_file"
+    cat "$summary_file" >&2
 }
 
 # Main function
@@ -250,7 +291,7 @@ main() {
         log_info "Processing APK file: $apk_file"
 
         if extract_apk "$apk_file" 0; then
-            ((success_count++))
+            ((success_count++)) || true
         else
             log_error "Failed to process: $apk_file"
         fi
@@ -258,7 +299,8 @@ main() {
         echo "----------------------------------------"
     done
 
-    # Generate summary
+    # Generate per-file manifest and summary
+    generate_file_manifest
     generate_summary
 
     # Final status

@@ -11,4 +11,5 @@ pub mod additional_master_data;
 pub mod calendar;
 pub mod configuration;
 pub mod messaging;
+pub mod presence;
 pub mod profiles;

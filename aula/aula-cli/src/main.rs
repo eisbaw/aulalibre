@@ -129,7 +129,7 @@ async fn main() {
 
     match cli.command {
         Some(Command::Auth(ref cmd)) => auth::handle(cmd, env_str).await,
-        Some(Command::Messages(ref cmd)) => messages::handle(cmd),
+        Some(Command::Messages(ref cmd)) => messages::handle(cmd, cli.json, env_str).await,
         Some(Command::Calendar(ref cmd)) => calendar::handle(cmd),
         Some(Command::Presence(ref cmd)) => presence::handle(cmd),
         Some(Command::Posts(ref cmd)) => posts::handle(cmd),

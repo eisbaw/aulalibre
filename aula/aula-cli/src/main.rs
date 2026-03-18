@@ -131,14 +131,16 @@ async fn main() {
         Some(Command::Auth(ref cmd)) => auth::handle(cmd, env_str).await,
         Some(Command::Messages(ref cmd)) => messages::handle(cmd, cli.json, env_str).await,
         Some(Command::Calendar(ref cmd)) => calendar::handle(cmd, cli.json, env_str).await,
-        Some(Command::Presence(ref cmd)) => presence::handle(cmd),
-        Some(Command::Posts(ref cmd)) => posts::handle(cmd),
-        Some(Command::Gallery(ref cmd)) => gallery::handle(cmd),
-        Some(Command::Documents(ref cmd)) => documents::handle(cmd),
-        Some(Command::Notifications(ref cmd)) => notifications::handle(cmd),
-        Some(Command::Search(ref cmd)) => search::handle(cmd),
-        Some(Command::Groups(ref cmd)) => groups::handle(cmd),
-        Some(Command::Profile(ref cmd)) => profile::handle(cmd),
+        Some(Command::Presence(ref cmd)) => presence::handle(cmd, cli.json, env_str).await,
+        Some(Command::Posts(ref cmd)) => posts::handle(cmd, cli.json, env_str).await,
+        Some(Command::Gallery(ref cmd)) => gallery::handle(cmd, cli.json, env_str).await,
+        Some(Command::Documents(ref cmd)) => documents::handle(cmd, cli.json, env_str).await,
+        Some(Command::Notifications(ref cmd)) => {
+            notifications::handle(cmd, cli.json, env_str).await
+        }
+        Some(Command::Search(ref cmd)) => search::handle(cmd, cli.json, env_str).await,
+        Some(Command::Groups(ref cmd)) => groups::handle(cmd, cli.json, env_str).await,
+        Some(Command::Profile(ref cmd)) => profile::handle(cmd, cli.json, env_str).await,
         Some(Command::Config(ref cmd)) => config_cmd::handle(cmd),
         None => {
             println!(

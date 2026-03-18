@@ -5,9 +5,13 @@
 //! to match the .NET JSON serialization conventions.
 
 pub mod calendar;
+pub mod documents;
+pub mod files;
+pub mod gallery;
 pub mod groups;
 pub mod institutions;
 pub mod messaging;
+pub mod posts;
 pub mod presence;
 pub mod profiles;
 pub mod users;

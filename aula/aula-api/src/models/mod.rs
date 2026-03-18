@@ -4,6 +4,7 @@
 //! organized by domain area. They use `serde(rename_all = "camelCase")`
 //! to match the .NET JSON serialization conventions.
 
+pub mod calendar;
 pub mod groups;
 pub mod institutions;
 pub mod messaging;

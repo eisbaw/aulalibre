@@ -9,7 +9,10 @@
 
 pub mod additional_master_data;
 pub mod calendar;
+pub mod comments;
 pub mod configuration;
+pub mod gallery;
 pub mod messaging;
+pub mod posts;
 pub mod presence;
 pub mod profiles;

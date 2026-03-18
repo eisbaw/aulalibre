@@ -1,0 +1,354 @@
+//! Gallery service.
+//!
+//! Maps to `AulaNative.Services.Web.GalleryWebService` (12 methods) from the APK.
+//!
+//! # Endpoint paths
+//!
+//! Endpoint paths are **inferred** from method names in the decompiled
+//! assembly; they have not been verified against live traffic. See
+//! `api_endpoints.md` Section 3.10.
+//!
+//! | Method | HTTP | Path (inferred) |
+//! |--------|------|-----------------|
+//! | `get_albums` | GET | `/gallery/albums` |
+//! | `get_albums_cached` | GET | `/gallery/albums` (cached) |
+//! | `get_medias_in_album` | GET | `/gallery/albums/{id}/media` |
+//! | `get_medias_in_album_cached` | GET | `/gallery/albums/{id}/media` (cached) |
+//! | `get_media_by_id` | GET | `/gallery/media/{id}` |
+//! | `create_album` | POST | `/gallery/albums` |
+//! | `update_album` | PUT | `/gallery/albums/{id}` |
+//! | `delete_album` | DELETE | `/gallery/albums/{id}` |
+//! | `delete_media` | DELETE | `/gallery/media/{id}` |
+//! | `add_tag` | POST | `/gallery/media/{id}/tags` |
+//! | `remove_tag` | DELETE | `/gallery/media/{id}/tags/{tagId}` |
+//! | `report_media` | POST | `/gallery/media/{id}/report` |
+
+use crate::models::files::AddOrRemoveTagArguments;
+use crate::models::gallery::{
+    AlbumDto, CreateAlbumParameters, GalleryViewFilter, GetMediaInAlbumFilter, MediaListDto,
+    MediasInAlbumDto,
+};
+use crate::models::posts::ReportApiParameter;
+use crate::session::Session;
+
+// ---------------------------------------------------------------------------
+// Service functions
+// ---------------------------------------------------------------------------
+
+/// Fetch albums matching the given filter.
+///
+/// Maps to `GalleryWebService.GetAlbums()`.
+///
+/// # Endpoint (inferred)
+///
+/// `GET /gallery/albums?<query params>`
+pub async fn get_albums(
+    session: &mut Session,
+    filter: &GalleryViewFilter,
+) -> crate::Result<Vec<AlbumDto>> {
+    let mut query = Vec::new();
+    if let Some(ref code) = filter.selected_institution_code_for_filter {
+        query.push(format!("selectedInstitutionCodeForFilter={code}"));
+    }
+    if let Some(album_id) = filter.album_id {
+        query.push(format!("albumId={album_id}"));
+    }
+    if let Some(user_specific) = filter.user_specific_album {
+        query.push(format!("userSpecificAlbum={user_specific}"));
+    }
+    if let Some(limit) = filter.limit {
+        query.push(format!("limit={limit}"));
+    }
+    if let Some(index) = filter.index {
+        query.push(format!("index={index}"));
+    }
+    if let Some(ref sort_on) = filter.sort_on {
+        query.push(format!("sortOn={sort_on}"));
+    }
+    if let Some(ref order) = filter.order_direction {
+        query.push(format!("orderDirection={order}"));
+    }
+    if let Some(ref filter_by) = filter.filter_by {
+        query.push(format!("filterBy={filter_by}"));
+    }
+
+    let path = if query.is_empty() {
+        "gallery/albums".to_string()
+    } else {
+        format!("gallery/albums?{}", query.join("&"))
+    };
+    session.get(&path).await
+}
+
+/// Fetch albums with caching hint.
+///
+/// Maps to `GalleryWebService.GetAlbumsCached()`.
+///
+/// Identical endpoint to `get_albums` but the native app uses a local
+/// cache layer. From an API perspective the request is the same; the
+/// caching is client-side. This wrapper exists to match the decompiled
+/// method one-to-one.
+///
+/// # Endpoint (inferred)
+///
+/// `GET /gallery/albums?<query params>`
+pub async fn get_albums_cached(
+    session: &mut Session,
+    filter: &GalleryViewFilter,
+) -> crate::Result<Vec<AlbumDto>> {
+    get_albums(session, filter).await
+}
+
+/// Fetch media items in a specific album.
+///
+/// Maps to `GalleryWebService.GetMediasInAlbum()`.
+///
+/// # Endpoint (inferred)
+///
+/// `GET /gallery/albums/{albumId}/media?<query params>`
+pub async fn get_medias_in_album(
+    session: &mut Session,
+    filter: &GetMediaInAlbumFilter,
+) -> crate::Result<MediasInAlbumDto> {
+    let album_id = filter.album_id.unwrap_or(0);
+    let mut query = Vec::new();
+    if let Some(user_specific) = filter.user_specific_album {
+        query.push(format!("userSpecificAlbum={user_specific}"));
+    }
+    if let Some(limit) = filter.limit {
+        query.push(format!("limit={limit}"));
+    }
+    if let Some(index) = filter.index {
+        query.push(format!("index={index}"));
+    }
+    if let Some(ref sort_on) = filter.sort_on {
+        query.push(format!("sortOn={sort_on}"));
+    }
+    if let Some(ref order) = filter.order_direction {
+        query.push(format!("orderDirection={order}"));
+    }
+    if let Some(ref filter_by) = filter.filter_by {
+        query.push(format!("filterBy={filter_by}"));
+    }
+    if filter.is_selection_mode {
+        query.push("isSelectionMode=true".to_string());
+    }
+    if let Some(ref code) = filter.selected_institution_code {
+        query.push(format!("selectedInstitutionCode={code}"));
+    }
+
+    let path = if query.is_empty() {
+        format!("gallery/albums/{album_id}/media")
+    } else {
+        format!("gallery/albums/{album_id}/media?{}", query.join("&"))
+    };
+    session.get(&path).await
+}
+
+/// Fetch media items in an album with caching hint.
+///
+/// Maps to `GalleryWebService.GetMediasInAlbumCached()`.
+///
+/// Same API call as `get_medias_in_album`; caching is client-side.
+///
+/// # Endpoint (inferred)
+///
+/// `GET /gallery/albums/{albumId}/media?<query params>`
+pub async fn get_medias_in_album_cached(
+    session: &mut Session,
+    filter: &GetMediaInAlbumFilter,
+) -> crate::Result<MediasInAlbumDto> {
+    get_medias_in_album(session, filter).await
+}
+
+/// Fetch a single media item by ID.
+///
+/// Maps to `GalleryWebService.GetMediaById()`.
+///
+/// # Endpoint (inferred)
+///
+/// `GET /gallery/media/{id}`
+pub async fn get_media_by_id(session: &mut Session, media_id: i64) -> crate::Result<MediaListDto> {
+    session.get(&format!("gallery/media/{media_id}")).await
+}
+
+/// Create a new album.
+///
+/// Maps to `GalleryWebService.CreateAlbum()`.
+///
+/// # Endpoint (inferred)
+///
+/// `POST /gallery/albums`
+pub async fn create_album(
+    session: &mut Session,
+    params: &CreateAlbumParameters,
+) -> crate::Result<serde_json::Value> {
+    session.post("gallery/albums", params).await
+}
+
+/// Update an existing album.
+///
+/// Maps to `GalleryWebService.UpdateAlbum()`.
+///
+/// # Endpoint (inferred)
+///
+/// `PUT /gallery/albums/{id}`
+pub async fn update_album(
+    session: &mut Session,
+    album_id: i64,
+    params: &CreateAlbumParameters,
+) -> crate::Result<serde_json::Value> {
+    session
+        .put(&format!("gallery/albums/{album_id}"), params)
+        .await
+}
+
+/// Delete an album.
+///
+/// Maps to `GalleryWebService.DeleteAlbum()`.
+///
+/// # Endpoint (inferred)
+///
+/// `DELETE /gallery/albums/{id}`
+pub async fn delete_album(
+    session: &mut Session,
+    album_id: i64,
+) -> crate::Result<serde_json::Value> {
+    session.delete(&format!("gallery/albums/{album_id}")).await
+}
+
+/// Delete a media item.
+///
+/// Maps to `GalleryWebService.DeleteMedia()`.
+///
+/// # Endpoint (inferred)
+///
+/// `DELETE /gallery/media/{id}`
+pub async fn delete_media(
+    session: &mut Session,
+    media_id: i64,
+) -> crate::Result<serde_json::Value> {
+    session.delete(&format!("gallery/media/{media_id}")).await
+}
+
+/// Add a tag (person tag) to a media item.
+///
+/// Maps to `GalleryWebService.AddTag()`.
+///
+/// # Endpoint (inferred)
+///
+/// `POST /gallery/media/{id}/tags`
+pub async fn add_tag(
+    session: &mut Session,
+    media_id: i64,
+    params: &AddOrRemoveTagArguments,
+) -> crate::Result<serde_json::Value> {
+    session
+        .post(&format!("gallery/media/{media_id}/tags"), params)
+        .await
+}
+
+/// Remove a tag from a media item.
+///
+/// Maps to `GalleryWebService.RemoveTag()`.
+///
+/// # Endpoint (inferred)
+///
+/// `DELETE /gallery/media/{mediaId}/tags/{tagId}`
+pub async fn remove_tag(
+    session: &mut Session,
+    media_id: i64,
+    tag_id: i64,
+) -> crate::Result<serde_json::Value> {
+    session
+        .delete(&format!("gallery/media/{media_id}/tags/{tag_id}"))
+        .await
+}
+
+/// Report a media item for moderation.
+///
+/// Maps to `GalleryWebService.ReportMedia()`.
+///
+/// # Endpoint (inferred)
+///
+/// `POST /gallery/media/{id}/report`
+pub async fn report_media(
+    session: &mut Session,
+    media_id: i64,
+    params: &ReportApiParameter,
+) -> crate::Result<serde_json::Value> {
+    session
+        .post(&format!("gallery/media/{media_id}/report"), params)
+        .await
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gallery_view_filter_serializes() {
+        let filter = GalleryViewFilter {
+            selected_institution_code_for_filter: Some("101001".into()),
+            album_id: None,
+            user_specific_album: None,
+            limit: Some(20),
+            index: Some(0),
+            sort_on: Some("createdAt".into()),
+            order_direction: Some("desc".into()),
+            filter_by: None,
+        };
+        let json = serde_json::to_value(&filter).unwrap();
+        assert_eq!(json["selectedInstitutionCodeForFilter"], "101001");
+        assert_eq!(json["limit"], 20);
+        assert_eq!(json["sortOn"], "createdAt");
+    }
+
+    #[test]
+    fn create_album_params_serialize() {
+        let params = CreateAlbumParameters {
+            title: Some("Trip Photos".into()),
+            album_id: None,
+            creator_institution_profile_id: Some(42),
+            shared_with_groups: None,
+            description: Some("Photos from the trip".into()),
+        };
+        let json = serde_json::to_value(&params).unwrap();
+        assert_eq!(json["title"], "Trip Photos");
+        assert_eq!(json["creatorInstitutionProfileId"], 42);
+        assert_eq!(json["description"], "Photos from the trip");
+    }
+
+    #[test]
+    fn add_or_remove_tag_args_serialize() {
+        let args = AddOrRemoveTagArguments {
+            inst_profile_id: Some(55),
+            media_id: Some(100),
+        };
+        let json = serde_json::to_value(&args).unwrap();
+        assert_eq!(json["instProfileId"], 55);
+        assert_eq!(json["mediaId"], 100);
+    }
+
+    #[test]
+    fn get_media_in_album_filter_serializes() {
+        let filter = GetMediaInAlbumFilter {
+            album_id: Some(10),
+            user_specific_album: None,
+            limit: Some(50),
+            index: Some(0),
+            sort_on: None,
+            order_direction: None,
+            filter_by: None,
+            is_selection_mode: false,
+            selected_institution_code: None,
+        };
+        let json = serde_json::to_value(&filter).unwrap();
+        assert_eq!(json["albumId"], 10);
+        assert_eq!(json["limit"], 50);
+    }
+}

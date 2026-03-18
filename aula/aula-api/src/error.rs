@@ -68,6 +68,16 @@ pub enum AulaError {
         status: Option<WebResponseStatus>,
     },
 
+    // -- Auth flow errors --
+    /// OIDC authentication flow error (token exchange, redirect parsing, etc.).
+    #[error("auth error: {error}{}", description.as_ref().map(|d| format!(": {d}")).unwrap_or_default())]
+    Auth {
+        /// OAuth error code or short identifier.
+        error: String,
+        /// Optional human-readable description.
+        description: Option<String>,
+    },
+
     // -- Serialization --
     /// JSON serialization/deserialization error.
     #[error("JSON error: {0}")]

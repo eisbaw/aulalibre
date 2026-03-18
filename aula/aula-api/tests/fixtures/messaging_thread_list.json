@@ -1,0 +1,158 @@
+{
+  "status": {
+    "httpCode": 200,
+    "backendErrorCode": 0,
+    "message": null,
+    "presentedMessage": null,
+    "subCode": null,
+    "htmlContentIfError": null
+  },
+  "data": {
+    "threads": [
+      {
+        "id": 48291,
+        "leaveTime": null,
+        "muted": false,
+        "marked": true,
+        "read": false,
+        "sensitive": false,
+        "lastReadMessageId": "msg-33012",
+        "institutionCode": "280371",
+        "creator": {
+          "mailBoxOwner": {
+            "id": 7821,
+            "otpInboxId": null,
+            "mailBoxOwnerType": "InstitutionProfile",
+            "profileId": 4401,
+            "isDeactivated": false,
+            "isDeleted": false,
+            "portalRole": "Employee"
+          },
+          "fullName": "Mette Frederiksen",
+          "metadata": null,
+          "lastReadMessageId": null,
+          "lastReadMessageTimestamp": null,
+          "shortName": "MF",
+          "profilePicture": {
+            "id": 9912,
+            "key": "profiles/4401/picture.jpg",
+            "bucket": "aula-prod-media",
+            "isImageScalingPending": false,
+            "url": "https://media.aula.dk/profiles/4401/picture.jpg",
+            "scanningStatus": "Available"
+          }
+        },
+        "recipients": [
+          {
+            "mailBoxOwner": {
+              "id": 12055,
+              "otpInboxId": null,
+              "mailBoxOwnerType": "InstitutionProfile",
+              "profileId": 6701,
+              "isDeactivated": false,
+              "isDeleted": false,
+              "portalRole": "Guardian"
+            },
+            "fullName": "Henrik Jensen",
+            "metadata": null,
+            "lastReadMessageId": "msg-33015",
+            "lastReadMessageTimestamp": "2026-03-17T14:22:00",
+            "shortName": "HJ",
+            "profilePicture": null
+          }
+        ],
+        "regardingChildren": [
+          {
+            "profileId": 8801,
+            "displayName": "Emma Jensen",
+            "profilePicture": {
+              "name": "emma.jpg",
+              "url": "https://media.aula.dk/profiles/8801/emma.jpg"
+            }
+          }
+        ],
+        "latestMessage": {
+          "id": "msg-33015",
+          "threadId": 48291,
+          "sendDateTime": "2026-03-17T14:22:00",
+          "text": {
+            "html": "<p>Hej Henrik, Emma har klaret sig rigtig godt til matematik i dag.</p>"
+          },
+          "sender": {
+            "id": 7821,
+            "email": "mette.f@skole.aula.dk",
+            "displayName": "Mette Frederiksen",
+            "relation": "Teacher",
+            "shortName": "MF"
+          },
+          "newRecipient": null,
+          "hasAttachments": false,
+          "pendingMedia": false
+        },
+        "subject": "Matematik-fremskridt",
+        "messageDraft": null,
+        "mailBoxOwner": {
+          "id": 12055,
+          "otpInboxId": null,
+          "mailBoxOwnerType": "InstitutionProfile",
+          "profileId": 6701,
+          "isDeactivated": false,
+          "isDeleted": false,
+          "portalRole": "Guardian"
+        },
+        "currentFolder": {
+          "id": 1,
+          "name": "Indbakke",
+          "type": "Normal"
+        },
+        "subscriptionId": 91023,
+        "isThreadOrSubscriptionDeleted": false,
+        "subscriptionType": "Unbundled",
+        "numberOfBundleItems": null,
+        "extraRecipientsCount": 0,
+        "bundleId": null,
+        "threadEntityLinkDto": null,
+        "primarySubscriptionId": null
+      },
+      {
+        "id": 48290,
+        "leaveTime": null,
+        "muted": true,
+        "marked": false,
+        "read": true,
+        "sensitive": true,
+        "lastReadMessageId": "msg-33010",
+        "institutionCode": "280371",
+        "creator": null,
+        "recipients": [],
+        "regardingChildren": [],
+        "latestMessage": null,
+        "subject": "Fortrolig: Trivselssamtale",
+        "messageDraft": {
+          "text": "Tak for samtalen, jeg vil gerne",
+          "attachmentIds": [501, 502]
+        },
+        "mailBoxOwner": null,
+        "currentFolder": {
+          "id": 2,
+          "name": "Slettet",
+          "type": "Deleted"
+        },
+        "subscriptionId": 91022,
+        "isThreadOrSubscriptionDeleted": false,
+        "subscriptionType": "Bundle",
+        "numberOfBundleItems": 3,
+        "extraRecipientsCount": 5,
+        "bundleId": 7701,
+        "threadEntityLinkDto": {
+          "entityId": "event-4455",
+          "threadType": "EventReminder"
+        },
+        "primarySubscriptionId": 91020
+      }
+    ],
+    "page": 1,
+    "bundleId": null,
+    "moreMessagesExist": true
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "status": {
+    "httpCode": 200,
+    "backendErrorCode": 0,
+    "message": null,
+    "presentedMessage": null,
+    "subCode": null,
+    "htmlContentIfError": null
+  },
+  "data": {
+    "documents": [
+      {
+        "id": 9901,
+        "hasMedia": false,
+        "canEdit": true,
+        "canEditLockedStatus": true,
+        "isLocked": false,
+        "journalingStatus": "NotProcessed",
+        "category": "Agenda",
+        "documentTemplateTitle": "Mødereferat skabelon",
+        "institutionCode": "280371",
+        "documentType": "Internal",
+        "associatedInstitutionProfiles": [
+          {
+            "id": 14201,
+            "name": "Emma Jensen",
+            "alias": false,
+            "metadata": null
+          }
+        ],
+        "sharedWithGroups": [],
+        "sharedWithInstitutionProfiles": [
+          {
+            "id": 12055,
+            "name": "Henrik Jensen",
+            "institutionName": "Bakkeskolen",
+            "canEdit": false,
+            "alias": false,
+            "metadata": null,
+            "role": "Guardian"
+          }
+        ],
+        "implicitSharings": [],
+        "creator": {
+          "id": 4401,
+          "name": "Mette Frederiksen",
+          "alias": false,
+          "metadata": null
+        },
+        "createdAt": "2026-03-01T10:00:00",
+        "title": "Trivselssamtale - Emma Jensen",
+        "updatedAt": "2026-03-15T14:30:00",
+        "updatedBy": "Mette Frederiksen",
+        "version": 3,
+        "description": "Referat fra trivselssamtale",
+        "isSharedWithGuardian": true,
+        "isShareable": true,
+        "shareableGuardianIds": [12055, 12056],
+        "templateTitle": null
+      }
+    ],
+    "filters": {
+      "regardingGroups": [],
+      "regardingInstitutionProfiles": [
+        { "id": 14201, "name": "Emma Jensen" }
+      ],
+      "documentCategories": ["Agenda", "Note"],
+      "sharedGroups": [],
+      "sharedInstitutionProfiles": []
+    },
+    "totalCount": 1
+  }
+}

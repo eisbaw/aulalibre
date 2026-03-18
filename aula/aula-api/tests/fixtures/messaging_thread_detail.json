@@ -1,0 +1,130 @@
+{
+  "status": {
+    "httpCode": 200,
+    "backendErrorCode": 0,
+    "message": null,
+    "presentedMessage": null,
+    "subCode": null,
+    "htmlContentIfError": null
+  },
+  "data": {
+    "id": 48291,
+    "firstMessage": {
+      "id": "msg-33010",
+      "messageType": "Message",
+      "sendDateTime": "2026-03-15T09:15:00",
+      "text": {
+        "html": "<p>Hej, jeg ville lige fortælle om Emmas fremskridt.</p>"
+      },
+      "sender": {
+        "shortName": "MF",
+        "fullName": "Mette Frederiksen",
+        "answerDirectlyName": "Mette Frederiksen (Klasselærer 3.A)",
+        "mailBoxOwner": {
+          "id": 7821,
+          "otpInboxId": null,
+          "mailBoxOwnerType": "InstitutionProfile",
+          "profileId": 4401,
+          "isDeactivated": false,
+          "isDeleted": false,
+          "portalRole": "Employee"
+        },
+        "profilePicture": null,
+        "metadata": null
+      },
+      "canReplyToMessage": true,
+      "attachments": [],
+      "newRecipient": null,
+      "newRecipients": null,
+      "originalRecipients": null,
+      "leaverName": null,
+      "inviterName": null,
+      "leaverNames": null
+    },
+    "messages": [
+      {
+        "id": "msg-33012",
+        "messageType": "Message",
+        "sendDateTime": "2026-03-16T08:30:00",
+        "text": {
+          "html": "<p>Tak for besked! Det er dejligt at høre.</p>"
+        },
+        "sender": {
+          "shortName": "HJ",
+          "fullName": "Henrik Jensen",
+          "answerDirectlyName": null,
+          "mailBoxOwner": null,
+          "profilePicture": {
+            "name": "henrik.jpg",
+            "url": "https://media.aula.dk/profiles/6701/henrik.jpg"
+          },
+          "metadata": null
+        },
+        "canReplyToMessage": true,
+        "attachments": [{"type": "file", "name": "opgave.pdf"}],
+        "newRecipient": null,
+        "newRecipients": [],
+        "originalRecipients": [],
+        "leaverName": null,
+        "inviterName": null,
+        "leaverNames": []
+      },
+      {
+        "id": "msg-33015",
+        "messageType": "RecipientAdded",
+        "sendDateTime": "2026-03-17T14:22:00",
+        "text": null,
+        "sender": null,
+        "canReplyToMessage": false,
+        "attachments": [],
+        "newRecipient": {
+          "shortName": "KJ",
+          "fullName": "Karen Jensen",
+          "answerDirectlyName": null,
+          "mailBoxOwner": null,
+          "profilePicture": null,
+          "metadata": null
+        },
+        "newRecipients": null,
+        "originalRecipients": null,
+        "leaverName": null,
+        "inviterName": "Mette Frederiksen",
+        "leaverNames": null
+      }
+    ],
+    "isMarked": true,
+    "threadCreator": {
+      "lastReadMessageId": "msg-33015",
+      "lastReadTimeStamp": "2026-03-17T15:00:00",
+      "leaveTime": null,
+      "deletedAt": null,
+      "fullName": "Mette Frederiksen",
+      "shortName": "MF",
+      "mailBoxOwner": {
+        "id": 7821,
+        "otpInboxId": null,
+        "mailBoxOwnerType": "InstitutionProfile",
+        "profileId": 4401,
+        "isDeactivated": false,
+        "isDeleted": false,
+        "portalRole": "Employee"
+      },
+      "metadata": null,
+      "profilePicture": null
+    },
+    "threadStartedDateTime": "2026-03-15T09:15:00",
+    "recipients": [],
+    "moreMessagesExist": false,
+    "totalMessageCount": 3,
+    "page": 1,
+    "subject": "Matematik-fremskridt",
+    "muted": false,
+    "marked": true,
+    "isThreadForwarded": false,
+    "sensitive": false,
+    "hasSecureDocuments": false,
+    "mailboxOwner": null,
+    "threadEntityLinkDto": null,
+    "folderName": "Indbakke"
+  }
+}

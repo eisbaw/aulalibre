@@ -1,0 +1,111 @@
+{
+  "status": {
+    "httpCode": 200,
+    "backendErrorCode": 0,
+    "message": null,
+    "presentedMessage": null,
+    "subCode": null,
+    "htmlContentIfError": null
+  },
+  "data": [
+    {
+      "id": 22150,
+      "title": "Forældremøde 3.A",
+      "description": {
+        "html": "<p>Velkommen til forældremøde. Vi mødes i lokale 201.</p>"
+      },
+      "startDateTime": "2026-04-10T19:00:00",
+      "endDateTime": "2026-04-10T21:00:00",
+      "allDay": false,
+      "private": false,
+      "type": "ParentalMeeting",
+      "responseRequired": true,
+      "responseDeadline": "2026-04-05T23:59:59",
+      "responseType": "Waiting",
+      "repeating": false,
+      "repeatType": "Never",
+      "location": {
+        "id": 301,
+        "name": "Lokale 201",
+        "description": "2. sal, bygning A",
+        "institutionCode": "280371"
+      },
+      "creator": {
+        "institutionProfileId": 4401,
+        "profileId": 2201,
+        "fullName": "Mette Frederiksen",
+        "shortName": "MF",
+        "role": "Employee",
+        "profilePicture": null,
+        "metadata": null,
+        "institutionCode": "280371",
+        "institutionName": "Bakkeskolen",
+        "institutionRole": "Teacher"
+      },
+      "groups": [
+        {
+          "id": 1501,
+          "name": "3.A",
+          "institutionCode": "280371",
+          "institutionName": "Bakkeskolen"
+        }
+      ],
+      "resources": [],
+      "attachments": [],
+      "eventClass": "Basic",
+      "lesson": null,
+      "hideFromGuardians": false,
+      "institutionCode": "280371",
+      "noteToParents": {
+        "html": "<p>Medbring gerne notebook.</p>"
+      },
+      "addedToPersonalCalendar": false,
+      "responseStatus": "Waiting"
+    },
+    {
+      "id": 22151,
+      "title": "Matematik",
+      "description": null,
+      "startDateTime": "2026-04-11T08:00:00",
+      "endDateTime": "2026-04-11T08:45:00",
+      "allDay": false,
+      "private": false,
+      "type": "Lesson",
+      "responseRequired": false,
+      "responseDeadline": null,
+      "responseType": null,
+      "repeating": true,
+      "repeatType": "Weekly",
+      "location": null,
+      "creator": null,
+      "groups": [],
+      "resources": [],
+      "attachments": [],
+      "eventClass": "Lesson",
+      "lesson": {
+        "id": 88001,
+        "status": "Normal",
+        "note": {
+          "html": "<p>Side 42-45 i matematikbogen</p>"
+        },
+        "homework": {
+          "html": "<p>Lav opgave 3.1 og 3.2</p>"
+        },
+        "title": "Matematik",
+        "participantIds": [4401],
+        "participants": [
+          {
+            "participantId": 4401,
+            "teacherName": "Mette Frederiksen",
+            "participantRole": "PrimaryTeacher"
+          }
+        ]
+      },
+      "hideFromGuardians": false,
+      "institutionCode": "280371",
+      "noteToParents": null,
+      "addedToPersonalCalendar": false,
+      "responseStatus": null
+    }
+  ]
+}

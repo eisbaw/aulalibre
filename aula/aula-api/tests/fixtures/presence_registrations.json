@@ -1,0 +1,87 @@
+{
+  "status": {
+    "httpCode": 200,
+    "backendErrorCode": 0,
+    "message": null,
+    "presentedMessage": null,
+    "subCode": null,
+    "htmlContentIfError": null
+  },
+  "data": [
+    {
+      "id": 55001,
+      "institutionProfile": {
+        "profileId": 8801,
+        "institutionProfileId": 14201,
+        "institutionCode": "280371",
+        "institutionName": "Bakkeskolen",
+        "name": "Emma Jensen",
+        "role": "Child",
+        "mainGroup": "3.A",
+        "profilePicture": null,
+        "shortName": "EJ",
+        "metadata": null
+      },
+      "status": "Present",
+      "activityType": "CHECK_IN",
+      "location": {
+        "id": 601,
+        "name": "SFO Lokale 1",
+        "institutionCode": "280371"
+      },
+      "sleepIntervals": [],
+      "editablePresenceStates": ["Present", "Sick", "ReportedAbsence", "FieldTrip"],
+      "checkInTime": "2026-03-18T07:45:00",
+      "checkOutTime": null,
+      "selfDeciderStartTime": null,
+      "exitWith": null,
+      "exitWithProfileName": null,
+      "exitWithOther": null,
+      "spareTimeActivity": null,
+      "dailyNote": "Emma har det godt i dag",
+      "pickUpTime": "15:30",
+      "dropOffTime": "07:45",
+      "plannedCheckOutTime": "15:30",
+      "autoCheckOutTime": "17:00"
+    },
+    {
+      "id": 55002,
+      "institutionProfile": {
+        "profileId": 8802,
+        "institutionProfileId": 14202,
+        "institutionCode": "280371",
+        "institutionName": "Bakkeskolen",
+        "name": "Oliver Jensen",
+        "role": "Child",
+        "mainGroup": "1.B",
+        "profilePicture": null,
+        "shortName": "OJ",
+        "metadata": null
+      },
+      "status": "Sick",
+      "activityType": null,
+      "location": null,
+      "sleepIntervals": [
+        {
+          "id": 3301,
+          "startTime": "12:00",
+          "endTime": "13:30",
+          "note": "Sov godt"
+        }
+      ],
+      "editablePresenceStates": ["Present", "Sick", "ReportedAbsence"],
+      "checkInTime": null,
+      "checkOutTime": null,
+      "selfDeciderStartTime": null,
+      "exitWith": null,
+      "exitWithProfileName": null,
+      "exitWithOther": null,
+      "spareTimeActivity": null,
+      "dailyNote": null,
+      "pickUpTime": null,
+      "dropOffTime": null,
+      "plannedCheckOutTime": null,
+      "autoCheckOutTime": null
+    }
+  ]
+}

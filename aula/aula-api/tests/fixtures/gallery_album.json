@@ -1,0 +1,51 @@
+{
+  "status": {
+    "httpCode": 200,
+    "backendErrorCode": 0,
+    "message": null,
+    "presentedMessage": null,
+    "subCode": null,
+    "htmlContentIfError": null
+  },
+  "data": {
+    "id": 7701,
+    "title": "Tur til Tivoli",
+    "name": "Tur til Tivoli",
+    "creator": {
+      "id": 4401,
+      "institutionCode": "280371",
+      "institutionName": "Bakkeskolen",
+      "name": "Mette Frederiksen",
+      "shortName": "MF",
+      "metadata": null,
+      "profileId": 2201,
+      "role": "Employee",
+      "profilePicture": null
+    },
+    "creationDate": "2026-03-10T14:00:00",
+    "totalSize": 45,
+    "size": 20,
+    "from": 0,
+    "description": "Billeder fra klassens tur til Tivoli Friheden",
+    "sharedWithGroups": [
+      {
+        "id": 1501,
+        "portalRoles": ["Guardian", "Employee"],
+        "name": "3.A",
+        "shortName": "3A",
+        "institutionCode": "280371",
+        "institutionName": "Bakkeskolen",
+        "membershipCount": null,
+        "allowMembersToBeShown": true
+      }
+    ],
+    "thumbnailsUrls": [
+      "https://media.aula.dk/thumb/img1.jpg",
+      "https://media.aula.dk/thumb/img2.jpg",
+      "https://media.aula.dk/thumb/img3.jpg"
+    ],
+    "currentUserCanEdit": false,
+    "currentUserCanDelete": false,
+    "currentUserCanAddMedia": false
+  }
+}

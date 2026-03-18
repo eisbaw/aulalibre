@@ -6,6 +6,7 @@
 
 pub mod enums;
 pub mod error;
+pub mod models;
 pub mod response;
 
 // Re-export key types at crate root for convenience.

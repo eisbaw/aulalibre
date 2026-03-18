@@ -206,7 +206,7 @@ pub fn e2e_session_with_env(environment: Environment) -> Option<Session> {
 
             let client = match AulaClient::with_config(AulaClientConfig {
                 environment,
-                api_version: 19,
+                api_version: 23,
             }) {
                 Ok(c) => c,
                 Err(e) => {

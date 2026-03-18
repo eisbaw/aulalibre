@@ -4,17 +4,13 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.9.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `add_comment` | POST | `/comments` |
-//! | `update_comment` | PUT | `/comments/{id}` |
-//! | `get_comments` | GET | `/comments` |
-//! | `report_comment` | POST | `/comments/{id}/report` |
-//! | `delete_comment` | DELETE | `/comments/{id}` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `ADD_COMMENT` | `comments.addComment` |
+//! | `GET_COMMENTS` | `comments.getComments` |
+//! | `REPORT_COMMENT` | `comments.reportComment` |
+//! | `DELETE_COMMENT` | `comments.deleteComment` |
+//! | `UPDATE_COMMENT` | `comments.updateComment` |
 
 use serde::{Deserialize, Serialize};
 
@@ -68,30 +64,30 @@ pub struct GetCommentsRequestModel {
 ///
 /// Maps to `CommentService.AddComment()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /comments`
+/// `POST ?method=comments.addComment`
 pub async fn add_comment(
     session: &mut Session,
     request: &AddCommentRequestModel,
 ) -> crate::Result<serde_json::Value> {
-    session.post("comments", request).await
+    session.post("?method=comments.addComment", request).await
 }
 
 /// Update an existing comment's content.
 ///
 /// Maps to `CommentService.UpdateComment()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /comments/{id}`
+/// `POST ?method=comments.updateComment`
 pub async fn update_comment(
     session: &mut Session,
-    comment_id: i64,
+    _comment_id: i64,
     request: &UpdateCommentRequestModel,
 ) -> crate::Result<serde_json::Value> {
     session
-        .put(&format!("comments/{comment_id}"), request)
+        .post("?method=comments.updateComment", request)
         .await
 }
 
@@ -99,9 +95,9 @@ pub async fn update_comment(
 ///
 /// Maps to `CommentService.GetComments()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /comments?parentType=...&parentId=...&startIndex=...&limit=...`
+/// `GET ?method=comments.getComments&parentType=...&parentId=...`
 pub async fn get_comments(
     session: &mut Session,
     params: &GetCommentsRequestModel,
@@ -122,7 +118,7 @@ pub async fn get_comments(
         query.push(format!("limit={limit}"));
     }
 
-    let path = format!("comments?{}", query.join("&"));
+    let path = format!("?method=comments.getComments&{}", query.join("&"));
     session.get(&path).await
 }
 
@@ -130,38 +126,32 @@ pub async fn get_comments(
 ///
 /// Maps to `CommentService.ReportComment()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /comments/{id}/report`
+/// `POST ?method=comments.reportComment`
 pub async fn report_comment(
     session: &mut Session,
-    comment_id: i64,
+    _comment_id: i64,
     params: &ReportCommentApiParameters,
 ) -> crate::Result<serde_json::Value> {
-    session
-        .post(&format!("comments/{comment_id}/report"), params)
-        .await
+    session.post("?method=comments.reportComment", params).await
 }
 
 /// Delete a comment.
 ///
 /// Maps to `CommentService.DeleteComment()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /comments/{id}`
-///
-/// NOTE: The decompiled code shows a `DeleteCommentRequestModel` with
-/// `comment_id` and `parent_type`. It is unclear whether the delete
-/// endpoint also requires the parent type as a query parameter or body.
-/// This implementation sends a simple DELETE by ID; if the API requires
-/// additional data, switch to `delete_with_body`.
+/// `POST ?method=comments.deleteComment`
 pub async fn delete_comment(
     session: &mut Session,
-    comment_id: i64,
-    _request: &DeleteCommentRequestModel,
+    _comment_id: i64,
+    request: &DeleteCommentRequestModel,
 ) -> crate::Result<serde_json::Value> {
-    session.delete(&format!("comments/{comment_id}")).await
+    session
+        .post("?method=comments.deleteComment", request)
+        .await
 }
 
 // ---------------------------------------------------------------------------

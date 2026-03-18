@@ -4,21 +4,16 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.17.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `register_device` | POST | `/pushNotifications/devices` |
-//! | `unregister_device` | DELETE | `/pushNotifications/devices/{id}` |
-//! | `delete_all_devices` | DELETE | `/pushNotifications/devices` |
-//! | `get_devices` | GET | `/pushNotifications/devices` |
-//! | `get_notification_settings` | GET | `/pushNotifications/settings` |
-//! | `update_notification_settings` | PUT | `/pushNotifications/settings` |
-//! | `clear_notification_badges` | POST | `/pushNotifications/badges/clear` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `REGISTER_DEVICE` | `notifications.registerDevice` |
+//! | `UNREGISTER_DEVICE` | `notifications.unregisterDevice` |
+//! | `DELETE_ALL_DEVICES` | `notifications.unregisterAllDevices` |
+//! | `GET_NOTIFICATION_SETTINGS` | `notifications.getNotificationSettingsForActiveProfile` |
+//! | `UPDATE_NOTIFICATION_SETTINGS` | `notifications.setNotificationSettingsForActiveProfile` |
+//! | `DELETE_NOTIFICATIONS_BY_MODULE` | `notifications.deleteBadgeNotificationByModule` |
 
-use crate::models::notifications::{ConfigureDeviceModel, NotificationSettings, SimpleDevice};
+use crate::models::notifications::{ConfigureDeviceModel, NotificationSettings};
 use crate::session::Session;
 
 use serde::{Deserialize, Serialize};
@@ -40,29 +35,34 @@ pub struct ClearBadgesRequest {
 ///
 /// Maps to `RemoteNotificationWebService.RegisterDevice()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /pushNotifications/devices`
+/// `POST ?method=notifications.registerDevice`
 pub async fn register_device(
     session: &mut Session,
     device: &ConfigureDeviceModel,
 ) -> crate::Result<serde_json::Value> {
-    session.post("pushNotifications/devices", device).await
+    session
+        .post("?method=notifications.registerDevice", device)
+        .await
 }
 
 /// Unregister a specific device from push notifications.
 ///
 /// Maps to `RemoteNotificationWebService.UnregisterDevice()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /pushNotifications/devices/{deviceId}`
+/// `POST ?method=notifications.unregisterDevice`
 pub async fn unregister_device(
     session: &mut Session,
     device_id: &str,
 ) -> crate::Result<serde_json::Value> {
     session
-        .delete(&format!("pushNotifications/devices/{device_id}"))
+        .post(
+            "?method=notifications.unregisterDevice",
+            &serde_json::json!({"deviceId": device_id}),
+        )
         .await
 }
 
@@ -70,64 +70,65 @@ pub async fn unregister_device(
 ///
 /// Maps to `RemoteNotificationWebService.DeleteAllDevices()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /pushNotifications/devices`
+/// `POST ?method=notifications.unregisterAllDevices`
 pub async fn delete_all_devices(session: &mut Session) -> crate::Result<serde_json::Value> {
-    session.delete("pushNotifications/devices").await
-}
-
-/// Get all registered devices for the current profile.
-///
-/// Maps to `RemoteNotificationWebService.GetDevices()`.
-///
-/// # Endpoint (inferred)
-///
-/// `GET /pushNotifications/devices`
-pub async fn get_devices(session: &mut Session) -> crate::Result<Vec<SimpleDevice>> {
-    session.get("pushNotifications/devices").await
+    session
+        .post_empty("?method=notifications.unregisterAllDevices")
+        .await
 }
 
 /// Get the notification settings for the current profile.
 ///
 /// Maps to `RemoteNotificationWebService.GetNotificationSettings()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /pushNotifications/settings`
+/// `GET ?method=notifications.getNotificationSettingsForActiveProfile&includeDeviceTokens=true`
 pub async fn get_notification_settings(
     session: &mut Session,
 ) -> crate::Result<NotificationSettings> {
-    session.get("pushNotifications/settings").await
+    session
+        .get("?method=notifications.getNotificationSettingsForActiveProfile&includeDeviceTokens=true")
+        .await
 }
 
 /// Update notification settings for the current profile.
 ///
 /// Maps to `RemoteNotificationWebService.UpdateNotificationSettings()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /pushNotifications/settings`
+/// `POST ?method=notifications.setNotificationSettingsForActiveProfile`
 pub async fn update_notification_settings(
     session: &mut Session,
     settings: &NotificationSettings,
 ) -> crate::Result<serde_json::Value> {
-    session.put("pushNotifications/settings", settings).await
+    session
+        .post(
+            "?method=notifications.setNotificationSettingsForActiveProfile",
+            settings,
+        )
+        .await
 }
 
 /// Clear notification badge counts for a specific module.
 ///
 /// Maps to `RemoteNotificationWebService.ClearNotificationBadgesByModule()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /pushNotifications/badges/clear`
+/// `POST ?method=notifications.deleteBadgeNotificationByModule`
 pub async fn clear_notification_badges(
     session: &mut Session,
     request: &ClearBadgesRequest,
 ) -> crate::Result<serde_json::Value> {
     session
-        .post("pushNotifications/badges/clear", request)
+        .post(
+            "?method=notifications.deleteBadgeNotificationByModule",
+            request,
+        )
         .await
 }
 

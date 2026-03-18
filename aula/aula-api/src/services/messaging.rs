@@ -1,55 +1,43 @@
 //! Messaging service.
 //!
-//! Maps to `AulaNative.Services.Web.MessagingWebService` (26 methods) and
-//! `AulaNative.Services.Web.FolderService` (6 methods) from the APK.
+//! Maps to `AulaNative.Services.Web.MessagingWebService` and
+//! `AulaNative.Services.Web.FolderService` from the APK.
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Sections 3.7 and 3.13.
+//! All endpoints use RPC-style routing via `?method=messaging.<action>`.
+//! Paths are sourced from the decompiled `Urls.cs` class.
 //!
-//! ## MessagingWebService (Section 3.7)
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_thread_list` | GET | `/messaging/threads` |
-//! | `get_thread_by_id` | GET | `/messaging/threads/{id}` |
-//! | `start_new_thread` | POST | `/messaging/threads` |
-//! | `reply_to_thread` | POST | `/messaging/threads/{id}/reply` |
-//! | `reply_in_new_thread` | POST | `/messaging/threads/{id}/replyNew` |
-//! | `forward_thread` | POST | `/messaging/threads/{id}/forward` |
-//! | `delete_threads` | DELETE | `/messaging/threads` |
-//! | `leave_thread` | POST | `/messaging/threads/{id}/leave` |
-//! | `leave_threads` | POST | `/messaging/threads/leave` |
-//! | `add_recipients_to_thread` | POST | `/messaging/threads/{id}/recipients` |
-//! | `get_message_list` | GET | `/messaging/threads/{id}/messages` |
-//! | `get_message_info_light` | GET | `/messaging/messages/{id}/info` |
-//! | `delete_message` | DELETE | `/messaging/messages/{id}` |
-//! | `edit_message` | PUT | `/messaging/messages/{id}` |
-//! | `set_last_read_message` | PUT | `/messaging/threads/{id}/lastRead` |
-//! | `set_thread_muted` | PUT | `/messaging/threads/{id}/muted` |
-//! | `set_thread_marked` | PUT | `/messaging/threads/{id}/marked` |
-//! | `set_sensitive_level` | PUT | `/messaging/threads/{id}/sensitive` |
-//! | `set_auto_reply` | POST | `/messaging/autoReply` |
-//! | `get_auto_reply` | GET | `/messaging/autoReply` |
-//! | `delete_auto_reply` | DELETE | `/messaging/autoReply` |
-//! | `get_threads_in_bundle_list` | GET | `/messaging/threads/bundle` |
-//! | `set_subscription_status` | PUT | `/messaging/threads/subscription` |
-//! | `check_recipients_for_blocked_channels` | POST | `/messaging/recipients/blocked` |
-//! | `attach_messages_to_secure_document` | POST | `/messaging/messages/attachToDocument` |
-//! | `send_event_reminder` | POST | `/messaging/eventReminder` |
-//!
-//! ## FolderService (Section 3.13)
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_folders` | GET | `/messaging/folders` |
-//! | `create_folder` | POST | `/messaging/folders` |
-//! | `update_folder` | PUT | `/messaging/folders/{id}` |
-//! | `delete_folder` | POST | `/messaging/folders/{id}` |
-//! | `move_threads_to_folder` | POST | `/messaging/folders/{id}/moveThreads` |
-//! | `get_common_inboxes` | GET | `/messaging/commonInboxes` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `REPLY_TO_THREAD` | `messaging.reply` |
+//! | `START_NEW_THREAD` | `messaging.startNewThread` |
+//! | `GET_THREADS` | `messaging.getThreads` |
+//! | `MESSAGES_RESOURCE` | `messaging.getMessagesForThread` |
+//! | `SET_LAST_READ_MESSAGE` | `messaging.setLastReadMessage` |
+//! | `DELETE_THREAD` | `messaging.deleteThreads` |
+//! | `LEAVE_THREAD` | `messaging.leaveThread` |
+//! | `LEAVE_THREADS` | `messaging.leaveThreads` |
+//! | `SET_THREAD_MUTED` | `messaging.setThreadsMuted` |
+//! | `SET_THREAD_MARKED` | `messaging.setThreadsMarked` |
+//! | `SET_AUTOREPLY` | `messaging.setAutoReply` |
+//! | `GET_AUTOREPLY` | `messaging.getAutoReply` |
+//! | `DELETE_AUTOREPLY` | `messaging.deleteAutoReply` |
+//! | `SET_SENSITIVITY_LEVEL` | `messaging.setSensitivityLevel` |
+//! | `FOLDERS_RESOURCE` | `messaging.getFolders` |
+//! | `CREATE_FOLDER` | `messaging.createFolder` |
+//! | `DELETE_FOLDER` | `messaging.deletefolder` |
+//! | `UPDATE_FOLDER` | `messaging.updateFolder` |
+//! | `MOVE_THREADS_TO_FOLDER` | `messaging.moveThreadsToFolder` |
+//! | `ADD_RECIPIENTS_TO_THREAD` | `messaging.addRecipients` |
+//! | `ATTACH_MESSAGES_TO_SECURE_DOCUMENT` | `messaging.attachMessagesToSecureDocument` |
+//! | `GET_COMMON_INBOXES` | `messaging.getCommonInboxes` |
+//! | `UPDATE_SUBSCRIPTION_STATUS` | `messaging.updateSubscriptionStatus` |
+//! | `GET_THREADS_IN_BUNDLE` | `messaging.getThreadsInBundle` |
+//! | `DELETE_MESSAGE` | `messaging.deleteMessage` |
+//! | `EDIT_MESSAGE` | `messaging.editMessage` |
+//! | `SEND_EVENT_REMINDER` | `messaging.sendEventReminder` |
+//! | `GET_MESSAGE_INFO_LIGHT` | `messaging.getMessageInfoLight` |
 
 use serde::{Deserialize, Serialize};
 
@@ -71,14 +59,9 @@ use crate::session::Session;
 // ---------------------------------------------------------------------------
 
 /// Response from `StartNewThread` / `ReplyInNewThread` / `ForwardThread`.
-///
-/// The API likely returns the thread ID of the newly created thread.
-/// Using `serde_json::Value` since the exact shape is unverified.
 pub type NewThreadResponse = serde_json::Value;
 
 /// Response from `ReplyToThread`.
-///
-/// The API likely returns the new message ID or a confirmation.
 pub type ReplyResponse = serde_json::Value;
 
 /// Response from `EditMessage`.
@@ -118,16 +101,12 @@ pub type FolderMutationResponse = serde_json::Value;
 pub type SetSubscriptionStatusResponse = serde_json::Value;
 
 /// Response from `CheckRecipientsForBlockedChannels`.
-///
-/// Returns a list of blocked recipient identifiers.
 pub type BlockedChannelsResponse = serde_json::Value;
 
 /// Response from `AttachMessagesToSecureDocument`.
 pub type AttachToDocumentResponse = serde_json::Value;
 
 /// Request body for `SendEventReminder`.
-///
-/// Inferred from `MessagingWebService.SendEventReminder()`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SendEventReminderRequest {
@@ -141,28 +120,21 @@ pub struct SendEventReminderRequest {
 pub type SendEventReminderResponse = serde_json::Value;
 
 // ===========================================================================
-// Thread CRUD (AC #1)
+// Thread CRUD
 // ===========================================================================
 
 /// List message threads (inbox view) with filtering, sorting, and pagination.
 ///
 /// Maps to `MessagingWebService.GetThreadList()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /messaging/threads`
-///
-/// NOTE: The GET request sends query parameters derived from
-/// `GetThreadListArguments`. Since the argument struct has many fields,
-/// the API likely accepts them as query parameters. However, some .NET
-/// APIs accept complex filter objects via POST. If this fails, try
-/// `POST /messaging/threads/list` instead.
+/// `GET ?method=messaging.getThreads`
 pub async fn get_thread_list(
     session: &mut Session,
     args: &GetThreadListArguments,
 ) -> crate::Result<MessageThreadSubscriptionList> {
-    // Build query string from the arguments.
-    let mut params = Vec::new();
+    let mut params = vec!["method=messaging.getThreads".to_string()];
     if let Some(page) = args.page {
         params.push(format!("page={page}"));
     }
@@ -209,42 +181,32 @@ pub async fn get_thread_list(
         }
     }
 
-    let path = if params.is_empty() {
-        "messaging/threads".to_string()
-    } else {
-        format!("messaging/threads?{}", params.join("&"))
-    };
+    let path = format!("?{}", params.join("&"));
     session.get(&path).await
 }
 
-/// Get a specific thread by ID with its messages.
+/// Get messages for a thread.
 ///
-/// Maps to `MessagingWebService.GetThreadById()`.
+/// Maps to `MessagingWebService.GetMessageList()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /messaging/threads/{thread_id}/messages`
-///
-/// NOTE: `GetThreadById` and `GetMessageList` may share the same
-/// endpoint with different pagination. This method fetches the first
-/// page of messages for the thread.
+/// `GET ?method=messaging.getMessagesForThread`
 pub async fn get_thread_by_id(
     session: &mut Session,
     args: &GetMessagesForThreadArguments,
 ) -> crate::Result<MessagesInThreadDto> {
-    let thread_id = args.thread_id.unwrap_or(0);
-    let mut path = format!("messaging/threads/{thread_id}/messages");
-    let mut params = Vec::new();
+    let mut params = vec!["method=messaging.getMessagesForThread".to_string()];
+    if let Some(tid) = args.thread_id {
+        params.push(format!("threadId={tid}"));
+    }
     if let Some(page) = args.page {
         params.push(format!("page={page}"));
     }
     if let Some(cid) = args.common_inbox_id {
         params.push(format!("commonInboxId={cid}"));
     }
-    if !params.is_empty() {
-        path.push('?');
-        path.push_str(&params.join("&"));
-    }
+    let path = format!("?{}", params.join("&"));
     session.get(&path).await
 }
 
@@ -252,145 +214,115 @@ pub async fn get_thread_by_id(
 ///
 /// Maps to `MessagingWebService.StartNewThread()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/threads`
+/// `POST ?method=messaging.startNewThread`
 pub async fn start_new_thread(
     session: &mut Session,
     args: &StartNewThreadRequestArguments,
 ) -> crate::Result<NewThreadResponse> {
-    session.post("messaging/threads", args).await
+    session.post("?method=messaging.startNewThread", args).await
 }
 
 /// Reply to an existing thread.
 ///
 /// Maps to `MessagingWebService.ReplyToThread()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/threads/{thread_id}/reply`
+/// `POST ?method=messaging.reply`
 pub async fn reply_to_thread(
     session: &mut Session,
     args: &ReplyMessageArgument,
 ) -> crate::Result<ReplyResponse> {
-    let thread_id = args.thread_id.unwrap_or(0);
-    session
-        .post(&format!("messaging/threads/{thread_id}/reply"), args)
-        .await
+    session.post("?method=messaging.reply", args).await
 }
 
 /// Delete one or more threads.
 ///
 /// Maps to `MessagingWebService.DeleteThreads()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /messaging/threads`
-///
-/// NOTE: This endpoint uses DELETE with a JSON body containing
-/// subscription and thread IDs.
+/// `POST ?method=messaging.deleteThreads`
 pub async fn delete_threads(
     session: &mut Session,
     args: &DeleteThreadArguments,
 ) -> crate::Result<DeleteThreadsResponse> {
-    session.delete_with_body("messaging/threads", args).await
+    session.post("?method=messaging.deleteThreads", args).await
 }
 
 /// Leave a single thread.
 ///
 /// Maps to `MessagingWebService.LeaveThread()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/threads/{thread_id}/leave`
+/// `POST ?method=messaging.leaveThread`
 pub async fn leave_thread(
     session: &mut Session,
     args: &LeaveThreadArguments,
 ) -> crate::Result<LeaveThreadResponse> {
-    let thread_id = args.thread_id.unwrap_or(0);
-    session
-        .post(&format!("messaging/threads/{thread_id}/leave"), args)
-        .await
+    session.post("?method=messaging.leaveThread", args).await
 }
 
 /// Leave multiple threads at once.
 ///
 /// Maps to `MessagingWebService.LeaveThreads()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/threads/leave`
+/// `POST ?method=messaging.leaveThreads`
 pub async fn leave_threads(
     session: &mut Session,
     args: &LeaveThreadsRequest,
 ) -> crate::Result<LeaveThreadResponse> {
-    session.post("messaging/threads/leave", args).await
+    session.post("?method=messaging.leaveThreads", args).await
 }
 
 /// Forward a thread to new recipients.
 ///
 /// Maps to `MessagingWebService.ForwardThread()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/threads/{thread_id}/forward`
-///
-/// NOTE: The thread ID to forward is embedded in `forward_info.forwarded_thread_id`.
-/// The URL path may use that same ID.
+/// `POST ?method=messaging.startNewThread` (forward uses same endpoint as start)
 pub async fn forward_thread(
     session: &mut Session,
     args: &ForwardThreadRequestArguments,
 ) -> crate::Result<NewThreadResponse> {
-    let thread_id = args
-        .forward_info
-        .as_ref()
-        .and_then(|fi| fi.forwarded_thread_id)
-        .unwrap_or(0);
-    session
-        .post(&format!("messaging/threads/{thread_id}/forward"), args)
-        .await
+    session.post("?method=messaging.startNewThread", args).await
 }
 
 /// Reply to a thread by creating a new thread (quote-reply).
 ///
 /// Maps to `MessagingWebService.ReplyInNewThread()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/threads/{thread_id}/replyNew`
-///
-/// NOTE: The original thread ID is likely taken from
-/// `forward_info.forwarded_thread_id` similar to `forward_thread`.
+/// `POST ?method=messaging.startNewThread`
 pub async fn reply_in_new_thread(
     session: &mut Session,
     args: &ForwardThreadRequestArguments,
 ) -> crate::Result<NewThreadResponse> {
-    let thread_id = args
-        .forward_info
-        .as_ref()
-        .and_then(|fi| fi.forwarded_thread_id)
-        .unwrap_or(0);
-    session
-        .post(&format!("messaging/threads/{thread_id}/replyNew"), args)
-        .await
+    session.post("?method=messaging.startNewThread", args).await
 }
 
 // ===========================================================================
-// Message operations (AC #2)
+// Message operations
 // ===========================================================================
 
 /// Get messages in a thread (paginated).
 ///
 /// Maps to `MessagingWebService.GetMessageList()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /messaging/threads/{thread_id}/messages`
+/// `GET ?method=messaging.getMessagesForThread`
 pub async fn get_message_list(
     session: &mut Session,
     args: &GetMessagesForThreadArguments,
 ) -> crate::Result<MessagesInThreadDto> {
-    // Same endpoint as get_thread_by_id; both return MessagesInThreadDto.
     get_thread_by_id(session, args).await
 }
 
@@ -398,27 +330,26 @@ pub async fn get_message_list(
 ///
 /// Maps to `MessagingWebService.GetMessageInfoLight()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /messaging/messages/{message_id}/info`
+/// `GET ?method=messaging.getMessageInfoLight`
 pub async fn get_message_info_light(
     session: &mut Session,
     message_id: &str,
     common_inbox_id: Option<i64>,
     otp_inbox_id: Option<i64>,
 ) -> crate::Result<GetMessageInfoLightDto> {
-    let mut params = Vec::new();
+    let mut params = vec![
+        "method=messaging.getMessageInfoLight".to_string(),
+        format!("messageId={message_id}"),
+    ];
     if let Some(cid) = common_inbox_id {
         params.push(format!("commonInboxId={cid}"));
     }
     if let Some(oid) = otp_inbox_id {
         params.push(format!("otpInboxId={oid}"));
     }
-    let path = if params.is_empty() {
-        format!("messaging/messages/{message_id}/info")
-    } else {
-        format!("messaging/messages/{message_id}/info?{}", params.join("&"))
-    };
+    let path = format!("?{}", params.join("&"));
     session.get(&path).await
 }
 
@@ -426,107 +357,95 @@ pub async fn get_message_info_light(
 ///
 /// Maps to `MessagingWebService.DeleteMessage()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /messaging/messages/{message_id}`
+/// `POST ?method=messaging.deleteMessage`
 pub async fn delete_message(
     session: &mut Session,
     args: &DeleteMessageRequest,
 ) -> crate::Result<DeleteMessageResponse> {
-    let message_id = args.message_id.as_deref().unwrap_or("0");
-    let mut path = format!("messaging/messages/{message_id}");
-    if let Some(tid) = args.thread_id {
-        path.push_str(&format!("?threadId={tid}"));
-    }
-    session.delete(&path).await
+    session.post("?method=messaging.deleteMessage", args).await
 }
 
 /// Edit an existing message.
 ///
 /// Maps to `MessagingWebService.EditMessage()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /messaging/messages/{message_id}`
+/// `POST ?method=messaging.editMessage`
 pub async fn edit_message(
     session: &mut Session,
     args: &EditMessageRequest,
 ) -> crate::Result<EditMessageResponse> {
-    let message_id = args.message_id.as_deref().unwrap_or("0");
-    session
-        .put(&format!("messaging/messages/{message_id}"), args)
-        .await
+    session.post("?method=messaging.editMessage", args).await
 }
 
 /// Mark a message as the last read in a thread.
 ///
 /// Maps to `MessagingWebService.SetLastReadMessage()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /messaging/threads/{thread_id}/lastRead`
+/// `POST ?method=messaging.setLastReadMessage`
 pub async fn set_last_read_message(
     session: &mut Session,
     args: &SetLastMessageRequestArguments,
 ) -> crate::Result<SetLastReadResponse> {
-    let thread_id = args.thread_id.unwrap_or(0);
     session
-        .put(&format!("messaging/threads/{thread_id}/lastRead"), args)
+        .post("?method=messaging.setLastReadMessage", args)
         .await
 }
 
 // ===========================================================================
-// Thread management (AC #3)
+// Thread management
 // ===========================================================================
 
 /// Mute or unmute a thread.
 ///
 /// Maps to `MessagingWebService.SetThreadMuted()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /messaging/threads/{thread_id}/muted`
-///
-/// NOTE: The thread ID in the URL may be redundant since the body
-/// contains `thread_ids`. The API may accept either form.
+/// `POST ?method=messaging.setThreadsMuted`
 pub async fn set_thread_muted(
     session: &mut Session,
     args: &MuteThreadRequestArguments,
 ) -> crate::Result<SetMutedResponse> {
-    session.put("messaging/threads/muted", args).await
+    session
+        .post("?method=messaging.setThreadsMuted", args)
+        .await
 }
 
 /// Mark or unmark a thread (star/flag).
 ///
 /// Maps to `MessagingWebService.SetThreadMarked()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /messaging/threads/{thread_id}/marked`
-///
-/// NOTE: Similar to muted, the body contains `thread_ids` so the URL
-/// may not need a specific thread ID.
+/// `POST ?method=messaging.setThreadsMarked`
 pub async fn set_thread_marked(
     session: &mut Session,
     args: &MarkThreadsRequest,
 ) -> crate::Result<SetMarkedResponse> {
-    session.put("messaging/threads/marked", args).await
+    session
+        .post("?method=messaging.setThreadsMarked", args)
+        .await
 }
 
 /// Set the sensitivity level on a thread.
 ///
 /// Maps to `MessagingWebService.SetSensitiveLevel()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /messaging/threads/{thread_id}/sensitive`
+/// `POST ?method=messaging.setSensitivityLevel`
 pub async fn set_sensitive_level(
     session: &mut Session,
     args: &SetSensitivityLevelRequest,
 ) -> crate::Result<SetSensitiveLevelResponse> {
-    let thread_id = args.thread_id.unwrap_or(0);
     session
-        .put(&format!("messaging/threads/{thread_id}/sensitive"), args)
+        .post("?method=messaging.setSensitivityLevel", args)
         .await
 }
 
@@ -534,86 +453,81 @@ pub async fn set_sensitive_level(
 ///
 /// Maps to `MessagingWebService.AddRecipientsToThread()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/threads/{thread_id}/recipients`
+/// `POST ?method=messaging.addRecipients`
 pub async fn add_recipients_to_thread(
     session: &mut Session,
     args: &AddRecipientArguments,
 ) -> crate::Result<AddRecipientsResponse> {
-    let thread_id = args.thread_id.unwrap_or(0);
-    session
-        .post(&format!("messaging/threads/{thread_id}/recipients"), args)
-        .await
+    session.post("?method=messaging.addRecipients", args).await
 }
 
 // ===========================================================================
-// Auto-reply (AC #4)
+// Auto-reply
 // ===========================================================================
 
 /// Set an auto-reply message.
 ///
 /// Maps to `MessagingWebService.SetAutoReply()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/autoReply`
+/// `POST ?method=messaging.setAutoReply`
 pub async fn set_auto_reply(
     session: &mut Session,
     args: &SetAutoReplyArguments,
 ) -> crate::Result<MessageAutoReplyResult> {
-    session.post("messaging/autoReply", args).await
+    session.post("?method=messaging.setAutoReply", args).await
 }
 
 /// Get the current auto-reply configuration.
 ///
 /// Maps to `MessagingWebService.GetAutoReply()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /messaging/autoReply`
+/// `GET ?method=messaging.getAutoReply`
 pub async fn get_auto_reply(session: &mut Session) -> crate::Result<MessageAutoReplyResult> {
-    session.get("messaging/autoReply").await
+    session.get("?method=messaging.getAutoReply").await
 }
 
 /// Delete the auto-reply configuration.
 ///
 /// Maps to `MessagingWebService.DeleteAutoReply()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /messaging/autoReply`
+/// `POST ?method=messaging.deleteAutoReply`
 pub async fn delete_auto_reply(session: &mut Session) -> crate::Result<DeleteAutoReplyResponse> {
-    session.delete("messaging/autoReply").await
+    session
+        .post_empty("?method=messaging.deleteAutoReply")
+        .await
 }
 
 // ===========================================================================
-// Folder management (AC #5)
+// Folder management
 // ===========================================================================
 
 /// Get folders for the current user's mailbox.
 ///
 /// Maps to `FolderService.GetFolders()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /messaging/folders`
+/// `GET ?method=messaging.getFolders`
 pub async fn get_folders(
     session: &mut Session,
     args: &GetFoldersArguments,
 ) -> crate::Result<Vec<Folder>> {
-    let mut params = Vec::new();
+    let mut params = vec!["method=messaging.getFolders".to_string()];
     if args.include_deleted_folders {
         params.push("includeDeletedFolders=true".to_string());
     }
     if let Some(cid) = args.common_inbox_id {
         params.push(format!("commonInboxId={cid}"));
     }
-    let path = if params.is_empty() {
-        "messaging/folders".to_string()
-    } else {
-        format!("messaging/folders?{}", params.join("&"))
-    };
+    let path = format!("?{}", params.join("&"));
     session.get(&path).await
 }
 
@@ -621,53 +535,50 @@ pub async fn get_folders(
 ///
 /// Maps to `FolderService.CreateFolder()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/folders`
+/// `POST ?method=messaging.createFolder`
 pub async fn create_folder(
     session: &mut Session,
     args: &CreateFolderArguments,
 ) -> crate::Result<FolderMutationResponse> {
-    session.post("messaging/folders", args).await
+    session.post("?method=messaging.createFolder", args).await
 }
 
 /// Rename a folder.
 ///
 /// Maps to `FolderService.UpdateFolder()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /messaging/folders/{folder_id}`
+/// `POST ?method=messaging.updateFolder`
 pub async fn update_folder(
     session: &mut Session,
     args: &UpdateFolderArguments,
 ) -> crate::Result<FolderMutationResponse> {
-    let folder_id = args.folder_id.unwrap_or(0);
-    session
-        .put(&format!("messaging/folders/{folder_id}"), args)
-        .await
+    session.post("?method=messaging.updateFolder", args).await
 }
 
 /// Delete a folder.
 ///
 /// Maps to `FolderService.PostDeleteFolder()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/folders/{folder_id}` (delete via POST)
-///
-/// NOTE: The decompiled method is `PostDeleteFolder`, suggesting the
-/// API uses POST rather than DELETE for folder deletion. This may be
-/// a soft-delete pattern.
+/// `POST ?method=messaging.deletefolder`
 pub async fn delete_folder(
     session: &mut Session,
     folder_id: i64,
     common_inbox_id: Option<i64>,
 ) -> crate::Result<FolderMutationResponse> {
-    let mut path = format!("messaging/folders/{folder_id}/delete");
+    let mut params = vec![
+        "method=messaging.deletefolder".to_string(),
+        format!("folderId={folder_id}"),
+    ];
     if let Some(cid) = common_inbox_id {
-        path.push_str(&format!("?commonInboxId={cid}"));
+        params.push(format!("commonInboxId={cid}"));
     }
+    let path = format!("?{}", params.join("&"));
     session.post_empty(&path).await
 }
 
@@ -675,16 +586,15 @@ pub async fn delete_folder(
 ///
 /// Maps to `FolderService.MoveThreadsToFolder()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/folders/{folder_id}/moveThreads`
+/// `POST ?method=messaging.moveThreadsToFolder`
 pub async fn move_threads_to_folder(
     session: &mut Session,
     args: &MoveThreadsToFolderRequestArguments,
 ) -> crate::Result<FolderMutationResponse> {
-    let folder_id = args.folder_id.unwrap_or(0);
     session
-        .post(&format!("messaging/folders/{folder_id}/moveThreads"), args)
+        .post("?method=messaging.moveThreadsToFolder", args)
         .await
 }
 
@@ -692,50 +602,45 @@ pub async fn move_threads_to_folder(
 ///
 /// Maps to `FolderService.GetCommonInboxes()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /messaging/commonInboxes`
-///
-/// NOTE: The query parameters are derived from `GetCommonInboxesArguments`.
-/// Institution profile IDs are passed as repeated query params.
+/// `GET ?method=messaging.getCommonInboxes`
 pub async fn get_common_inboxes(
     session: &mut Session,
     institution_profile_ids: &[i64],
     include_profile_picture_url: bool,
 ) -> crate::Result<Vec<CommonInboxesDto>> {
-    let mut params = Vec::new();
+    let mut params = vec!["method=messaging.getCommonInboxes".to_string()];
     for id in institution_profile_ids {
         params.push(format!("institutionProfileIds={id}"));
     }
     if include_profile_picture_url {
         params.push("shouldIncludeProfilePictureUrl=true".to_string());
     }
-    let path = if params.is_empty() {
-        "messaging/commonInboxes".to_string()
-    } else {
-        format!("messaging/commonInboxes?{}", params.join("&"))
-    };
+    let path = format!("?{}", params.join("&"));
     session.get(&path).await
 }
 
 // ===========================================================================
-// Bundle / subscription management (AC #6)
+// Bundle / subscription management
 // ===========================================================================
 
 /// Get threads within a bundle (grouped threads).
 ///
 /// Maps to `MessagingWebService.GetThreadsInBundleList()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /messaging/threads/bundle?bundleId={id}`
+/// `GET ?method=messaging.getThreadsInBundle`
 pub async fn get_threads_in_bundle_list(
     session: &mut Session,
     args: &GetThreadsInBundleArguments,
 ) -> crate::Result<MessageThreadSubscriptionList> {
     let bundle_id = args.bundle_id.unwrap_or(0);
     session
-        .get(&format!("messaging/threads/bundle?bundleId={bundle_id}"))
+        .get(&format!(
+            "?method=messaging.getThreadsInBundle&bundleId={bundle_id}"
+        ))
         .await
 }
 
@@ -743,29 +648,34 @@ pub async fn get_threads_in_bundle_list(
 ///
 /// Maps to `MessagingWebService.SetMessageThreadsSubscriptionStatus()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /messaging/threads/subscription`
+/// `POST ?method=messaging.updateSubscriptionStatus`
 pub async fn set_subscription_status(
     session: &mut Session,
     args: &UpdateMessageThreadsSubscriptionStatusRequest,
 ) -> crate::Result<SetSubscriptionStatusResponse> {
-    session.put("messaging/threads/subscription", args).await
+    session
+        .post("?method=messaging.updateSubscriptionStatus", args)
+        .await
 }
 
 /// Check whether recipients have blocked messaging channels.
 ///
 /// Maps to `MessagingWebService.CheckRecipientsForBlockedChannels()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/recipients/blocked`
+/// `POST ?method=municipalConfiguration.getBlockedCommunicationInstitutionProfilesAndGroups`
 pub async fn check_recipients_for_blocked_channels(
     session: &mut Session,
     recipients: &[RecipientApiModel],
 ) -> crate::Result<BlockedChannelsResponse> {
     session
-        .post("messaging/recipients/blocked", &recipients)
+        .post(
+            "?method=municipalConfiguration.getBlockedCommunicationInstitutionProfilesAndGroups",
+            &recipients,
+        )
         .await
 }
 
@@ -773,15 +683,15 @@ pub async fn check_recipients_for_blocked_channels(
 ///
 /// Maps to `MessagingWebService.AttachMessagesToSecureDocument()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/messages/attachToDocument`
+/// `POST ?method=messaging.attachMessagesToSecureDocument`
 pub async fn attach_messages_to_secure_document(
     session: &mut Session,
     args: &AttachMessagesToSecureDocumentRequest,
 ) -> crate::Result<AttachToDocumentResponse> {
     session
-        .post("messaging/messages/attachToDocument", args)
+        .post("?method=messaging.attachMessagesToSecureDocument", args)
         .await
 }
 
@@ -789,14 +699,16 @@ pub async fn attach_messages_to_secure_document(
 ///
 /// Maps to `MessagingWebService.SendEventReminder()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /messaging/eventReminder`
+/// `POST ?method=messaging.sendEventReminder`
 pub async fn send_event_reminder(
     session: &mut Session,
     args: &SendEventReminderRequest,
 ) -> crate::Result<SendEventReminderResponse> {
-    session.post("messaging/eventReminder", args).await
+    session
+        .post("?method=messaging.sendEventReminder", args)
+        .await
 }
 
 // ---------------------------------------------------------------------------

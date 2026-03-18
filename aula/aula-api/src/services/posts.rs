@@ -4,20 +4,16 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.8.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_posts` | GET | `/posts` |
-//! | `get_post_by_id` | GET | `/posts/{id}` |
-//! | `create_post` | POST | `/posts` |
-//! | `edit_post` | PUT | `/posts/{id}` |
-//! | `delete_post` | DELETE | `/posts/{id}` |
-//! | `report_post` | POST | `/posts/{id}/report` |
-//! | `bookmark_post` | POST | `/posts/{id}/bookmark` |
-//! | `unbookmark_post` | DELETE | `/posts/{id}/bookmark` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GET_POSTS` | `posts.getAllPosts` |
+//! | `GET_POST_BY_ID` | `posts.getById` |
+//! | `CREATE_POST` | `posts.createPost` |
+//! | `EDIT_POST` | `posts.updatePost` |
+//! | `DELETE_POST` | `posts.deletePost` |
+//! | `REPORT_POST` | `posts.reportPost` |
+//! | `BOOKMARK_POST` | `posts.bookmark` |
+//! | `UNBOOKMARK_POST` | `posts.unbookmark` |
 
 use crate::models::posts::{
     CreatePostApiParameter, CreatePostResult, GetPostApiParameters, GetPostApiResult, PostApiDto,
@@ -33,12 +29,9 @@ use crate::session::Session;
 ///
 /// Maps to `PostWebService.GetPosts()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /posts?<query params>`
-///
-/// The filter struct is serialised as query parameters. If the API
-/// actually expects a POST body, this will need adjustment.
+/// `GET ?method=posts.getAllPosts`
 pub async fn get_posts(
     session: &mut Session,
     params: &GetPostApiParameters,
@@ -80,9 +73,9 @@ pub async fn get_posts(
     }
 
     let path = if query.is_empty() {
-        "posts".to_string()
+        "?method=posts.getAllPosts".to_string()
     } else {
-        format!("posts?{}", query.join("&"))
+        format!("?method=posts.getAllPosts&{}", query.join("&"))
     };
 
     session.get(&path).await
@@ -92,86 +85,91 @@ pub async fn get_posts(
 ///
 /// Maps to `PostWebService.GetPostById()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /posts/{id}`
+/// `GET ?method=posts.getById&id={post_id}`
 pub async fn get_post_by_id(session: &mut Session, post_id: i64) -> crate::Result<PostApiDto> {
-    session.get(&format!("posts/{post_id}")).await
+    session
+        .get(&format!("?method=posts.getById&id={post_id}"))
+        .await
 }
 
 /// Create a new post.
 ///
 /// Maps to `PostWebService.CreatePost()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /posts`
+/// `POST ?method=posts.createPost`
 pub async fn create_post(
     session: &mut Session,
     params: &CreatePostApiParameter,
 ) -> crate::Result<CreatePostResult> {
-    session.post("posts", params).await
+    session.post("?method=posts.createPost", params).await
 }
 
 /// Edit an existing post.
 ///
 /// Maps to `PostWebService.EditPost()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /posts/{id}`
-///
-/// NOTE: The `id` field inside `params` may be redundant with the path
-/// parameter. Both are sent to match the likely .NET routing convention.
+/// `POST ?method=posts.updatePost`
 pub async fn edit_post(
     session: &mut Session,
-    post_id: i64,
+    _post_id: i64,
     params: &CreatePostApiParameter,
 ) -> crate::Result<serde_json::Value> {
-    session.put(&format!("posts/{post_id}"), params).await
+    session.post("?method=posts.updatePost", params).await
 }
 
 /// Delete a post.
 ///
 /// Maps to `PostWebService.DeletePost()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /posts/{id}`
+/// `POST ?method=posts.deletePost`
 pub async fn delete_post(session: &mut Session, post_id: i64) -> crate::Result<serde_json::Value> {
-    session.delete(&format!("posts/{post_id}")).await
+    session
+        .post(
+            "?method=posts.deletePost",
+            &serde_json::json!({"id": post_id}),
+        )
+        .await
 }
 
 /// Report a post (flag for moderation).
 ///
 /// Maps to `PostWebService.ReportPost()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /posts/{id}/report`
+/// `POST ?method=posts.reportPost`
 pub async fn report_post(
     session: &mut Session,
-    post_id: i64,
+    _post_id: i64,
     params: &ReportApiParameter,
 ) -> crate::Result<serde_json::Value> {
-    session
-        .post(&format!("posts/{post_id}/report"), params)
-        .await
+    session.post("?method=posts.reportPost", params).await
 }
 
 /// Bookmark a post for the current user.
 ///
 /// Maps to `PostWebService.BookmarkPost()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /posts/{id}/bookmark`
+/// `POST ?method=posts.bookmark`
 pub async fn bookmark_post(
     session: &mut Session,
     post_id: i64,
 ) -> crate::Result<serde_json::Value> {
     session
-        .post_empty(&format!("posts/{post_id}/bookmark"))
+        .post(
+            "?method=posts.bookmark",
+            &serde_json::json!({"id": post_id}),
+        )
         .await
 }
 
@@ -179,14 +177,19 @@ pub async fn bookmark_post(
 ///
 /// Maps to `PostWebService.UnbookmarkPost()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /posts/{id}/bookmark`
+/// `POST ?method=posts.unbookmark`
 pub async fn unbookmark_post(
     session: &mut Session,
     post_id: i64,
 ) -> crate::Result<serde_json::Value> {
-    session.delete(&format!("posts/{post_id}/bookmark")).await
+    session
+        .post(
+            "?method=posts.unbookmark",
+            &serde_json::json!({"id": post_id}),
+        )
+        .await
 }
 
 // ---------------------------------------------------------------------------

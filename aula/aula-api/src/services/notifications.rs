@@ -1,18 +1,18 @@
 //! Notification service.
 //!
-//! Maps to `AulaNative.Services.Web.NotificationWebService` (3 methods) from the APK.
+//! Maps to `AulaNative.Services.Web.NotificationWebService` from the APK.
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.16.
+//! All endpoints use RPC-style routing via `?method=notifications.<action>`.
+//! Paths are sourced from the decompiled `Urls.cs` class.
 //!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_notifications` | GET | `/notifications` |
-//! | `delete_notifications` | DELETE | `/notifications` |
-//! | `delete_notification_for_child` | DELETE | `/notifications/child/{id}` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GET_NOTIFICATIONS_FOR_ACTIVE_PROFILE` | `notifications.getNotificationsForActiveProfile` |
+//! | `DELETE_NOTIFICATIONS` | `notifications.deleteNotifications` |
+//! | `DELETE_NOTIFICATIONS_FOR_RELATED_CHILDREN` | `notifications.deleteNotificationsByRelatedChild` |
+//! | `DELETE_NOTIFICATIONS_BY_MODULE` | `notifications.deleteBadgeNotificationByModule` |
 
 use crate::models::notifications::NotificationItemDto;
 use crate::session::Session;
@@ -23,40 +23,38 @@ use crate::session::Session;
 
 /// Fetch in-app notifications for the active profile.
 ///
-/// Maps to `NotificationWebService.GetNotificationsForActiveProfile()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `GET /notifications`
+/// `GET ?method=notifications.getNotificationsForActiveProfile`
 pub async fn get_notifications(session: &mut Session) -> crate::Result<Vec<NotificationItemDto>> {
-    session.get("notifications").await
+    session
+        .get("?method=notifications.getNotificationsForActiveProfile")
+        .await
 }
 
 /// Delete all notifications for the active profile.
 ///
-/// Maps to `NotificationWebService.DeleteNotifications()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `DELETE /notifications`
+/// `POST ?method=notifications.deleteNotifications`
 pub async fn delete_notifications(session: &mut Session) -> crate::Result<serde_json::Value> {
-    session.delete("notifications").await
+    session
+        .post_empty("?method=notifications.deleteNotifications")
+        .await
 }
 
 /// Delete notifications for a specific related child.
 ///
-/// Maps to `NotificationWebService.DeleteNotificationForRelatedChild()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `DELETE /notifications/child/{childInstitutionProfileId}`
+/// `POST ?method=notifications.deleteNotificationsByRelatedChild`
 pub async fn delete_notification_for_child(
     session: &mut Session,
     child_institution_profile_id: i64,
 ) -> crate::Result<serde_json::Value> {
     session
-        .delete(&format!(
-            "notifications/child/{child_institution_profile_id}"
+        .get(&format!(
+            "?method=notifications.deleteNotificationsByRelatedChild&childInstitutionProfileId={child_institution_profile_id}"
         ))
         .await
 }

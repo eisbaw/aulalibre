@@ -36,9 +36,12 @@ pub struct IsAliveResponse {
 ///
 /// # Endpoint (inferred)
 ///
-/// `GET /isAlive`
+/// `GET alivecheck/`
+///
+/// Note: This is a path-based endpoint, not RPC-style. The URL in the APK
+/// is `Conf.BackendUrl + "alivecheck/"` (not via the API base URL).
 pub async fn is_alive(session: &mut Session) -> crate::Result<serde_json::Value> {
-    session.get("isAlive").await
+    session.get("alivecheck/").await
 }
 
 // ---------------------------------------------------------------------------

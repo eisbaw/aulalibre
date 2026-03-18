@@ -4,56 +4,53 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.6.
+//! All endpoints use RPC-style URLs from `Urls.cs` in the decompiled assembly.
 //!
-//! ## PresenceWebService (Section 3.6)
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_childrens_state` | GET | `/presence/children/state` |
-//! | `get_presence_registrations` | GET | `/presence/registrations` |
-//! | `get_presence_registration_detail` | GET | `/presence/registrations/{id}` |
-//! | `update_presence_registration` | PUT | `/presence/registrations/{id}` |
-//! | `update_status_by_presence_registration_ids` | PUT | `/presence/registrations/status` |
-//! | `update_status_by_institution_profile_ids` | PUT | `/presence/status/byProfiles` |
-//! | `get_presence_schedules` | GET | `/presence/schedules` |
-//! | `get_presence_week_overview` | GET | `/presence/weekOverview` |
-//! | `update_one_day_presence` | PUT | `/presence/oneDay` |
-//! | `get_template_for_date` | GET | `/presence/templates/{date}` |
-//! | `delete_repeated_presence_template` | DELETE | `/presence/templates/repeated/{id}` |
-//! | `get_overlapping_presence_templates` | GET | `/presence/templates/overlapping` |
-//! | `get_suggestions_for_pickup` | GET | `/presence/pickup/suggestions` |
-//! | `update_suggestions_for_pickup` | PUT | `/presence/pickup/suggestions` |
-//! | `get_pickup_responsibles` | GET | `/presence/pickup/responsibles` |
-//! | `delete_pickup_responsible` | DELETE | `/presence/pickup/responsibles/{id}` |
-//! | `get_child_go_home_with` | GET | `/presence/children/{id}/goHomeWith` |
-//! | `add_sleep_intervals` | POST | `/presence/sleep` |
-//! | `update_sleep_interval` | PUT | `/presence/sleep/{id}` |
-//! | `delete_sleep_intervals` | DELETE | `/presence/sleep` |
-//! | `get_activity_list` | GET | `/presence/activities` |
-//! | `get_activity_filter` | GET | `/presence/activities/filter` |
-//! | `get_daily_overview` | GET | `/presence/daily/overview` |
-//! | `get_available_locations` | GET | `/presence/locations` |
-//! | `update_location` | PUT | `/presence/location` |
-//! | `add_vacation` | POST | `/presence/vacation` |
-//! | `get_children_vacation` | GET | `/presence/children/vacation` |
-//! | `get_vacation_announcements_by_children` | GET | `/presence/vacation/announcements` |
-//! | `get_vacation_registration_overview` | GET | `/presence/vacation/registrations/overview` |
-//! | `get_vacation_registrations_by_children` | GET | `/presence/vacation/registrations/children` |
-//! | `get_existing_vacation_registration_response` | GET | `/presence/vacation/registrations/existing` |
-//! | `get_presence_configuration` | GET | `/presence/configuration` |
-//! | `get_presence_configuration_by_children_ids` | GET | `/presence/configuration/children` |
-//! | `get_presence_filter` | GET | `/presence/filter` |
-//! | `get_presence_filters` | GET | `/presence/filters` |
-//! | `get_closed_days` | GET | `/presence/closedDays` |
-//! | `get_general_opening_hours` | GET | `/presence/openingHours` |
-//! | `get_opening_hours_by_institution_codes` | GET | `/presence/openingHours/institution` |
-//! | `get_specific_opening_hour_overview` | GET | `/presence/openingHours/specific` |
-//! | `get_available_presence_statuses` | GET | `/presence/statuses` |
-//! | `get_institution_with_presence_states` | GET | `/presence/institution/states` |
-//! | `get_presence_children_distribution` | GET | `/presence/children/distribution` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GET_PRESENCE_STATES` | `presence.getPresenceStates` |
+//! | `GET_PRESENCE_REGISTRATIONS` | `presence.getPresenceRegistrations` |
+//! | `GET_PRESENCE_REGISTRATION_BY_IDS` | `presence.getPresenceRegistrationsByIds` |
+//! | `GET_PRESENCE_DETAIL` | `presence.getPresenceRegistrationDetail` |
+//! | `UPDATE_PRESENCE_REGISTRATION` | `presence.updatePresenceRegistration` |
+//! | `UPDATE_STATUSES_BY_PRESENCE_REGISTRATION_IDS` | `presence.bulkUpdatePresenceStatus` |
+//! | `UPDATE_STATUS_BY_PROFILE_ID` | `presence.updateStatusByInstitutionProfileIds` |
+//! | `GET_PRESENCE_TEMPLATES` | `presence.getPresenceTemplates` |
+//! | `GET_WEEK_OVERVIEW` | `presence.getActivityOverview` |
+//! | `UPDATE_PRESENCE_TEMPLATES` | `presence.updatePresenceTemplate` |
+//! | `GET_PRESENCE_REGISTRATION_FOR_TODAY` | `presence.getTemplateForDate` |
+//! | `DELETE_REPEATED_PRESENCE_TEMPLATE` | `presence.deleteRepeatingPresenceTemplate` |
+//! | `GET_OVERLAPPING_PRESENCE_TEMPLATES` | `presence.getOverlappingPresenceTemplates` |
+//! | `GET_SUGGESTIONS_PICK_UP` | `presence.getSuggestedNamesForPickupChild` |
+//! | `UPDATE_SUGGESTIONS_PICK_UP` | `presence.savePickupNames` |
+//! | `GET_PICK_UP_RESPONSIBLES` | `presence.getPickupResponsibles` |
+//! | `DELETE_PICKUP_RESPONSIBLE` | `presence.deletePickupResponsible` |
+//! | `GET_CHILD_GO_HOME_WITH` | `presence.getGoHomeWithList` |
+//! | `ADD_SLEEP_INTERVALS` | `presence.addSleepIntervals` |
+//! | `UPDATE_SLEEP_INTERVALS` | `presence.updateSleepInterval` |
+//! | `DELETE_SLEEP_INTERVALS` | `presence.deleteSleepIntervals` |
+//! | `GET_ACTIVITY_LIST` | `presence.getActivityList` |
+//! | `GET_ACTIVITY_LIST_EDIT_OPTIONS` | `presence.getActivityListEditOptions` |
+//! | `GET_DAILY_OVERVIEW` | `presence.getDailyOverview` |
+//! | `GET_AVAILABLE_LOCATIONS` | `presence.getAvailablePresenceLocations` |
+//! | `UPDATE_LOCATION` | `presence.updateLocation` |
+//! | `UPDATE_CHECKOUT_ACTIVITY` | `presence.updateCheckoutActivity` |
+//! | `ADD_VACATION` | `calendar.addVacation` |
+//! | `GET_CHILDREN_VACATION_LIST` | `presence.getChildVacationList` |
+//! | `GET_VACATION_ANNOUNCEMENTS_BY_CHILDREN` | `presence.getVacationAnnouncementsByChildren` |
+//! | `GET_VACATION_REGISTRATION_OVERVIEW` | `presence.getVacationRegistrations` |
+//! | `GET_VACATION_REGISTRATIONS_BY_CHILDREN` | `presence.getVacationRegistrationsByChildren` |
+//! | `GET_EXISTING_VACATION_REGISTRATION_RESPONSE` | `presence.getVacationRegistrationResponse` |
+//! | `GET_PRESENCE_CONFIGURATION` | `presence.getPresenceConfiguration` |
+//! | `GET_PRESENCE_CONFIGURATION_BY_CHILD_IDS` | `presence.getPresenceConfigurationByChildIds` |
+//! | `GET_PRESENCE_FILTER` | `presence.getPresenceFilters` |
+//! | `GET_CHILDREN_VACATION_LIST` | `presence.getChildVacationList` |
+//! | `GET_CLOSED_DAYS_OVERVIEW` | `presence.getClosedDays` |
+//! | `GET_GENERAL_OPENING_HOURS` | `presence.getGeneralOpeningHours` |
+//! | `GET_OPENING_HOURS_BY_INSTITUTION_CODES` | `presence.getOpeningHoursByInstitutionCodes` |
+//! | `GET_SPECIFIC_OPENING_HOUR_OVERVIEW` | `presence.getSpecificOpeningHourOverview` |
+//! | `GET_AVAILABLE_STATUSES` | `presence.getPresenceStates` |
+//! | `GET_NUMBER_CHILDREN_PRESENCE` | `presence.getPresenceDistribution` |
 
 use crate::models::presence::{
     ActivityFilterResult, ActivityListRequest, ActivityListResult, AddSleepIntervalsRequest,
@@ -112,9 +109,9 @@ pub type PickupResponsibleDeleteResponse = serde_json::Value;
 ///
 /// Maps to `PresenceWebService.GetChildrensState()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/children/state`
+/// `GET ?method=presence.getPresenceStates`
 pub async fn get_childrens_state(
     session: &mut Session,
     inst_profile_ids: &[i64],
@@ -124,9 +121,9 @@ pub async fn get_childrens_state(
         query.push(format!("instProfileIds={id}"));
     }
     let path = if query.is_empty() {
-        "presence/children/state".to_string()
+        "?method=presence.getPresenceStates".to_string()
     } else {
-        format!("presence/children/state?{}", query.join("&"))
+        format!("?method=presence.getPresenceStates&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -135,9 +132,9 @@ pub async fn get_childrens_state(
 ///
 /// Maps to `PresenceWebService.GetPresenceRegistrations()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/registrations`
+/// `GET ?method=presence.getPresenceRegistrations`
 pub async fn get_presence_registrations(
     session: &mut Session,
     inst_profile_ids: &[i64],
@@ -151,9 +148,12 @@ pub async fn get_presence_registrations(
         query.push(format!("date={d}"));
     }
     let path = if query.is_empty() {
-        "presence/registrations".to_string()
+        "?method=presence.getPresenceRegistrations".to_string()
     } else {
-        format!("presence/registrations?{}", query.join("&"))
+        format!(
+            "?method=presence.getPresenceRegistrations&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -162,15 +162,17 @@ pub async fn get_presence_registrations(
 ///
 /// Maps to `PresenceWebService.GetPresenceRegistrationDetail()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/registrations/{registration_id}`
+/// `GET ?method=presence.getPresenceRegistrationDetail`
 pub async fn get_presence_registration_detail(
     session: &mut Session,
     registration_id: i64,
 ) -> crate::Result<PresenceRegistrationResult> {
     session
-        .get(&format!("presence/registrations/{registration_id}"))
+        .get(&format!(
+            "?method=presence.getPresenceRegistrationsByIds&registrationId={registration_id}"
+        ))
         .await
 }
 
@@ -178,16 +180,16 @@ pub async fn get_presence_registration_detail(
 ///
 /// Maps to `PresenceWebService.UpdatePresenceRegistration()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /presence/registrations/{registration_id}`
+/// `POST ?method=presence.updatePresenceRegistration`
 pub async fn update_presence_registration(
     session: &mut Session,
     args: &UpdatePresenceRegistrationRequest,
 ) -> crate::Result<PresenceRegistrationMutationResponse> {
-    let registration_id = args.registration_id;
+    let _registration_id = args.registration_id;
     session
-        .put(&format!("presence/registrations/{registration_id}"), args)
+        .post("?method=presence.updatePresenceRegistration", args)
         .await
 }
 
@@ -195,28 +197,32 @@ pub async fn update_presence_registration(
 ///
 /// Maps to `PresenceWebService.UpdateStatusByPresenceRegistrationIds()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /presence/registrations/status`
+/// `POST ?method=presence.bulkUpdatePresenceStatus`
 pub async fn update_status_by_presence_registration_ids(
     session: &mut Session,
     args: &BulkUpdatePresenceStatusRequest,
 ) -> crate::Result<StatusUpdateResponse> {
-    session.put("presence/registrations/status", args).await
+    session
+        .post("?method=presence.bulkUpdatePresenceStatus", args)
+        .await
 }
 
 /// Update presence status by institution profile IDs.
 ///
 /// Maps to `PresenceWebService.UpdateStatusByInstitutionProfileIds()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /presence/status/byProfiles`
+/// `POST ?method=presence.updateStatusByInstitutionProfileIds`
 pub async fn update_status_by_institution_profile_ids(
     session: &mut Session,
     args: &UpdateStatusByInstitutionProfileIds,
 ) -> crate::Result<StatusUpdateResponse> {
-    session.put("presence/status/byProfiles", args).await
+    session
+        .post("?method=presence.updateStatusByInstitutionProfileIds", args)
+        .await
 }
 
 // ===========================================================================
@@ -227,9 +233,9 @@ pub async fn update_status_by_institution_profile_ids(
 ///
 /// Maps to `PresenceWebService.GetPresenceSchedules()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/schedules`
+/// `GET ?method=presence.getPresenceTemplates`
 pub async fn get_presence_schedules(
     session: &mut Session,
     args: &PresenceSchedulesRequest,
@@ -247,9 +253,9 @@ pub async fn get_presence_schedules(
         query.push(format!("toDate={to}"));
     }
     let path = if query.is_empty() {
-        "presence/schedules".to_string()
+        "?method=presence.getPresenceTemplates".to_string()
     } else {
-        format!("presence/schedules?{}", query.join("&"))
+        format!("?method=presence.getPresenceTemplates&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -258,9 +264,9 @@ pub async fn get_presence_schedules(
 ///
 /// Maps to `PresenceWebService.GetPresenceWeekOverview()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/weekOverview`
+/// `GET ?method=presence.getActivityOverview`
 pub async fn get_presence_week_overview(
     session: &mut Session,
     args: &ComeGoGetWeekOverviewRequest,
@@ -285,7 +291,7 @@ pub async fn get_presence_week_overview(
     }
     query.push(format!("offset={}", args.offset));
     query.push(format!("limit={}", args.limit));
-    let path = format!("presence/weekOverview?{}", query.join("&"));
+    let path = format!("?method=presence.getActivityOverview&{}", query.join("&"));
     session.get(&path).await
 }
 
@@ -293,23 +299,25 @@ pub async fn get_presence_week_overview(
 ///
 /// Maps to `PresenceWebService.UpdateOneDayPresence()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /presence/oneDay`
+/// `POST ?method=presence.updatePresenceTemplate`
 pub async fn update_one_day_presence(
     session: &mut Session,
     args: &UpdatePresenceDayRequest,
 ) -> crate::Result<TemplateMutationResponse> {
-    session.put("presence/oneDay", args).await
+    session
+        .post("?method=presence.updatePresenceTemplate", args)
+        .await
 }
 
 /// Get the presence template for a specific date.
 ///
 /// Maps to `PresenceWebService.GetTemplateForDate()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/templates/{date}`
+/// `GET ?method=presence.getTemplateForDate`
 pub async fn get_template_for_date(
     session: &mut Session,
     date: &str,
@@ -317,7 +325,7 @@ pub async fn get_template_for_date(
 ) -> crate::Result<GetDayTemplateResult> {
     session
         .get(&format!(
-            "presence/templates/{date}?institutionProfileId={institution_profile_id}"
+            "?method=presence.getTemplateForDate&date={date}&institutionProfileId={institution_profile_id}"
         ))
         .await
 }
@@ -326,9 +334,9 @@ pub async fn get_template_for_date(
 ///
 /// Maps to `PresenceWebService.DeleteRepeatedPresenceTemplate()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /presence/templates/repeated/{template_id}`
+/// `POST ?method=presence.deleteRepeatingPresenceTemplate`
 pub async fn delete_repeated_presence_template(
     session: &mut Session,
     args: &DeletePresenceTemplateRequest,
@@ -339,23 +347,23 @@ pub async fn delete_repeated_presence_template(
         query.push(format!("deleteFromDay={day}"));
     }
     let path = if query.is_empty() {
-        format!("presence/templates/repeated/{template_id}")
+        format!("?method=presence.deleteRepeatingPresenceTemplate&templateId={template_id}")
     } else {
         format!(
-            "presence/templates/repeated/{template_id}?{}",
+            "?method=presence.deleteRepeatingPresenceTemplate&templateId={template_id}&{}",
             query.join("&")
         )
     };
-    session.delete(&path).await
+    session.post_empty(&path).await
 }
 
 /// Get overlapping presence templates.
 ///
 /// Maps to `PresenceWebService.GetOverlappingPresenceTemplates()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/templates/overlapping`
+/// `GET ?method=presence.getOverlappingPresenceTemplates`
 pub async fn get_overlapping_presence_templates(
     session: &mut Session,
     args: &GetOverlappingPresenceTemplatesRequest,
@@ -374,7 +382,10 @@ pub async fn get_overlapping_presence_templates(
     if let Some(ref pattern) = args.repeat_pattern {
         query.push(format!("repeatPattern={pattern:?}"));
     }
-    let path = format!("presence/templates/overlapping?{}", query.join("&"));
+    let path = format!(
+        "?method=presence.getOverlappingPresenceTemplates&{}",
+        query.join("&")
+    );
     session.get(&path).await
 }
 
@@ -386,9 +397,9 @@ pub async fn get_overlapping_presence_templates(
 ///
 /// Maps to `PresenceWebService.GetSuggestionsForPickUp()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/pickup/suggestions`
+/// `GET ?method=presence.getSuggestedNamesForPickupChild`
 pub async fn get_suggestions_for_pickup(
     session: &mut Session,
     args: &ComeGoExitWithSuggestionRequest,
@@ -403,9 +414,12 @@ pub async fn get_suggestions_for_pickup(
         }
     }
     let path = if query.is_empty() {
-        "presence/pickup/suggestions".to_string()
+        "?method=presence.getSuggestedNamesForPickupChild".to_string()
     } else {
-        format!("presence/pickup/suggestions?{}", query.join("&"))
+        format!(
+            "?method=presence.getSuggestedNamesForPickupChild&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -414,23 +428,23 @@ pub async fn get_suggestions_for_pickup(
 ///
 /// Maps to `PresenceWebService.UpdateSuggestionsForPickup()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /presence/pickup/suggestions`
+/// `POST ?method=presence.savePickupNames`
 pub async fn update_suggestions_for_pickup(
     session: &mut Session,
     args: &SavePickupNameRequest,
 ) -> crate::Result<UpdatePickUpResponsibleResult> {
-    session.put("presence/pickup/suggestions", args).await
+    session.post("?method=presence.savePickupNames", args).await
 }
 
 /// Get pickup responsibles for children.
 ///
 /// Maps to `PresenceWebService.GetPickupResponsibles()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/pickup/responsibles`
+/// `GET ?method=presence.getPickupResponsibles`
 pub async fn get_pickup_responsibles(
     session: &mut Session,
     args: &GetPickupResponsibleRequest,
@@ -442,9 +456,9 @@ pub async fn get_pickup_responsibles(
         }
     }
     let path = if query.is_empty() {
-        "presence/pickup/responsibles".to_string()
+        "?method=presence.getPickupResponsibles".to_string()
     } else {
-        format!("presence/pickup/responsibles?{}", query.join("&"))
+        format!("?method=presence.getPickupResponsibles&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -453,18 +467,18 @@ pub async fn get_pickup_responsibles(
 ///
 /// Maps to `PresenceWebService.DeletePickupResponsible()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /presence/pickup/responsibles/{suggestion_id}`
+/// `POST ?method=presence.deletePickupResponsible`
 pub async fn delete_pickup_responsible(
     session: &mut Session,
     args: &DeletePickupResponsibleRequest,
 ) -> crate::Result<PickupResponsibleDeleteResponse> {
     session
-        .delete(&format!(
-            "presence/pickup/responsibles/{}",
-            args.presence_pickup_suggestion_id
-        ))
+        .post(
+            "?method=presence.deletePickupResponsible",
+            &serde_json::json!({"presencePickupSuggestionId": args.presence_pickup_suggestion_id}),
+        )
         .await
 }
 
@@ -472,15 +486,17 @@ pub async fn delete_pickup_responsible(
 ///
 /// Maps to `PresenceWebService.GetChildGoHomeWith()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/children/{child_id}/goHomeWith`
+/// `GET ?method=presence.getGoHomeWithList`
 pub async fn get_child_go_home_with(
     session: &mut Session,
     child_id: i64,
 ) -> crate::Result<GetChildGoHomeWithResult> {
     session
-        .get(&format!("presence/children/{child_id}/goHomeWith"))
+        .get(&format!(
+            "?method=presence.getGoHomeWithList&childId={child_id}"
+        ))
         .await
 }
 
@@ -492,30 +508,32 @@ pub async fn get_child_go_home_with(
 ///
 /// Maps to `PresenceWebService.AddSleepIntervals()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /presence/sleep`
+/// `POST ?method=presence.addSleepIntervals`
 pub async fn add_sleep_intervals(
     session: &mut Session,
     args: &AddSleepIntervalsRequest,
 ) -> crate::Result<SleepMutationResponse> {
-    session.post("presence/sleep", args).await
+    session
+        .post("?method=presence.addSleepIntervals", args)
+        .await
 }
 
 /// Update a sleep interval.
 ///
 /// Maps to `PresenceWebService.UpdateSleepInterval()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /presence/sleep/{interval_id}`
+/// `POST ?method=presence.updateSleepInterval`
 pub async fn update_sleep_interval(
     session: &mut Session,
     args: &UpdateSleepIntervalsDto,
 ) -> crate::Result<SleepMutationResponse> {
-    let interval_id = args.id;
+    let _interval_id = args.id;
     session
-        .put(&format!("presence/sleep/{interval_id}"), args)
+        .post("?method=presence.updateSleepInterval", args)
         .await
 }
 
@@ -523,35 +541,28 @@ pub async fn update_sleep_interval(
 ///
 /// Maps to `PresenceWebService.DeleteSleepIntervals()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `DELETE /presence/sleep`
-///
-/// NOTE: DELETE with body is unusual; the API may accept IDs as query
-/// parameters. Using `delete_with_body` to match the decompiled signature.
+/// `POST ?method=presence.deleteSleepIntervals`
 pub async fn delete_sleep_intervals(
     session: &mut Session,
     sleep_interval_ids: &[i64],
 ) -> crate::Result<SleepMutationResponse> {
-    let mut query = Vec::new();
-    for id in sleep_interval_ids {
-        query.push(format!("sleepIntervalIds={id}"));
-    }
-    let path = if query.is_empty() {
-        "presence/sleep".to_string()
-    } else {
-        format!("presence/sleep?{}", query.join("&"))
-    };
-    session.delete(&path).await
+    session
+        .post(
+            "?method=presence.deleteSleepIntervals",
+            &serde_json::json!({"sleepIntervalIds": sleep_interval_ids}),
+        )
+        .await
 }
 
 /// Get the activity list for a department.
 ///
 /// Maps to `PresenceWebService.GetActivityList()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/activities`
+/// `GET ?method=presence.getActivityList`
 pub async fn get_activity_list(
     session: &mut Session,
     args: &ActivityListRequest,
@@ -585,7 +596,7 @@ pub async fn get_activity_list(
     if let Some(ref sort) = args.sort_on {
         query.push(format!("sortOn={sort}"));
     }
-    let path = format!("presence/activities?{}", query.join("&"));
+    let path = format!("?method=presence.getActivityList&{}", query.join("&"));
     session.get(&path).await
 }
 
@@ -593,16 +604,16 @@ pub async fn get_activity_list(
 ///
 /// Maps to `PresenceWebService.GetActivityFilter()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/activities/filter`
+/// `GET ?method=presence.getActivityListEditOptions`
 pub async fn get_activity_filter(
     session: &mut Session,
     institution_code: &str,
 ) -> crate::Result<ActivityFilterResult> {
     session
         .get(&format!(
-            "presence/activities/filter?institutionCode={institution_code}"
+            "?method=presence.getActivityListEditOptions&institutionCode={institution_code}"
         ))
         .await
 }
@@ -611,9 +622,9 @@ pub async fn get_activity_filter(
 ///
 /// Maps to `PresenceWebService.GetDailyOverview()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/daily/overview`
+/// `GET ?method=presence.getDailyOverview`
 pub async fn get_daily_overview(
     session: &mut Session,
     inst_profile_ids: &[i64],
@@ -623,9 +634,9 @@ pub async fn get_daily_overview(
         query.push(format!("instProfileIds={id}"));
     }
     let path = if query.is_empty() {
-        "presence/daily/overview".to_string()
+        "?method=presence.getDailyOverview".to_string()
     } else {
-        format!("presence/daily/overview?{}", query.join("&"))
+        format!("?method=presence.getDailyOverview&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -638,16 +649,16 @@ pub async fn get_daily_overview(
 ///
 /// Maps to `PresenceWebService.GetAvailableLocations()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/locations`
+/// `GET ?method=presence.getAvailablePresenceLocations`
 pub async fn get_available_locations(
     session: &mut Session,
     institution_code: &str,
 ) -> crate::Result<Vec<PresenceLocation>> {
     session
         .get(&format!(
-            "presence/locations?institutionCode={institution_code}"
+            "?method=presence.getAvailablePresenceLocations&institutionCode={institution_code}"
         ))
         .await
 }
@@ -656,37 +667,37 @@ pub async fn get_available_locations(
 ///
 /// Maps to `PresenceWebService.UpdateLocation()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `PUT /presence/location`
+/// `POST ?method=presence.updateLocation`
 pub async fn update_location(
     session: &mut Session,
     args: &UpdateLocationRequest,
 ) -> crate::Result<LocationUpdateResponse> {
-    session.put("presence/location", args).await
+    session.post("?method=presence.updateLocation", args).await
 }
 
 /// Add a vacation entry for children.
 ///
 /// Maps to `PresenceWebService.AddVacation()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /presence/vacation`
+/// `POST ?method=calendar.addVacation`
 pub async fn add_vacation(
     session: &mut Session,
     args: &VacationEntry,
 ) -> crate::Result<VacationMutationResponse> {
-    session.post("presence/vacation", args).await
+    session.post("?method=calendar.addVacation", args).await
 }
 
 /// Get children vacation overview (employee view).
 ///
 /// Maps to `PresenceWebService.GetChildrenVacation()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/children/vacation`
+/// `GET ?method=presence.getChildVacationList`
 pub async fn get_children_vacation(
     session: &mut Session,
     args: &ChildrenVacationRequest,
@@ -703,7 +714,7 @@ pub async fn get_children_vacation(
     }
     query.push(format!("offset={}", args.offset));
     query.push(format!("limit={}", args.limit));
-    let path = format!("presence/children/vacation?{}", query.join("&"));
+    let path = format!("?method=presence.getChildVacationList&{}", query.join("&"));
     session.get(&path).await
 }
 
@@ -711,9 +722,9 @@ pub async fn get_children_vacation(
 ///
 /// Maps to `PresenceWebService.GetVacationAnnouncementsByChildren()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/vacation/announcements`
+/// `GET ?method=presence.getVacationAnnouncementsByChildren`
 pub async fn get_vacation_announcements_by_children(
     session: &mut Session,
     inst_profile_ids: &[i64],
@@ -723,9 +734,12 @@ pub async fn get_vacation_announcements_by_children(
         query.push(format!("instProfileIds={id}"));
     }
     let path = if query.is_empty() {
-        "presence/vacation/announcements".to_string()
+        "?method=presence.getVacationAnnouncementsByChildren".to_string()
     } else {
-        format!("presence/vacation/announcements?{}", query.join("&"))
+        format!(
+            "?method=presence.getVacationAnnouncementsByChildren&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -734,9 +748,9 @@ pub async fn get_vacation_announcements_by_children(
 ///
 /// Maps to `PresenceWebService.GetVacationRegistrationOverview()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/vacation/registrations/overview`
+/// `GET ?method=presence.getVacationRegistrations`
 pub async fn get_vacation_registration_overview(
     session: &mut Session,
     args: &ComeGoGetVacationRegistrationOverviewRequest,
@@ -756,7 +770,7 @@ pub async fn get_vacation_registration_overview(
     query.push(format!("offset={}", args.offset));
     query.push(format!("limit={}", args.limit));
     let path = format!(
-        "presence/vacation/registrations/overview?{}",
+        "?method=presence.getVacationRegistrations&{}",
         query.join("&")
     );
     session.get(&path).await
@@ -766,9 +780,9 @@ pub async fn get_vacation_registration_overview(
 ///
 /// Maps to `PresenceWebService.GetVacationRegistrationsByChildren()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/vacation/registrations/children`
+/// `GET ?method=presence.getVacationRegistrationsByChildren`
 pub async fn get_vacation_registrations_by_children(
     session: &mut Session,
     inst_profile_ids: &[i64],
@@ -778,10 +792,10 @@ pub async fn get_vacation_registrations_by_children(
         query.push(format!("instProfileIds={id}"));
     }
     let path = if query.is_empty() {
-        "presence/vacation/registrations/children".to_string()
+        "?method=presence.getVacationRegistrationsByChildren".to_string()
     } else {
         format!(
-            "presence/vacation/registrations/children?{}",
+            "?method=presence.getVacationRegistrationsByChildren&{}",
             query.join("&")
         )
     };
@@ -792,9 +806,9 @@ pub async fn get_vacation_registrations_by_children(
 ///
 /// Maps to `PresenceWebService.GetExistingVacationRegistrationResponse()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/vacation/registrations/existing`
+/// `GET ?method=presence.getVacationRegistrationResponse`
 pub async fn get_existing_vacation_registration_response(
     session: &mut Session,
     child_id: i64,
@@ -802,7 +816,7 @@ pub async fn get_existing_vacation_registration_response(
 ) -> crate::Result<VacationRegistrationResponseForGuardian> {
     session
         .get(&format!(
-            "presence/vacation/registrations/existing?childId={child_id}&vacationRegistrationId={vacation_registration_id}"
+            "?method=presence.getVacationRegistrationResponse&childId={child_id}&vacationRegistrationId={vacation_registration_id}"
         ))
         .await
 }
@@ -815,16 +829,16 @@ pub async fn get_existing_vacation_registration_response(
 ///
 /// Maps to `PresenceWebService.GetPresenceConfiguration()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/configuration`
+/// `GET ?method=presence.getPresenceConfiguration`
 pub async fn get_presence_configuration(
     session: &mut Session,
     institution_code: &str,
 ) -> crate::Result<PresenceConfigurationResult> {
     session
         .get(&format!(
-            "presence/configuration?institutionCode={institution_code}"
+            "?method=presence.getPresenceConfiguration&institutionCode={institution_code}"
         ))
         .await
 }
@@ -833,9 +847,9 @@ pub async fn get_presence_configuration(
 ///
 /// Maps to `PresenceWebService.GetPresenceConfigurationByChildrenIds()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/configuration/children`
+/// `GET ?method=presence.getPresenceConfigurationByChildIds`
 pub async fn get_presence_configuration_by_children_ids(
     session: &mut Session,
     inst_profile_ids: &[i64],
@@ -845,9 +859,12 @@ pub async fn get_presence_configuration_by_children_ids(
         query.push(format!("instProfileIds={id}"));
     }
     let path = if query.is_empty() {
-        "presence/configuration/children".to_string()
+        "?method=presence.getPresenceConfigurationByChildIds".to_string()
     } else {
-        format!("presence/configuration/children?{}", query.join("&"))
+        format!(
+            "?method=presence.getPresenceConfigurationByChildIds&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -856,16 +873,16 @@ pub async fn get_presence_configuration_by_children_ids(
 ///
 /// Maps to `PresenceWebService.GetPresenceFilter()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/filter`
+/// `GET ?method=presence.getPresenceFilters`
 pub async fn get_presence_filter(
     session: &mut Session,
     institution_code: &str,
 ) -> crate::Result<PresenceFilterResult> {
     session
         .get(&format!(
-            "presence/filter?institutionCode={institution_code}"
+            "?method=presence.getPresenceFilters&institutionCode={institution_code}"
         ))
         .await
 }
@@ -874,9 +891,9 @@ pub async fn get_presence_filter(
 ///
 /// Maps to `PresenceWebService.GetPresenceFilters()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/filters`
+/// `GET ?method=presence.getPresenceFilters` (list)
 pub async fn get_presence_filters(
     session: &mut Session,
     args: &PresenceFiltersRequest,
@@ -888,9 +905,9 @@ pub async fn get_presence_filters(
         }
     }
     let path = if query.is_empty() {
-        "presence/filters".to_string()
+        "?method=presence.getPresenceFilters".to_string()
     } else {
-        format!("presence/filters?{}", query.join("&"))
+        format!("?method=presence.getPresenceFilters&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -899,9 +916,9 @@ pub async fn get_presence_filters(
 ///
 /// Maps to `PresenceWebService.GetClosedDays()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/closedDays`
+/// `GET ?method=presence.getClosedDays`
 pub async fn get_closed_days(
     session: &mut Session,
     institution_codes: &[String],
@@ -911,9 +928,9 @@ pub async fn get_closed_days(
         query.push(format!("institutionCodes={code}"));
     }
     let path = if query.is_empty() {
-        "presence/closedDays".to_string()
+        "?method=presence.getClosedDays".to_string()
     } else {
-        format!("presence/closedDays?{}", query.join("&"))
+        format!("?method=presence.getClosedDays&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -922,9 +939,9 @@ pub async fn get_closed_days(
 ///
 /// Maps to `PresenceWebService.GetGeneralOpeningHours()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/openingHours`
+/// `GET ?method=presence.getGeneralOpeningHours`
 pub async fn get_general_opening_hours(
     session: &mut Session,
     institution_codes: &[String],
@@ -934,9 +951,12 @@ pub async fn get_general_opening_hours(
         query.push(format!("institutionCodes={code}"));
     }
     let path = if query.is_empty() {
-        "presence/openingHours".to_string()
+        "?method=presence.getGeneralOpeningHours".to_string()
     } else {
-        format!("presence/openingHours?{}", query.join("&"))
+        format!(
+            "?method=presence.getGeneralOpeningHours&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -945,9 +965,9 @@ pub async fn get_general_opening_hours(
 ///
 /// Maps to `PresenceWebService.GetOpeningHoursByInstitutionCodes()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/openingHours/institution`
+/// `GET ?method=presence.getOpeningHoursByInstitutionCodes`
 pub async fn get_opening_hours_by_institution_codes(
     session: &mut Session,
     args: &GetOpeningHoursByInstitutionCodesRequest,
@@ -965,9 +985,12 @@ pub async fn get_opening_hours_by_institution_codes(
         query.push(format!("endDate={end}"));
     }
     let path = if query.is_empty() {
-        "presence/openingHours/institution".to_string()
+        "?method=presence.getOpeningHoursByInstitutionCodes".to_string()
     } else {
-        format!("presence/openingHours/institution?{}", query.join("&"))
+        format!(
+            "?method=presence.getOpeningHoursByInstitutionCodes&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -976,9 +999,9 @@ pub async fn get_opening_hours_by_institution_codes(
 ///
 /// Maps to `PresenceWebService.GetSpecificOpeningHourOverview()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/openingHours/specific`
+/// `GET ?method=presence.getSpecificOpeningHourOverview`
 pub async fn get_specific_opening_hour_overview(
     session: &mut Session,
     institution_codes: &[String],
@@ -988,9 +1011,12 @@ pub async fn get_specific_opening_hour_overview(
         query.push(format!("institutionCodes={code}"));
     }
     let path = if query.is_empty() {
-        "presence/openingHours/specific".to_string()
+        "?method=presence.getSpecificOpeningHourOverview".to_string()
     } else {
-        format!("presence/openingHours/specific?{}", query.join("&"))
+        format!(
+            "?method=presence.getSpecificOpeningHourOverview&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -999,16 +1025,16 @@ pub async fn get_specific_opening_hour_overview(
 ///
 /// Maps to `PresenceWebService.GetAvailablePresenceStatuses()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/statuses`
+/// `GET ?method=presence.getPresenceStates`
 pub async fn get_available_presence_statuses(
     session: &mut Session,
     institution_code: &str,
 ) -> crate::Result<GetAvailableStatusesResult> {
     session
         .get(&format!(
-            "presence/statuses?institutionCode={institution_code}"
+            "?method=presence.getPresenceStates&institutionCode={institution_code}"
         ))
         .await
 }
@@ -1017,9 +1043,9 @@ pub async fn get_available_presence_statuses(
 ///
 /// Maps to `PresenceWebService.GetInstitutionWithPresenceStates()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/institution/states`
+/// `GET ?method=presence.getPresenceStates` (institution)
 pub async fn get_institution_with_presence_states(
     session: &mut Session,
     institution_codes: &[String],
@@ -1029,9 +1055,9 @@ pub async fn get_institution_with_presence_states(
         query.push(format!("institutionCodes={code}"));
     }
     let path = if query.is_empty() {
-        "presence/institution/states".to_string()
+        "?method=presence.getPresenceStates".to_string()
     } else {
-        format!("presence/institution/states?{}", query.join("&"))
+        format!("?method=presence.getPresenceStates&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -1040,9 +1066,9 @@ pub async fn get_institution_with_presence_states(
 ///
 /// Maps to `PresenceWebService.GetPresenceChildrenDistribution()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /presence/children/distribution`
+/// `GET ?method=presence.getPresenceDistribution`
 pub async fn get_presence_children_distribution(
     session: &mut Session,
     args: &PresenceChildrenDistributionRequestDto,
@@ -1062,7 +1088,10 @@ pub async fn get_presence_children_distribution(
             query.push(format!("statusFilters={f}"));
         }
     }
-    let path = format!("presence/children/distribution?{}", query.join("&"));
+    let path = format!(
+        "?method=presence.getPresenceDistribution&{}",
+        query.join("&")
+    );
     session.get(&path).await
 }
 

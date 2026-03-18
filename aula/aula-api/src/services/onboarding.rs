@@ -4,14 +4,10 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.18.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `mark_onboarding_complete` | POST | `/onboarding/complete` |
-//! | `get_policy_links` | GET | `/onboarding/policyLinks` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `SET_ONBOARDING_COMPLETED` | `profiles.markOnboardingCompleted` |
+//! | `GET_POLICY_LINKS` | `CommonFiles.getPersonalDataPolicies` |
 
 use crate::session::Session;
 
@@ -35,22 +31,26 @@ pub struct PolicyLink {
 ///
 /// Maps to `OnboardingWebService.MarkOnboardingComplete()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /onboarding/complete`
+/// `POST ?method=profiles.markOnboardingCompleted`
 pub async fn mark_onboarding_complete(session: &mut Session) -> crate::Result<serde_json::Value> {
-    session.post_empty("onboarding/complete").await
+    session
+        .post_empty("?method=profiles.markOnboardingCompleted")
+        .await
 }
 
 /// Get policy links shown during onboarding (data policy, terms, etc.).
 ///
 /// Maps to `OnboardingWebService.GetPolicyLinks()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /onboarding/policyLinks`
+/// `GET ?method=CommonFiles.getPersonalDataPolicies`
 pub async fn get_policy_links(session: &mut Session) -> crate::Result<Vec<PolicyLink>> {
-    session.get("onboarding/policyLinks").await
+    session
+        .get("?method=CommonFiles.getPersonalDataPolicies")
+        .await
 }
 
 // ---------------------------------------------------------------------------

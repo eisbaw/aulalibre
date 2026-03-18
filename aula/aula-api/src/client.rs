@@ -111,7 +111,7 @@ const BASIC_AUTH_PASS: &str = "Aula-1337";
 pub struct AulaClientConfig {
     /// Target environment (default: [`Environment::Production`]).
     pub environment: Environment,
-    /// API version number (default: 19).
+    /// API version number (default: 23).
     pub api_version: u32,
 }
 
@@ -119,7 +119,7 @@ impl Default for AulaClientConfig {
     fn default() -> Self {
         Self {
             environment: Environment::Production,
-            api_version: 19,
+            api_version: 23,
         }
     }
 }
@@ -142,7 +142,7 @@ pub struct AulaClient {
 }
 
 impl AulaClient {
-    /// Create a new client with default configuration (production, API v19).
+    /// Create a new client with default configuration (production, API v23).
     pub fn new() -> crate::Result<Self> {
         Self::with_config(AulaClientConfig::default())
     }
@@ -181,7 +181,7 @@ impl AulaClient {
 
     /// Create a client pointing at a custom base URL (for testing with mock servers).
     ///
-    /// The URL must end with a trailing slash (e.g., `http://127.0.0.1:9090/api/v19/`).
+    /// The URL must end with a trailing slash (e.g., `http://127.0.0.1:9090/api/v23/`).
     /// No basic auth is applied and the environment is set to Production.
     pub fn with_base_url(base_url: &str) -> crate::Result<Self> {
         let base_url = Url::parse(base_url).expect("valid base URL");
@@ -211,7 +211,7 @@ impl AulaClient {
         &self.environment
     }
 
-    /// The base URL for API requests (e.g. `https://www.aula.dk/api/v19/`).
+    /// The base URL for API requests (e.g. `https://www.aula.dk/api/v23/`).
     pub fn base_url(&self) -> &Url {
         &self.base_url
     }
@@ -262,13 +262,34 @@ impl AulaClient {
     // -- Request helpers ----------------------------------------------------
 
     /// Build a full URL by appending `path` to the base URL.
+    ///
+    /// # RPC-style routing
+    ///
+    /// The Aula API uses RPC-style routing where endpoint paths are query
+    /// parameters, not URL path segments. For example:
+    ///
+    /// ```text
+    /// https://www.aula.dk/api/v23/?method=messaging.getThreads&page=0
+    /// ```
+    ///
+    /// Paths starting with `?` are appended directly to the base URL
+    /// (which ends with a `/`). Paths without `?` are joined using
+    /// standard URL path joining for backward compatibility (e.g.,
+    /// the `alivecheck/` health endpoint).
     fn url(&self, path: &str) -> Url {
-        // Strip leading slash if caller includes one, since base_url ends
-        // with a slash.
-        let path = path.strip_prefix('/').unwrap_or(path);
-        self.base_url
-            .join(path)
-            .expect("path should be valid URL segment")
+        if path.starts_with('?') {
+            // RPC-style: append query string directly to base URL.
+            // base_url is e.g. "https://www.aula.dk/api/v23/"
+            let mut url_str = self.base_url.as_str().to_string();
+            url_str.push_str(path);
+            Url::parse(&url_str).expect("valid RPC URL")
+        } else {
+            // Path-style: join to base URL (used for alivecheck, auth, etc.).
+            let path = path.strip_prefix('/').unwrap_or(path);
+            self.base_url
+                .join(path)
+                .expect("path should be valid URL segment")
+        }
     }
 
     /// Send a GET request and deserialize the envelope payload.
@@ -335,11 +356,11 @@ impl AulaClient {
 
     /// Send a keep-alive ping to extend the current session.
     ///
-    /// Maps to `POST /profiles/keepAlive` which the
+    /// Maps to `?method=session.keepAlive` which the
     /// `SessionPromptManager` calls periodically.
     pub async fn keep_alive(&self) -> crate::Result<()> {
         // The keep-alive endpoint returns an AulaServiceResponse with empty data.
-        let _: serde_json::Value = self.post_empty("profiles/keepAlive").await?;
+        let _: serde_json::Value = self.post_empty("?method=session.keepAlive").await?;
         Ok(())
     }
 
@@ -507,16 +528,16 @@ mod tests {
     // -- AulaClient construction --------------------------------------------
 
     #[test]
-    fn default_config_is_production_v19() {
+    fn default_config_is_production_v23() {
         let cfg = AulaClientConfig::default();
         assert_eq!(cfg.environment, Environment::Production);
-        assert_eq!(cfg.api_version, 19);
+        assert_eq!(cfg.api_version, 23);
     }
 
     #[test]
     fn client_base_url_production() {
         let client = AulaClient::new().unwrap();
-        assert_eq!(client.base_url().as_str(), "https://www.aula.dk/api/v19/");
+        assert_eq!(client.base_url().as_str(), "https://www.aula.dk/api/v23/");
     }
 
     #[test]
@@ -536,7 +557,7 @@ mod tests {
     fn client_environment_accessor() {
         let client = AulaClient::with_config(AulaClientConfig {
             environment: Environment::Test3,
-            api_version: 19,
+            api_version: 23,
         })
         .unwrap();
         assert_eq!(client.environment(), &Environment::Test3);
@@ -553,23 +574,37 @@ mod tests {
     // -- URL construction ---------------------------------------------------
 
     #[test]
-    fn url_without_leading_slash() {
+    fn url_rpc_style_method_query() {
         let client = AulaClient::new().unwrap();
-        let url = client.url("profiles/keepAlive");
+        let url = client.url("?method=session.keepAlive");
         assert_eq!(
             url.as_str(),
-            "https://www.aula.dk/api/v19/profiles/keepAlive"
+            "https://www.aula.dk/api/v23/?method=session.keepAlive"
         );
     }
 
     #[test]
-    fn url_with_leading_slash() {
+    fn url_rpc_style_with_extra_params() {
         let client = AulaClient::new().unwrap();
-        let url = client.url("/profiles/keepAlive");
+        let url = client.url("?method=messaging.getThreads&page=0");
         assert_eq!(
             url.as_str(),
-            "https://www.aula.dk/api/v19/profiles/keepAlive"
+            "https://www.aula.dk/api/v23/?method=messaging.getThreads&page=0"
         );
+    }
+
+    #[test]
+    fn url_path_style_for_non_rpc() {
+        let client = AulaClient::new().unwrap();
+        let url = client.url("alivecheck/");
+        assert_eq!(url.as_str(), "https://www.aula.dk/api/v23/alivecheck/");
+    }
+
+    #[test]
+    fn url_path_style_with_leading_slash() {
+        let client = AulaClient::new().unwrap();
+        let url = client.url("/alivecheck/");
+        assert_eq!(url.as_str(), "https://www.aula.dk/api/v23/alivecheck/");
     }
 
     // -- CSRF token extraction ----------------------------------------------

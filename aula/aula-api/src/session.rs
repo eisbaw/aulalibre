@@ -279,7 +279,7 @@ impl Session {
 
     /// Send a keep-alive ping to extend the backend session.
     ///
-    /// Mirrors `SessionPromptManager`'s periodic call to `POST /profiles/keepAlive`.
+    /// Mirrors `SessionPromptManager`'s periodic call to `?method=session.keepAlive`.
     pub async fn keep_alive(&self) -> crate::Result<()> {
         self.client.keep_alive().await
     }
@@ -507,7 +507,7 @@ mod tests {
         let store = TokenStore::new(&dir);
         let client = AulaClient::with_config(AulaClientConfig {
             environment: Environment::Preprod,
-            api_version: 19,
+            api_version: 23,
         })
         .unwrap();
 

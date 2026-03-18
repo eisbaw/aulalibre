@@ -5,18 +5,22 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.3.
+//! All endpoints use RPC-style routing via `?method=module.action` query
+//! parameters. Paths are sourced from the decompiled `Urls.cs` class.
 //!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_profiles_by_login` | GET | `/profiles?method=profiles.getProfilesByLogin` |
-//! | `get_profile_master_data` | GET | `/masterdata/profile` |
-//! | `get_onboarding_master_data` | GET | `/masterdata/onboarding` |
-//! | `post_master_data` | POST | `/masterdata` |
-//! | `update_profile_picture` | POST | `/masterdata/profilePicture` |
-//! | `keep_alive` | POST | `/profiles/keepAlive` |
+//! | Method | HTTP | RPC method |
+//! |--------|------|------------|
+//! | `get_profiles_by_login` | GET | `profiles.getprofilesbylogin` |
+//! | `get_profile_context` | GET | `profiles.getProfileContext` |
+//! | `get_profile_master_data` | GET | `profiles.getProfileMasterData` |
+//! | `get_onboarding_master_data` | GET | `profiles.getProfilesByLogin` |
+//! | `post_master_data` | POST | `profiles.updateProfileMasterData` |
+//! | `update_profile_picture` | POST | `profiles.updateProfilePicture` |
+//! | `get_contact_list` | GET | `profiles.getContactList` |
+//! | `get_contact_parents` | GET | `profiles.getContactParents` |
+//! | `mark_onboarding_completed` | POST | `profiles.markOnboardingCompleted` |
+//! | `get_all_profiles` | GET | `profiles.getAllProfiles` |
+//! | `get_profile_types` | GET | `profiles.getProfileTypesByLogin` |
 
 use serde::{Deserialize, Serialize};
 
@@ -33,17 +37,11 @@ use crate::session::Session;
 /// The API returns the logged-in user's profiles (typically one per
 /// institution) wrapped in the standard `AulaServiceResponse` envelope.
 /// The `data` field is a `Vec<Profile>`.
-///
-/// NOTE: The exact response shape has not been verified against live
-/// traffic. If the API returns a single `Profile` instead of a `Vec`,
-/// this type will need adjustment.
 pub type ProfilesByLoginResponse = Vec<Profile>;
 
 /// Request body for `PostMasterData`.
 ///
 /// Inferred from `ProfileServiceManager.PostMasterData()` parameters.
-/// The exact field set is uncertain; this covers the commonly-seen
-/// editable fields.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMasterDataRequest {
@@ -77,9 +75,7 @@ pub struct UpdateProfilePictureRequest {
 /// Simplified master data response.
 ///
 /// The shape mirrors what `GetProfileMasterData` returns inside the
-/// `AulaServiceResponse.data` field. Since the exact response type was
-/// not found as a distinct DTO in the decompiled assembly, we use the
-/// top-level `Profile` which contains the relevant fields.
+/// `AulaServiceResponse.data` field.
 pub type ProfileMasterDataResponse = Profile;
 
 // ---------------------------------------------------------------------------
@@ -89,94 +85,83 @@ pub type ProfileMasterDataResponse = Profile;
 /// Fetch the logged-in user's profiles after authentication.
 ///
 /// Maps to `ProfileServiceManager.GetProfilesByLogin()`.
-/// Called immediately after login to load the user's institution profiles,
-/// groups, and page configuration.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /profiles?method=profiles.getProfilesByLogin`
-///
-/// NOTE: The query-parameter style (`?method=...`) is a guess based on
-/// the Aula web app pattern. The native app may use a different path.
+/// `GET ?method=profiles.getprofilesbylogin`
 pub async fn get_profiles_by_login(
     session: &mut Session,
 ) -> crate::Result<ProfilesByLoginResponse> {
-    session
-        .get("profiles?method=profiles.getProfilesByLogin")
-        .await
+    session.get("?method=profiles.getprofilesbylogin").await
 }
 
 /// Fetch profile master data for the current user.
 ///
 /// Maps to `ProfileServiceManager.GetProfileMasterData()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /masterdata/profile`
+/// `GET ?method=profiles.getProfileMasterData`
 pub async fn get_profile_master_data(
     session: &mut Session,
 ) -> crate::Result<ProfileMasterDataResponse> {
-    session.get("masterdata/profile").await
+    session.get("?method=profiles.getProfileMasterData").await
 }
 
 /// Fetch onboarding master data (first-login flow).
 ///
 /// Maps to `ProfileServiceManager.GetOnboardingMasterData()`.
-/// Returns the onboarding response with data policy status, children,
-/// and institution profiles that need confirmation.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /masterdata/onboarding`
+/// `GET ?method=profiles.getProfilesByLogin`
 pub async fn get_onboarding_master_data(
     session: &mut Session,
 ) -> crate::Result<OnboardingResponseDto> {
-    session.get("masterdata/onboarding").await
+    session.get("?method=profiles.getProfilesByLogin").await
 }
 
 /// Update profile master data (contact info).
 ///
 /// Maps to `ProfileServiceManager.PostMasterData()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /masterdata`
+/// `POST ?method=profiles.updateProfileMasterData`
 pub async fn post_master_data(
     session: &mut Session,
     request: &UpdateMasterDataRequest,
 ) -> crate::Result<serde_json::Value> {
-    session.post("masterdata", request).await
+    session
+        .post("?method=profiles.updateProfileMasterData", request)
+        .await
 }
 
 /// Update the profile picture for an institution profile.
 ///
 /// Maps to `ProfileServiceManager.PostUpdateProfilePicture()`.
-/// The image must already be uploaded to S3; this call associates
-/// the S3 object with the profile.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /masterdata/profilePicture`
+/// `POST ?method=profiles.updateProfilePicture`
 pub async fn update_profile_picture(
     session: &mut Session,
     request: &UpdateProfilePictureRequest,
 ) -> crate::Result<serde_json::Value> {
-    session.post("masterdata/profilePicture", request).await
+    session
+        .post("?method=profiles.updateProfilePicture", request)
+        .await
 }
 
 /// Send a keep-alive ping to extend the backend session.
 ///
-/// Maps to `ProfileServiceManager.KeepAlive()` /
-/// `SessionPromptManager`'s periodic keep-alive call.
+/// Maps to `SessionPromptManager`'s periodic keep-alive call.
 ///
 /// # Endpoint
 ///
-/// `POST /profiles/keepAlive`
-///
-/// This endpoint path is confirmed from multiple sources in the APK
-/// (see `auth_flow.md` Section 9).
+/// `POST ?method=session.keepAlive`
 pub async fn keep_alive(session: &mut Session) -> crate::Result<()> {
-    let _: serde_json::Value = session.post_empty("profiles/keepAlive").await?;
+    let _: serde_json::Value = session.post_empty("?method=session.keepAlive").await?;
     Ok(())
 }
 

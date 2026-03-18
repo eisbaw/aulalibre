@@ -1,17 +1,13 @@
 //! Consent service.
 //!
-//! Maps to `AulaNative.Services.Web.ConsentWebService` (2 methods) from the APK.
+//! Maps to `AulaNative.Services.Web.ConsentWebService` from the APK.
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.19.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_consents` | GET | `/consents` |
-//! | `post_consents` | POST | `/consents` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GET_CONSENTS` | `consents.getConsentResponses` |
+//! | `POST_CONSENTS` | `consents.updateConsentResponses` |
 
 use crate::models::consent::{InstitutionProfileConsentDto, ProfileConsentUpdatesDto};
 use crate::session::Session;
@@ -22,29 +18,27 @@ use crate::session::Session;
 
 /// Get consent status for all institution profiles.
 ///
-/// Maps to `ConsentWebService.GetConsents()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `GET /consents`
+/// `GET ?method=consents.getConsentResponses`
 pub async fn get_consents(
     session: &mut Session,
 ) -> crate::Result<Vec<InstitutionProfileConsentDto>> {
-    session.get("consents").await
+    session.get("?method=consents.getConsentResponses").await
 }
 
 /// Submit consent responses for an institution profile.
 ///
-/// Maps to `ConsentWebService.PostConsents()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `POST /consents`
+/// `POST ?method=consents.updateConsentResponses`
 pub async fn post_consents(
     session: &mut Session,
     updates: &ProfileConsentUpdatesDto,
 ) -> crate::Result<serde_json::Value> {
-    session.post("consents", updates).await
+    session
+        .post("?method=consents.updateConsentResponses", updates)
+        .await
 }
 
 // ---------------------------------------------------------------------------

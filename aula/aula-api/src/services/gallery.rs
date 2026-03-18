@@ -4,24 +4,21 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.10.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_albums` | GET | `/gallery/albums` |
-//! | `get_albums_cached` | GET | `/gallery/albums` (cached) |
-//! | `get_medias_in_album` | GET | `/gallery/albums/{id}/media` |
-//! | `get_medias_in_album_cached` | GET | `/gallery/albums/{id}/media` (cached) |
-//! | `get_media_by_id` | GET | `/gallery/media/{id}` |
-//! | `create_album` | POST | `/gallery/albums` |
-//! | `update_album` | PUT | `/gallery/albums/{id}` |
-//! | `delete_album` | DELETE | `/gallery/albums/{id}` |
-//! | `delete_media` | DELETE | `/gallery/media/{id}` |
-//! | `add_tag` | POST | `/gallery/media/{id}/tags` |
-//! | `remove_tag` | DELETE | `/gallery/media/{id}/tags/{tagId}` |
-//! | `report_media` | POST | `/gallery/media/{id}/report` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GET_MEDIA` | `gallery.getMedia` |
+//! | `GET_MEDIA_WITH_INSTITUTIONID` | `gallery.getMediaByInstitutionProfileId` |
+//! | `GET_ALBUM` | `gallery.getAlbums` |
+//! | `CREATE_ALBUM` | `gallery.createAlbum` |
+//! | `UPDATE_ALBUM` | `gallery.updateAlbum` |
+//! | `DELETE_MEDIA` | `gallery.deleteMedia` |
+//! | `CREATE_MEDIA` | `gallery.createMedia` |
+//! | `UPDATE_MEDIA` | `gallery.updateMedia` |
+//! | `MEDIA_ADD_TAG` | `gallery.addTag` |
+//! | `MEDIA_REMOVE_TAG` | `gallery.removeTag` |
+//! | `REPORT_MEDIA` | `gallery.reportMedia` |
+//! | `GET_MEDIA_BY_ID` | `gallery.getMediaById` |
+//! | `DELETE_ALBUM` | `gallery.deleteAlbums` |
 
 use crate::models::files::AddOrRemoveTagArguments;
 use crate::models::gallery::{
@@ -39,7 +36,7 @@ use crate::session::Session;
 ///
 /// Maps to `GalleryWebService.GetAlbums()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /gallery/albums?<query params>`
 pub async fn get_albums(
@@ -73,9 +70,9 @@ pub async fn get_albums(
     }
 
     let path = if query.is_empty() {
-        "gallery/albums".to_string()
+        "?method=gallery.getAlbums".to_string()
     } else {
-        format!("gallery/albums?{}", query.join("&"))
+        format!("?method=gallery.getAlbums&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -89,7 +86,7 @@ pub async fn get_albums(
 /// caching is client-side. This wrapper exists to match the decompiled
 /// method one-to-one.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /gallery/albums?<query params>`
 pub async fn get_albums_cached(
@@ -103,7 +100,7 @@ pub async fn get_albums_cached(
 ///
 /// Maps to `GalleryWebService.GetMediasInAlbum()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /gallery/albums/{albumId}/media?<query params>`
 pub async fn get_medias_in_album(
@@ -138,9 +135,12 @@ pub async fn get_medias_in_album(
     }
 
     let path = if query.is_empty() {
-        format!("gallery/albums/{album_id}/media")
+        format!("?method=gallery.getMedia&albumId={album_id}")
     } else {
-        format!("gallery/albums/{album_id}/media?{}", query.join("&"))
+        format!(
+            "?method=gallery.getMedia&albumId={album_id}&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -151,7 +151,7 @@ pub async fn get_medias_in_album(
 ///
 /// Same API call as `get_medias_in_album`; caching is client-side.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /gallery/albums/{albumId}/media?<query params>`
 pub async fn get_medias_in_album_cached(
@@ -165,94 +165,102 @@ pub async fn get_medias_in_album_cached(
 ///
 /// Maps to `GalleryWebService.GetMediaById()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /gallery/media/{id}`
 pub async fn get_media_by_id(session: &mut Session, media_id: i64) -> crate::Result<MediaListDto> {
-    session.get(&format!("gallery/media/{media_id}")).await
+    session
+        .get(&format!("?method=gallery.getMediaById&id={media_id}"))
+        .await
 }
 
 /// Create a new album.
 ///
 /// Maps to `GalleryWebService.CreateAlbum()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /gallery/albums`
 pub async fn create_album(
     session: &mut Session,
     params: &CreateAlbumParameters,
 ) -> crate::Result<serde_json::Value> {
-    session.post("gallery/albums", params).await
+    session.post("?method=gallery.createAlbum", params).await
 }
 
 /// Update an existing album.
 ///
 /// Maps to `GalleryWebService.UpdateAlbum()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `PUT /gallery/albums/{id}`
 pub async fn update_album(
     session: &mut Session,
-    album_id: i64,
+    _album_id: i64,
     params: &CreateAlbumParameters,
 ) -> crate::Result<serde_json::Value> {
-    session
-        .put(&format!("gallery/albums/{album_id}"), params)
-        .await
+    session.post("?method=gallery.updateAlbum", params).await
 }
 
 /// Delete an album.
 ///
 /// Maps to `GalleryWebService.DeleteAlbum()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `DELETE /gallery/albums/{id}`
 pub async fn delete_album(
     session: &mut Session,
     album_id: i64,
 ) -> crate::Result<serde_json::Value> {
-    session.delete(&format!("gallery/albums/{album_id}")).await
+    session
+        .post(
+            "?method=gallery.deleteAlbums",
+            &serde_json::json!({"albumId": album_id}),
+        )
+        .await
 }
 
 /// Delete a media item.
 ///
 /// Maps to `GalleryWebService.DeleteMedia()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `DELETE /gallery/media/{id}`
 pub async fn delete_media(
     session: &mut Session,
     media_id: i64,
 ) -> crate::Result<serde_json::Value> {
-    session.delete(&format!("gallery/media/{media_id}")).await
+    session
+        .post(
+            "?method=gallery.deleteMedia",
+            &serde_json::json!({"mediaId": media_id}),
+        )
+        .await
 }
 
 /// Add a tag (person tag) to a media item.
 ///
 /// Maps to `GalleryWebService.AddTag()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /gallery/media/{id}/tags`
 pub async fn add_tag(
     session: &mut Session,
-    media_id: i64,
+    _media_id: i64,
     params: &AddOrRemoveTagArguments,
 ) -> crate::Result<serde_json::Value> {
-    session
-        .post(&format!("gallery/media/{media_id}/tags"), params)
-        .await
+    session.post("?method=gallery.addTag", params).await
 }
 
 /// Remove a tag from a media item.
 ///
 /// Maps to `GalleryWebService.RemoveTag()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `DELETE /gallery/media/{mediaId}/tags/{tagId}`
 pub async fn remove_tag(
@@ -261,7 +269,10 @@ pub async fn remove_tag(
     tag_id: i64,
 ) -> crate::Result<serde_json::Value> {
     session
-        .delete(&format!("gallery/media/{media_id}/tags/{tag_id}"))
+        .post(
+            "?method=gallery.removeTag",
+            &serde_json::json!({"mediaId": media_id, "tagId": tag_id}),
+        )
         .await
 }
 
@@ -269,17 +280,15 @@ pub async fn remove_tag(
 ///
 /// Maps to `GalleryWebService.ReportMedia()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /gallery/media/{id}/report`
 pub async fn report_media(
     session: &mut Session,
-    media_id: i64,
+    _media_id: i64,
     params: &ReportApiParameter,
 ) -> crate::Result<serde_json::Value> {
-    session
-        .post(&format!("gallery/media/{media_id}/report"), params)
-        .await
+    session.post("?method=gallery.reportMedia", params).await
 }
 
 // ---------------------------------------------------------------------------

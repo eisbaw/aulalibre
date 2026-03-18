@@ -4,50 +4,49 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.5.
-//!
-//! ## CalendarWebService (Section 3.5)
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_daily_aggregated_events` | GET | `/calendar/events/daily` |
-//! | `get_daily_group_event_count` | GET | `/calendar/events/dailyGroupCount` |
-//! | `get_events` | GET | `/calendar/events` |
-//! | `get_event_detail` | GET | `/calendar/events/{id}` |
-//! | `get_event_types` | GET | `/calendar/eventTypes` |
-//! | `get_event_types_for_calendar_feed` | GET | `/calendar/eventTypes/feed` |
-//! | `get_event_for_group` | GET | `/calendar/events/group/{id}` |
-//! | `get_school_events` | GET | `/calendar/schoolEvents` |
-//! | `get_top_important_date` | GET | `/calendar/importantDates/top` |
-//! | `respond_simple_event` | POST | `/calendar/events/{id}/respond` |
-//! | `respond_timeslot_event` | POST | `/calendar/timeslots/{id}/respond` |
-//! | `update_lesson_event` | PUT | `/calendar/lessons/{id}` |
-//! | `edit_timeslot_event` | PUT | `/calendar/timeslots/{id}` |
-//! | `block_time_slot` | POST | `/calendar/timeslots/block` |
-//! | `delete_time_slot` | DELETE | `/calendar/timeslots/{id}` |
-//! | `delete_event` | DELETE | `/calendar/events/{id}` |
-//! | `check_conflict_event_for_attendees` | POST | `/calendar/events/conflicts` |
-//! | `get_birthdays_for_group` | GET | `/calendar/birthdays/group/{id}` |
-//! | `get_birthdays_for_institution` | GET | `/calendar/birthdays/institution/{id}` |
-//! | `add_vacation` | POST | `/calendar/vacations` |
-//! | `get_vacation` | GET | `/calendar/vacations/{id}` |
-//! | `delete_vacation` | DELETE | `/calendar/vacations/{id}` |
-//! | `get_future_vacation_request` | GET | `/calendar/vacations/future` |
-//! | `get_vacation_request_response` | GET | `/calendar/vacations/{id}/response` |
-//! | `respond_to_vacation_registration_request` | POST | `/calendar/vacations/{id}/respond` |
-//! | `get_delegated_accesses` | GET | `/calendar/delegatedAccesses` |
-//! | `set_delegated_accesses` | POST | `/calendar/delegatedAccesses` |
-//! | `get_institution_profiles_with_delegated_accesses` | GET | `/calendar/delegatedAccesses/profiles` |
-//! | `get_calendar_synchronisation_configurations` | GET | `/calendar/sync/configurations` |
-//! | `create_calendar_synchronisation_configuration` | POST | `/calendar/sync/configurations` |
-//! | `update_calendar_synchronisation_configuration` | PUT | `/calendar/sync/configurations/{id}` |
-//! | `delete_calendar_synchronisation_configuration` | DELETE | `/calendar/sync/configurations/{id}` |
-//! | `get_calendar_synchronisation_consent` | GET | `/calendar/sync/consent` |
-//! | `update_calendar_synchronisation_consent` | PUT | `/calendar/sync/consent` |
-//! | `get_is_calendar_feed_enabled_for_municipality` | GET | `/calendar/feed/municipality/{id}/enabled` |
-//! | `get_feed_configuration_by_id` | GET | `/calendar/feed/configuration/{id}` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GET_EVENTS` | `calendar.getEventsByProfileIdsAndResourceIds` |
+//! | `GET_EVENT_BY_ID` | `calendar.getEventById` |
+//! | `GET_DAILY_AGGREGATED_EVENT` | `calendar.getDailyAggregatedEvents` |
+//! | `GET_DAILY_GROUP_EVENT_COUNT` | `calendar.getDailyEventCountForGroup` |
+//! | `GET_EVENT_FOR_GROUP` | `calendar.geteventsbygroupid` |
+//! | `GET_EVENTS_FOR_INSTITUTION` | `calendar.getEventsForInstitutions` |
+//! | `GET_IMPORTANT_DATE` | `calendar.getImportantDates` |
+//! | `GET_EVENT_TYPES` | `calendar.getEventTypes` |
+//! | `DELETE_EVENT` | `calendar.deleteEvent` |
+//! | `RESPOND_SIMPLE_EVENT` | `calendar.respondToSimpleEvent` |
+//! | `RESPOND_TIMESLOT_EVENT` | `calendar.respondToTimeSlotEvent` |
+//! | `RESPOND_EVENT` | `calendar.respondToEvent` |
+//! | `EDIT_TIMESLOT_EVENT` | `calendar.updateResponseToTimeSlotEvent` |
+//! | `BLOCK_TIMES_SLOT` | `calendar.blockTimeSlot` |
+//! | `DELETE_TIMES_SLOT` | `calendar.removeBlockingOrResponseToTimeSlot` |
+//! | `UPDATE_LESSON_EVENT` | `calendar.updateLessonEvent` |
+//! | `CHECK_EVENT_CONFLICT` | `calendar.checkConflictEventForAttendees` |
+//! | `GET_BIRTHDAY_EVENT_FOR_GROUP` | `calendar.getBirthdayEventsForGroup` |
+//! | `GET_BIRTHDAY_EVENT_FOR_INSTITUTION` | `calendar.getBirthdayEventsForInstitutions` |
+//! | `ADD_VACATION` | `calendar.addVacation` |
+//! | `GET_VACATION_BY_ID` | `calendar.getVacationById` |
+//! | `DELETE_VACATION` | `calendar.deleteVacation` |
+//! | `GET_ALL_FURURE_VACATION_REQUESTS` | `calendar.getFutureVacationRequests` |
+//! | `GET_VACATION_REQUEST_RESPONSES` | `calendar.getVacationRequestResponses` |
+//! | `RESPOND_TO_VACATION_REGISTRATION_REQUEST` | `calendar.respondToVacationRegistrationRequest` |
+//! | `CREATE_VACATION_REGISTRATION` | `calendar.createVacationRequest` |
+//! | `UPDATE_VACATION_REQUEST` | `calendar.updateVacationRequest` |
+//! | `GET_DELEGATED_ACCESSES` | `calendar.getDelegatedAccesses` |
+//! | `SET_DELEGATED_ACCESS` | `calendar.setDelegatedAccesses` |
+//! | `GET_INSTITUTION_PROFILES_DELEGATED_ACCESSES` | `calendar.getInstitutionProfilesWithDelegatedAccess` |
+//! | `SET_DELEGATED_CONTEXT` | `calendar.setDelegatedContext` |
+//! | `GET_DELEGATED_CONTEXT` | `calendar.getDelegatedContext` |
+//! | `GET_CALENDAR_SYNCHRONISATION_CONSENT` | `CalendarFeed.getPolicyAnswer` |
+//! | `DELETE_CALENDAR_SYNCHRONISATION_CONSENT` | `CalendarFeed.setPolicyAnswer` |
+//! | `GET_CALENDAR_SYNCHRONISATION_CONFIGURATIONS` | `CalendarFeed.getFeedConfigurations` |
+//! | `CREATE_CALENDAR_SYNCHRONISATION_CONFIGURATION` | `CalendarFeed.createFeedConfiguration` |
+//! | `UPDATE_CALENDAR_SYNCHRONISATION_CONFIGURATION` | `CalendarFeed.updateFeedConfiguration` |
+//! | `DELETE_CALENDAR_SYNCHRONISATION_CONFIGURATION` | `CalendarFeed.removeFeedConfiguration` |
+//! | `GET_EVENT_TYPE_FOR_PORTAL_ROLE` | `CalendarFeed.getEventTypesRelevantForPortalRole` |
+//! | `GET_CALENDAR_SYNCHRONISATION_CONFIGURATIONS_BY_ID` | `CalendarFeed.getFeedConfigurationById` |
+//! | `GET_CALENDAR_SYNCHRONISATION_MUNICIPALITY_FEED_ENABLED` | `MunicipalConfiguration.getCalendarFeedEnabled` |
 
 use crate::models::calendar::{
     BirthdayEventDto, BlockTimeSlotRequest, CalendarSynchronisationConfigurationItem,
@@ -118,7 +117,7 @@ pub type UpdateSyncConsentResponse = serde_json::Value;
 ///
 /// Maps to `CalendarWebService.GetEvents()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/events`
 pub async fn get_events(
@@ -153,9 +152,12 @@ pub async fn get_events(
         }
     }
     let path = if query.is_empty() {
-        "calendar/events".to_string()
+        "?method=calendar.getEventsByProfileIdsAndResourceIds".to_string()
     } else {
-        format!("calendar/events?{}", query.join("&"))
+        format!(
+            "?method=calendar.getEventsByProfileIdsAndResourceIds&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -164,21 +166,23 @@ pub async fn get_events(
 ///
 /// Maps to `CalendarWebService.GetEventDetail()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/events/{event_id}`
 pub async fn get_event_detail(
     session: &mut Session,
     event_id: i64,
 ) -> crate::Result<EventDetailsDto> {
-    session.get(&format!("calendar/events/{event_id}")).await
+    session
+        .get(&format!("?method=calendar.getEventById&eventId={event_id}"))
+        .await
 }
 
 /// Get daily aggregated events (event counts per day per type).
 ///
 /// Maps to `CalendarWebService.GetDailyAggregatedEvents()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/events/daily`
 pub async fn get_daily_aggregated_events(
@@ -208,9 +212,12 @@ pub async fn get_daily_aggregated_events(
         }
     }
     let path = if query.is_empty() {
-        "calendar/events/daily".to_string()
+        "?method=calendar.getDailyAggregatedEvents".to_string()
     } else {
-        format!("calendar/events/daily?{}", query.join("&"))
+        format!(
+            "?method=calendar.getDailyAggregatedEvents&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -219,7 +226,7 @@ pub async fn get_daily_aggregated_events(
 ///
 /// Maps to `CalendarWebService.GetDailyGroupEventCount()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/events/dailyGroupCount`
 pub async fn get_daily_group_event_count(
@@ -230,7 +237,7 @@ pub async fn get_daily_group_event_count(
 ) -> crate::Result<Vec<DailyEventCountResultModel>> {
     session
         .get(&format!(
-            "calendar/events/dailyGroupCount?groupId={group_id}&start={start}&end={end}"
+            "?method=calendar.getDailyEventCountForGroup&groupId={group_id}&start={start}&end={end}"
         ))
         .await
 }
@@ -239,7 +246,7 @@ pub async fn get_daily_group_event_count(
 ///
 /// Maps to `CalendarWebService.GetEventForGroup()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/events/group/{group_id}`
 pub async fn get_event_for_group(
@@ -256,9 +263,12 @@ pub async fn get_event_for_group(
         query.push(format!("end={e}"));
     }
     let path = if query.is_empty() {
-        format!("calendar/events/group/{group_id}")
+        format!("?method=calendar.geteventsbygroupid&groupId={group_id}")
     } else {
-        format!("calendar/events/group/{group_id}?{}", query.join("&"))
+        format!(
+            "?method=calendar.geteventsbygroupid&groupId={group_id}&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -267,7 +277,7 @@ pub async fn get_event_for_group(
 ///
 /// Maps to `CalendarWebService.GetSchoolEvents()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/schoolEvents`
 pub async fn get_school_events(
@@ -287,9 +297,12 @@ pub async fn get_school_events(
         }
     }
     let path = if query.is_empty() {
-        "calendar/schoolEvents".to_string()
+        "?method=calendar.getEventsForInstitutions".to_string()
     } else {
-        format!("calendar/schoolEvents?{}", query.join("&"))
+        format!(
+            "?method=calendar.getEventsForInstitutions&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -298,7 +311,7 @@ pub async fn get_school_events(
 ///
 /// Maps to `CalendarWebService.GetEventTypes()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/eventTypes`
 pub async fn get_event_types(
@@ -310,9 +323,9 @@ pub async fn get_event_types(
         query.push(format!("filterInstitutionCodes={code}"));
     }
     let path = if query.is_empty() {
-        "calendar/eventTypes".to_string()
+        "?method=calendar.getEventTypes".to_string()
     } else {
-        format!("calendar/eventTypes?{}", query.join("&"))
+        format!("?method=calendar.getEventTypes&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -321,27 +334,34 @@ pub async fn get_event_types(
 ///
 /// Maps to `CalendarWebService.GetEventTypesForCalendarFeed()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/eventTypes/feed`
 pub async fn get_event_types_for_calendar_feed(
     session: &mut Session,
 ) -> crate::Result<GetEventTypesByPortalRoleResultModel> {
-    session.get("calendar/eventTypes/feed").await
+    session
+        .get("?method=CalendarFeed.getEventTypesRelevantForPortalRole")
+        .await
 }
 
 /// Delete a calendar event.
 ///
 /// Maps to `CalendarWebService.DeleteEvent()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `DELETE /calendar/events/{event_id}`
 pub async fn delete_event(
     session: &mut Session,
     event_id: i64,
 ) -> crate::Result<DeleteEventResponse> {
-    session.delete(&format!("calendar/events/{event_id}")).await
+    session
+        .post(
+            "?method=calendar.deleteEvent",
+            &serde_json::json!({"eventId": event_id}),
+        )
+        .await
 }
 
 // ===========================================================================
@@ -352,16 +372,16 @@ pub async fn delete_event(
 ///
 /// Maps to `CalendarWebService.RespondSimpleEvent()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /calendar/events/{event_id}/respond`
 pub async fn respond_simple_event(
     session: &mut Session,
     args: &RespondSimpleEventRequest,
 ) -> crate::Result<EventRespondResponse> {
-    let event_id = args.event_id.unwrap_or(0);
+    let _event_id = args.event_id.unwrap_or(0);
     session
-        .post(&format!("calendar/events/{event_id}/respond"), args)
+        .post("?method=calendar.respondToSimpleEvent", args)
         .await
 }
 
@@ -369,16 +389,15 @@ pub async fn respond_simple_event(
 ///
 /// Maps to `CalendarWebService.RespondTimeslotEvent()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /calendar/timeslots/{event_id}/respond`
+/// `POST ?method=calendar.respondToTimeSlotEvent`
 pub async fn respond_timeslot_event(
     session: &mut Session,
     args: &RespondTimeslotEventRequest,
 ) -> crate::Result<EventRespondResponse> {
-    let event_id = args.event_id.unwrap_or(0);
     session
-        .post(&format!("calendar/timeslots/{event_id}/respond"), args)
+        .post("?method=calendar.respondToTimeSlotEvent", args)
         .await
 }
 
@@ -390,16 +409,16 @@ pub async fn respond_timeslot_event(
 ///
 /// Maps to `CalendarWebService.EditTimeslotEvent()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `PUT /calendar/timeslots/{event_id}`
 pub async fn edit_timeslot_event(
     session: &mut Session,
     args: &CreateTimeslotEventRequest,
 ) -> crate::Result<EditTimeslotResponse> {
-    let event_id = args.event_id.unwrap_or(0);
+    let _event_id = args.event_id.unwrap_or(0);
     session
-        .put(&format!("calendar/timeslots/{event_id}"), args)
+        .post("?method=calendar.updateResponseToTimeSlotEvent", args)
         .await
 }
 
@@ -407,21 +426,21 @@ pub async fn edit_timeslot_event(
 ///
 /// Maps to `CalendarWebService.BlockTimeSlot()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /calendar/timeslots/block`
 pub async fn block_time_slot(
     session: &mut Session,
     args: &BlockTimeSlotRequest,
 ) -> crate::Result<BlockTimeSlotResponse> {
-    session.post("calendar/timeslots/block", args).await
+    session.post("?method=calendar.blockTimeSlot", args).await
 }
 
 /// Delete a timeslot booking.
 ///
 /// Maps to `CalendarWebService.DeleteTimeSlot()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `DELETE /calendar/timeslots/{event_id}`
 ///
@@ -444,27 +463,30 @@ pub async fn delete_time_slot(
         query.push(format!("concerningInstitutionProfileId={pid}"));
     }
     let path = if query.is_empty() {
-        format!("calendar/timeslots/{event_id}")
+        format!("?method=calendar.removeBlockingOrResponseToTimeSlot&eventId={event_id}")
     } else {
-        format!("calendar/timeslots/{event_id}?{}", query.join("&"))
+        format!(
+            "?method=calendar.removeBlockingOrResponseToTimeSlot&eventId={event_id}&{}",
+            query.join("&")
+        )
     };
-    session.delete(&path).await
+    session.post_empty(&path).await
 }
 
 /// Update a lesson event (notes, resources, attachments).
 ///
 /// Maps to `CalendarWebService.UpdateLessonEvent()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `PUT /calendar/lessons/{event_id}`
 pub async fn update_lesson_event(
     session: &mut Session,
     args: &UpdateLessonRequest,
 ) -> crate::Result<UpdateLessonResponse> {
-    let event_id = args.event_id.unwrap_or(0);
+    let _event_id = args.event_id.unwrap_or(0);
     session
-        .put(&format!("calendar/lessons/{event_id}"), args)
+        .post("?method=calendar.updateLessonEvent", args)
         .await
 }
 
@@ -476,7 +498,7 @@ pub async fn update_lesson_event(
 ///
 /// Maps to `CalendarWebService.AddVacation()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /calendar/vacations`
 ///
@@ -487,14 +509,14 @@ pub async fn add_vacation(
     session: &mut Session,
     args: &CreateSimpleEventRequest,
 ) -> crate::Result<AddVacationResponse> {
-    session.post("calendar/vacations", args).await
+    session.post("?method=calendar.addVacation", args).await
 }
 
 /// Get a vacation by ID.
 ///
 /// Maps to `CalendarWebService.GetVacation()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/vacations/{vacation_id}`
 pub async fn get_vacation(
@@ -502,7 +524,9 @@ pub async fn get_vacation(
     vacation_id: i64,
 ) -> crate::Result<EventDetailsDto> {
     session
-        .get(&format!("calendar/vacations/{vacation_id}"))
+        .get(&format!(
+            "?method=calendar.getVacationById&vacationId={vacation_id}"
+        ))
         .await
 }
 
@@ -510,7 +534,7 @@ pub async fn get_vacation(
 ///
 /// Maps to `CalendarWebService.DeleteVacation()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `DELETE /calendar/vacations/{vacation_id}`
 pub async fn delete_vacation(
@@ -518,7 +542,10 @@ pub async fn delete_vacation(
     vacation_id: i64,
 ) -> crate::Result<DeleteVacationResponse> {
     session
-        .delete(&format!("calendar/vacations/{vacation_id}"))
+        .post(
+            "?method=calendar.deleteVacation",
+            &serde_json::json!({"vacationId": vacation_id}),
+        )
         .await
 }
 
@@ -526,7 +553,7 @@ pub async fn delete_vacation(
 ///
 /// Maps to `CalendarWebService.GetFutureVacationRequest()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/vacations/future`
 pub async fn get_future_vacation_request(
@@ -538,9 +565,12 @@ pub async fn get_future_vacation_request(
         query.push(format!("filterInstitutionCalendarCodes={code}"));
     }
     let path = if query.is_empty() {
-        "calendar/vacations/future".to_string()
+        "?method=calendar.getFutureVacationRequests".to_string()
     } else {
-        format!("calendar/vacations/future?{}", query.join("&"))
+        format!(
+            "?method=calendar.getFutureVacationRequests&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -549,7 +579,7 @@ pub async fn get_future_vacation_request(
 ///
 /// Maps to `CalendarWebService.GetVacationRequestResponse()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/vacations/{vacation_id}/response`
 pub async fn get_vacation_request_response(
@@ -569,10 +599,10 @@ pub async fn get_vacation_request_response(
         }
     }
     let path = if query.is_empty() {
-        format!("calendar/vacations/{vacation_id}/response")
+        format!("?method=calendar.getVacationRequestResponses&vacationRequestId={vacation_id}")
     } else {
         format!(
-            "calendar/vacations/{vacation_id}/response?{}",
+            "?method=calendar.getVacationRequestResponses&vacationRequestId={vacation_id}&{}",
             query.join("&")
         )
     };
@@ -583,7 +613,7 @@ pub async fn get_vacation_request_response(
 ///
 /// Maps to `CalendarWebService.RespondToVacationRegistrationRequest()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /calendar/vacations/{vacation_id}/respond`
 pub async fn respond_to_vacation_registration_request(
@@ -591,8 +621,12 @@ pub async fn respond_to_vacation_registration_request(
     vacation_id: i64,
     args: &RespondToVacationRegistrationRequestDto,
 ) -> crate::Result<RespondVacationResponse> {
+    let _ = vacation_id; // included in args
     session
-        .post(&format!("calendar/vacations/{vacation_id}/respond"), args)
+        .post(
+            "?method=calendar.respondToVacationRegistrationRequest",
+            args,
+        )
         .await
 }
 
@@ -604,34 +638,38 @@ pub async fn respond_to_vacation_registration_request(
 ///
 /// Maps to `CalendarWebService.GetCalendarSynchronisationConfigurations()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/sync/configurations`
 pub async fn get_calendar_synchronisation_configurations(
     session: &mut Session,
 ) -> crate::Result<Vec<CalendarSynchronisationConfigurationItem>> {
-    session.get("calendar/sync/configurations").await
+    session
+        .get("?method=CalendarFeed.getFeedConfigurations")
+        .await
 }
 
 /// Create a new calendar synchronisation configuration.
 ///
 /// Maps to `CalendarWebService.CreateCalendarSynchronisationConfiguration()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /calendar/sync/configurations`
 pub async fn create_calendar_synchronisation_configuration(
     session: &mut Session,
     args: &CreateCalendarSynchronizationConfigurationRequest,
 ) -> crate::Result<SyncConfigMutationResponse> {
-    session.post("calendar/sync/configurations", args).await
+    session
+        .post("?method=CalendarFeed.createFeedConfiguration", args)
+        .await
 }
 
 /// Update an existing calendar synchronisation configuration.
 ///
 /// Maps to `CalendarWebService.UpdateCalendarSynchronisationConfiguration()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `PUT /calendar/sync/configurations/{config_id}`
 pub async fn update_calendar_synchronisation_configuration(
@@ -639,8 +677,9 @@ pub async fn update_calendar_synchronisation_configuration(
     config_id: i64,
     args: &UpdateCalendarSynchronizationConfigurationRequest,
 ) -> crate::Result<SyncConfigMutationResponse> {
+    let _ = config_id; // included in args
     session
-        .put(&format!("calendar/sync/configurations/{config_id}"), args)
+        .post("?method=CalendarFeed.updateFeedConfiguration", args)
         .await
 }
 
@@ -648,7 +687,7 @@ pub async fn update_calendar_synchronisation_configuration(
 ///
 /// Maps to `CalendarWebService.DeleteCalendarSynchronisationConfiguration()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `DELETE /calendar/sync/configurations/{config_id}`
 pub async fn delete_calendar_synchronisation_configuration(
@@ -656,7 +695,10 @@ pub async fn delete_calendar_synchronisation_configuration(
     config_id: i64,
 ) -> crate::Result<SyncConfigMutationResponse> {
     session
-        .delete(&format!("calendar/sync/configurations/{config_id}"))
+        .post(
+            "?method=CalendarFeed.removeFeedConfiguration",
+            &serde_json::json!({"configId": config_id}),
+        )
         .await
 }
 
@@ -664,27 +706,29 @@ pub async fn delete_calendar_synchronisation_configuration(
 ///
 /// Maps to `CalendarWebService.GetCalendarSynchronisationConsent()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/sync/consent`
 pub async fn get_calendar_synchronisation_consent(
     session: &mut Session,
 ) -> crate::Result<CalendarSynchronisationModel> {
-    session.get("calendar/sync/consent").await
+    session.get("?method=CalendarFeed.getPolicyAnswer").await
 }
 
 /// Update (accept/revoke) calendar synchronisation consent.
 ///
 /// Maps to `CalendarWebService.UpdateCalendarSynchronisationConsent()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `PUT /calendar/sync/consent`
 pub async fn update_calendar_synchronisation_consent(
     session: &mut Session,
     args: &CalendarSynchronisationModel,
 ) -> crate::Result<UpdateSyncConsentResponse> {
-    session.put("calendar/sync/consent", args).await
+    session
+        .post("?method=CalendarFeed.setPolicyAnswer", args)
+        .await
 }
 
 // ===========================================================================
@@ -695,7 +739,7 @@ pub async fn update_calendar_synchronisation_consent(
 ///
 /// Maps to `CalendarWebService.GetDelegatedAccesses()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/delegatedAccesses`
 pub async fn get_delegated_accesses(
@@ -703,8 +747,8 @@ pub async fn get_delegated_accesses(
     inst_profile_id: Option<i64>,
 ) -> crate::Result<Vec<DelegateAccesses>> {
     let path = match inst_profile_id {
-        Some(id) => format!("calendar/delegatedAccesses?instProfileId={id}"),
-        None => "calendar/delegatedAccesses".to_string(),
+        Some(id) => format!("?method=calendar.getDelegatedAccesses&instProfileId={id}"),
+        None => "?method=calendar.getDelegatedAccesses".to_string(),
     };
     session.get(&path).await
 }
@@ -713,21 +757,23 @@ pub async fn get_delegated_accesses(
 ///
 /// Maps to `CalendarWebService.SetDelegatedAccesses()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /calendar/delegatedAccesses`
 pub async fn set_delegated_accesses(
     session: &mut Session,
     args: &DelegateAccessesInput,
 ) -> crate::Result<SetDelegatedAccessesResponse> {
-    session.post("calendar/delegatedAccesses", args).await
+    session
+        .post("?method=calendar.setDelegatedAccesses", args)
+        .await
 }
 
 /// Get institution profiles that have delegated calendar access.
 ///
 /// Maps to `CalendarWebService.GetInstitutionProfilesWithDelegatedAccesses()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/delegatedAccesses/profiles`
 pub async fn get_institution_profiles_with_delegated_accesses(
@@ -735,8 +781,10 @@ pub async fn get_institution_profiles_with_delegated_accesses(
     inst_profile_id: Option<i64>,
 ) -> crate::Result<Vec<InstitutionDelegateAccessesItem>> {
     let path = match inst_profile_id {
-        Some(id) => format!("calendar/delegatedAccesses/profiles?instProfileId={id}"),
-        None => "calendar/delegatedAccesses/profiles".to_string(),
+        Some(id) => {
+            format!("?method=calendar.getInstitutionProfilesWithDelegatedAccess&instProfileId={id}")
+        }
+        None => "?method=calendar.getInstitutionProfilesWithDelegatedAccess".to_string(),
     };
     session.get(&path).await
 }
@@ -745,7 +793,7 @@ pub async fn get_institution_profiles_with_delegated_accesses(
 ///
 /// Maps to `CalendarWebService.GetBirthdaysForGroup()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/birthdays/group/{group_id}`
 pub async fn get_birthdays_for_group(
@@ -756,7 +804,7 @@ pub async fn get_birthdays_for_group(
 ) -> crate::Result<Vec<BirthdayEventDto>> {
     session
         .get(&format!(
-            "calendar/birthdays/group/{group_id}?start={start}&end={end}"
+            "?method=calendar.getBirthdayEventsForGroup&groupId={group_id}&start={start}&end={end}"
         ))
         .await
 }
@@ -765,7 +813,7 @@ pub async fn get_birthdays_for_group(
 ///
 /// Maps to `CalendarWebService.GetBirthdaysForInstitution()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/birthdays/institution/{institution_id}`
 pub async fn get_birthdays_for_institution(
@@ -776,7 +824,7 @@ pub async fn get_birthdays_for_institution(
 ) -> crate::Result<Vec<BirthdayEventDto>> {
     session
         .get(&format!(
-            "calendar/birthdays/institution/{institution_id}?start={start}&end={end}"
+            "?method=calendar.getBirthdayEventsForInstitutions&institutionId={institution_id}&start={start}&end={end}"
         ))
         .await
 }
@@ -785,7 +833,7 @@ pub async fn get_birthdays_for_institution(
 ///
 /// Maps to `CalendarWebService.GetTopImportantDate()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/importantDates/top`
 pub async fn get_top_important_date(
@@ -797,9 +845,9 @@ pub async fn get_top_important_date(
         query.push(format!("instProfileIds={id}"));
     }
     let path = if query.is_empty() {
-        "calendar/importantDates/top".to_string()
+        "?method=calendar.getImportantDates".to_string()
     } else {
-        format!("calendar/importantDates/top?{}", query.join("&"))
+        format!("?method=calendar.getImportantDates&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -808,21 +856,23 @@ pub async fn get_top_important_date(
 ///
 /// Maps to `CalendarWebService.CheckConflictEventForAttendees()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /calendar/events/conflicts`
 pub async fn check_conflict_event_for_attendees(
     session: &mut Session,
     args: &CheckEventConflictInput,
 ) -> crate::Result<Vec<ConflictEventItem>> {
-    session.post("calendar/events/conflicts", args).await
+    session
+        .post("?method=calendar.checkConflictEventForAttendees", args)
+        .await
 }
 
 /// Check whether calendar feed is enabled for a municipality.
 ///
 /// Maps to `CalendarWebService.GetIsCalendarFeedEnabledForMunicipality()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/feed/municipality/{municipality_id}/enabled`
 pub async fn get_is_calendar_feed_enabled_for_municipality(
@@ -831,7 +881,7 @@ pub async fn get_is_calendar_feed_enabled_for_municipality(
 ) -> crate::Result<CalendarSynchronisationMunicipalityFeedModel> {
     session
         .get(&format!(
-            "calendar/feed/municipality/{municipality_id}/enabled"
+            "?method=MunicipalConfiguration.getCalendarFeedEnabled&municipalityId={municipality_id}"
         ))
         .await
 }
@@ -840,7 +890,7 @@ pub async fn get_is_calendar_feed_enabled_for_municipality(
 ///
 /// Maps to `CalendarWebService.GetFeedConfigurationById()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /calendar/feed/configuration/{config_id}`
 pub async fn get_feed_configuration_by_id(
@@ -848,7 +898,9 @@ pub async fn get_feed_configuration_by_id(
     config_id: i64,
 ) -> crate::Result<CalendarSynchronisationConfigurationItem> {
     session
-        .get(&format!("calendar/feed/configuration/{config_id}"))
+        .get(&format!(
+            "?method=CalendarFeed.getFeedConfigurationById&configId={config_id}"
+        ))
         .await
 }
 

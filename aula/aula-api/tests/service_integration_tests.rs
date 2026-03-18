@@ -3,7 +3,7 @@
 //! Complements `mock_api_tests.rs` (TASK-66) by covering every service module
 //! with at least basic request/response validation.
 
-use wiremock::matchers::{body_json_string, header, method, path, path_regex, query_param};
+use wiremock::matchers::{header, method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use aula_api::client::AulaClient;
@@ -32,7 +32,7 @@ fn mock_session(base_url: &str) -> Session {
 }
 
 fn mock_client(base_url: &str) -> AulaClient {
-    AulaClient::with_base_url(&format!("{base_url}/api/v19/")).expect("client with base URL")
+    AulaClient::with_base_url(&format!("{base_url}/api/v23/")).expect("client with base URL")
 }
 
 fn aula_envelope(data: serde_json::Value) -> serde_json::Value {
@@ -99,7 +99,8 @@ mod profile_configuration {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/masterdata/profile"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getProfileMasterData"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -116,7 +117,8 @@ mod profile_configuration {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/masterdata"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.updateProfileMasterData"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
@@ -141,7 +143,8 @@ mod profile_configuration {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/profiles/keepAlive"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "session.keepAlive"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -158,7 +161,8 @@ mod profile_configuration {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/configuration/maxFileSize"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "centralConfiguration.getMaxFileSize"))
             .respond_with(json_response(serde_json::json!(52428800)))
             .expect(1)
             .mount(&server)
@@ -181,7 +185,11 @@ mod profile_configuration {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/configuration/isAppDeprecated"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "centralConfiguration.isAppVersionDeprecated",
+            ))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -204,7 +212,11 @@ mod profile_configuration {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/configuration/authorizedFileFormats"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "centralConfiguration.getauthorizedfileformats",
+            ))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -227,7 +239,8 @@ mod profile_configuration {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/configuration/privacyPolicy"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "centralConfiguration.getDataPolicy"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -250,7 +263,11 @@ mod profile_configuration {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/configuration/loginImportantInformation"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "centralConfiguration.getLoginImportantInformation",
+            ))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -269,7 +286,8 @@ mod profile_configuration {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/masterdata/profilePicture"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.updateProfilePicture"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
@@ -302,7 +320,8 @@ mod messaging_extended {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/messaging/threads"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.startNewThread"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({"threadId": 999})))
             .expect(1)
@@ -330,7 +349,8 @@ mod messaging_extended {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/messaging/threads/42/reply"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.reply"))
             .respond_with(json_response(serde_json::json!({"messageId": "msg-100"})))
             .expect(1)
             .mount(&server)
@@ -358,7 +378,8 @@ mod messaging_extended {
         let body = fixture("messaging_thread_detail.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/messaging/threads/42/messages"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.getMessagesForThread"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(body)
@@ -382,8 +403,9 @@ mod messaging_extended {
     async fn delete_threads() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/messaging/threads"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.deleteThreads"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -410,7 +432,8 @@ mod messaging_extended {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/messaging/folders"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.getFolders"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -433,7 +456,8 @@ mod messaging_extended {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/messaging/folders"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.createFolder"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({"id": 5})))
             .expect(1)
@@ -461,7 +485,8 @@ mod messaging_extended {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/messaging/autoReply"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.getAutoReply"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -479,7 +504,8 @@ mod messaging_extended {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/messaging/autoReply"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.setAutoReply"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({
                 "replyText": { "html": "Away" },
@@ -505,8 +531,9 @@ mod messaging_extended {
     async fn delete_auto_reply() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/messaging/autoReply"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.deleteAutoReply"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -522,8 +549,9 @@ mod messaging_extended {
     async fn set_thread_muted() {
         let server = MockServer::start().await;
 
-        Mock::given(method("PUT"))
-            .and(path("/api/v19/messaging/threads/muted"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.setThreadsMuted"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -546,8 +574,9 @@ mod messaging_extended {
     async fn set_thread_marked() {
         let server = MockServer::start().await;
 
-        Mock::given(method("PUT"))
-            .and(path("/api/v19/messaging/threads/marked"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.setThreadsMarked"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -578,7 +607,8 @@ mod messaging_extended {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/messaging/commonInboxes"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.getCommonInboxes"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -603,7 +633,8 @@ mod messaging_extended {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/messaging/messages/msg-99/info"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.getMessageInfoLight"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -639,7 +670,8 @@ mod calendar_extended {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/calendar/events/22150"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "calendar.getEventById"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -665,7 +697,8 @@ mod calendar_extended {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/calendar/birthdays/group/1501"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "calendar.getBirthdayEventsForGroup"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -693,7 +726,8 @@ mod calendar_extended {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/calendar/vacations/future"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "calendar.getFutureVacationRequests"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -710,8 +744,9 @@ mod calendar_extended {
     async fn delete_event() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/calendar/events/22150"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "calendar.deleteEvent"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -732,7 +767,8 @@ mod calendar_extended {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/calendar/eventTypes"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "calendar.getEventTypes"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -757,7 +793,8 @@ mod calendar_extended {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/calendar/importantDates/top"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "calendar.getImportantDates"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -777,7 +814,8 @@ mod calendar_extended {
         let data = serde_json::json!({ "policyAccepted": true });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/calendar/sync/consent"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "CalendarFeed.getPolicyAnswer"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -797,7 +835,8 @@ mod calendar_extended {
         let data = serde_json::json!([]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/calendar/delegatedAccesses"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "calendar.getDelegatedAccesses"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -826,7 +865,8 @@ mod presence_extended {
         let body = fixture("presence_registrations.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/presence/registrations"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "presence.getPresenceRegistrations"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(body)
@@ -856,7 +896,8 @@ mod presence_extended {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/presence/schedules"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "presence.getPresenceTemplates"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -885,7 +926,8 @@ mod presence_extended {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/presence/weekOverview"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "presence.getActivityOverview"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -916,7 +958,8 @@ mod presence_extended {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/presence/pickup/responsibles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "presence.getPickupResponsibles"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -949,7 +992,8 @@ mod posts_service {
         let body = fixture("posts_response.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/posts"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "posts.getAllPosts"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(body)
@@ -989,7 +1033,8 @@ mod posts_service {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/posts"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "posts.createPost"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(
                 serde_json::json!({"allImagesHasValidConsents": true}),
@@ -1024,7 +1069,8 @@ mod posts_service {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/posts/33001/bookmark"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "posts.bookmark"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1040,8 +1086,9 @@ mod posts_service {
     async fn unbookmark_post() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/posts/33001/bookmark"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "posts.unbookmark"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1057,8 +1104,9 @@ mod posts_service {
     async fn delete_post() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/posts/33001"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "posts.deletePost"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1105,7 +1153,8 @@ mod gallery_service {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/gallery/albums"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "gallery.getAlbums"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1134,7 +1183,8 @@ mod gallery_service {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/gallery/albums"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "gallery.createAlbum"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({"id": 7702})))
             .expect(1)
@@ -1158,8 +1208,9 @@ mod gallery_service {
     async fn delete_album() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/gallery/albums/7701"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "gallery.deleteAlbums"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1175,8 +1226,9 @@ mod gallery_service {
     async fn delete_media() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/gallery/media/100"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "gallery.deleteMedia"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1201,7 +1253,8 @@ mod documents_service {
         let body = fixture("documents_response.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/documents/secure"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "documents.getSecureDocuments"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(body)
@@ -1242,7 +1295,8 @@ mod documents_service {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/documents/export/maxCount"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "documents.getMaxDocumentsPerExport"))
             .respond_with(json_response(serde_json::json!(50)))
             .expect(1)
             .mount(&server)
@@ -1259,8 +1313,9 @@ mod documents_service {
     async fn soft_delete_document() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/documents/9901"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "documents.deleteDocument"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1276,8 +1331,9 @@ mod documents_service {
     async fn update_document_locked_status() {
         let server = MockServer::start().await;
 
-        Mock::given(method("PUT"))
-            .and(path("/api/v19/documents/9901/locked"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "documents.updateLockedStatus"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
@@ -1303,7 +1359,11 @@ mod documents_service {
         });
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/documents/9901/pdf"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "documents.createPDFForSingleDocument",
+            ))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1328,7 +1388,11 @@ mod notifications_service {
         let body = fixture("notifications_response.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/notifications"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "notifications.getNotificationsForActiveProfile",
+            ))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(body)
@@ -1350,8 +1414,9 @@ mod notifications_service {
     async fn delete_notifications() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/notifications"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "notifications.deleteNotifications"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1367,8 +1432,12 @@ mod notifications_service {
     async fn delete_notification_for_child() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/notifications/child/14201"))
+        Mock::given(method("GET"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "notifications.deleteNotificationsByRelatedChild",
+            ))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1403,7 +1472,8 @@ mod search_service {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/search"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "search.findGeneric"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1443,7 +1513,8 @@ mod search_service {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/search/recipients"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "search.findRecipients"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1487,7 +1558,8 @@ mod search_service {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/search/groups"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "search.findGroups"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1532,7 +1604,8 @@ mod groups_service {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/groups/1501"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "groups.getGroupById"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1561,7 +1634,8 @@ mod groups_service {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/groups/1501/memberships"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "groups.getMembershipsLight"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1585,7 +1659,8 @@ mod groups_service {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/groups/context/12055"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "groups.getGroupsByContext"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1603,7 +1678,8 @@ mod groups_service {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/groups/1501/membership"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "groups.joinOrLeaveGroup"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
@@ -1629,7 +1705,7 @@ mod health_service {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/isAlive"))
+            .and(path("/api/v23/alivecheck/"))
             .respond_with(json_response(serde_json::json!({"status": "ok"})))
             .expect(1)
             .mount(&server)
@@ -1677,7 +1753,8 @@ mod consent_service {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/consents"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "consents.getConsentResponses"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1696,7 +1773,8 @@ mod consent_service {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/consents"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "consents.updateConsentResponses"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
@@ -1726,7 +1804,8 @@ mod widget_service {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/widget/token"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "aulaToken.getAulaToken"))
             .respond_with(json_response(serde_json::json!({
                 "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.test"
             })))
@@ -1735,7 +1814,7 @@ mod widget_service {
             .await;
 
         let mut session = mock_session(&server.uri());
-        let val = widget::get_aula_token(&mut session)
+        let val = widget::get_aula_token(&mut session, "test-widget")
             .await
             .expect("should deserialize widget token");
         assert!(val["token"].as_str().unwrap().starts_with("eyJ"));
@@ -1751,7 +1830,8 @@ mod onboarding_service {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/onboarding/complete"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.markOnboardingCompleted"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1773,7 +1853,8 @@ mod onboarding_service {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/onboarding/policyLinks"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "CommonFiles.getPersonalDataPolicies"))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1791,29 +1872,6 @@ mod onboarding_service {
 mod push_notifications_service {
     use super::*;
     use aula_api::services::push_notifications;
-
-    #[tokio::test]
-    async fn get_devices() {
-        let server = MockServer::start().await;
-
-        let data = serde_json::json!([
-            { "deviceId": "dev-001" },
-            { "deviceId": "dev-002" }
-        ]);
-
-        Mock::given(method("GET"))
-            .and(path("/api/v19/pushNotifications/devices"))
-            .respond_with(json_response(data))
-            .expect(1)
-            .mount(&server)
-            .await;
-
-        let mut session = mock_session(&server.uri());
-        let devices = push_notifications::get_devices(&mut session)
-            .await
-            .expect("should deserialize devices");
-        assert_eq!(devices.len(), 2);
-    }
 
     #[tokio::test]
     async fn get_notification_settings() {
@@ -1844,7 +1902,11 @@ mod push_notifications_service {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/pushNotifications/settings"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "notifications.getNotificationSettingsForActiveProfile",
+            ))
             .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
@@ -1862,8 +1924,9 @@ mod push_notifications_service {
     async fn unregister_device() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/pushNotifications/devices/dev-001"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "notifications.unregisterDevice"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -1880,7 +1943,11 @@ mod push_notifications_service {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/pushNotifications/badges/clear"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "notifications.deleteBadgeNotificationByModule",
+            ))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
@@ -1908,7 +1975,8 @@ mod comments_service {
         let server = MockServer::start().await;
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/comments"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "comments.addComment"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(serde_json::json!({"id": 501})))
             .expect(1)
@@ -1947,7 +2015,8 @@ mod comments_service {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/comments"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "comments.getComments"))
             .and(query_param("parentType", "Post"))
             .and(query_param("parentId", "33001"))
             .respond_with(json_response(data))
@@ -1972,8 +2041,9 @@ mod comments_service {
     async fn delete_comment() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/comments/501"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "comments.deleteComment"))
             .respond_with(json_response(serde_json::json!({})))
             .expect(1)
             .mount(&server)
@@ -2008,7 +2078,8 @@ mod files_service {
         ]);
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/files/uploadLinks"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "files.getDownloadUrl"))
             .and(header("content-type", "application/json"))
             .respond_with(json_response(data))
             .expect(1)
@@ -2041,7 +2112,11 @@ mod error_handling_extended {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/notifications"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "notifications.getNotificationsForActiveProfile",
+            ))
             .respond_with(ResponseTemplate::new(503))
             .expect(1)
             .mount(&server)
@@ -2063,7 +2138,11 @@ mod error_handling_extended {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/notifications"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "notifications.getNotificationsForActiveProfile",
+            ))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(aula_error_envelope(13))
@@ -2076,7 +2155,7 @@ mod error_handling_extended {
         // Use the raw client (no stored tokens) so Session doesn't try to refresh.
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("notifications")
+            .get::<serde_json::Value>("?method=notifications.getNotificationsForActiveProfile")
             .await
             .unwrap_err();
         assert!(
@@ -2091,7 +2170,11 @@ mod error_handling_extended {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/notifications"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "notifications.getNotificationsForActiveProfile",
+            ))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(aula_error_envelope(9))
@@ -2103,7 +2186,7 @@ mod error_handling_extended {
 
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("notifications")
+            .get::<serde_json::Value>("?method=notifications.getNotificationsForActiveProfile")
             .await
             .unwrap_err();
         assert!(
@@ -2118,7 +2201,8 @@ mod error_handling_extended {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/groups/1"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "groups.getGroupById"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(aula_error_envelope(7))
@@ -2130,7 +2214,7 @@ mod error_handling_extended {
 
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("groups/1")
+            .get::<serde_json::Value>("?method=groups.getGroupById")
             .await
             .unwrap_err();
         assert!(
@@ -2154,7 +2238,8 @@ mod error_handling_extended {
         });
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/comments"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "comments.addComment"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(body)
@@ -2166,7 +2251,10 @@ mod error_handling_extended {
 
         let client = mock_client(&server.uri());
         let err = client
-            .post::<serde_json::Value, _>("comments", &serde_json::json!({"content": "test"}))
+            .post::<serde_json::Value, _>(
+                "?method=comments.addComment",
+                &serde_json::json!({"content": "test"}),
+            )
             .await
             .unwrap_err();
 
@@ -2178,13 +2266,14 @@ mod error_handling_extended {
         }
     }
 
-    /// Verify 401 on DELETE requests.
+    /// Verify 401 on POST requests (formerly DELETE).
     #[tokio::test]
     async fn delete_service_handles_401() {
         let server = MockServer::start().await;
 
-        Mock::given(method("DELETE"))
-            .and(path("/api/v19/notifications"))
+        Mock::given(method("POST"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "notifications.deleteNotifications"))
             .respond_with(ResponseTemplate::new(401))
             .expect(1)
             .mount(&server)
@@ -2192,7 +2281,10 @@ mod error_handling_extended {
 
         let client = mock_client(&server.uri());
         let err = client
-            .delete::<serde_json::Value>("notifications")
+            .post::<serde_json::Value, _>(
+                "?method=notifications.deleteNotifications",
+                &serde_json::json!({}),
+            )
             .await
             .unwrap_err();
         assert!(
@@ -2207,7 +2299,8 @@ mod error_handling_extended {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/documents/secure"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "documents.getSecureDocuments"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(aula_error_envelope(8))
@@ -2219,7 +2312,7 @@ mod error_handling_extended {
 
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("documents/secure")
+            .get::<serde_json::Value>("?method=documents.getSecureDocuments")
             .await
             .unwrap_err();
         assert!(

@@ -4,16 +4,12 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.4.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_additional_master_data` | GET | `/additionalMasterData` |
-//! | `get_by_institution_profile_id` | GET | `/additionalMasterData/{id}` |
-//! | `post_additional_master_data` | POST | `/additionalMasterData` |
-//! | `post_additional_master_data_employee` | POST | `/additionalMasterData/employee` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GET_ADDITIONAL_MASTER_DATA_FOR_OWNER` | `profiles.getAdditionalDataResponsesForOwner` |
+//! | `GET_ADDITIONAL_MASTER_DATA_BY_INSTPROFILEID` | `profiles.getAdditionalDataResponsesByInstitutionProfileIds` |
+//! | `POST_ADDITIONAL_MASTER_DATA_FOR_OWNER` | `profiles.updateAdditionalDataResponses` |
+//! | `POST_ADDITIONAL_MASTER_DATA_BY_EMPLOYEE` | `profiles.updateAdditionalDataResponsesEmployee` |
 
 use serde::{Deserialize, Serialize};
 
@@ -74,28 +70,32 @@ pub struct UpdateAdditionalMasterDataEmployeeRequest {
 ///
 /// Maps to `AdditionalMasterDataService.GetAdditionalMasterData()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /additionalMasterData`
+/// `GET ?method=profiles.getAdditionalDataResponsesForOwner`
 pub async fn get_additional_master_data(
     session: &mut Session,
 ) -> crate::Result<Vec<AdditionalMasterData>> {
-    session.get("additionalMasterData").await
+    session
+        .get("?method=profiles.getAdditionalDataResponsesForOwner")
+        .await
 }
 
 /// Get additional master data for a specific institution profile.
 ///
 /// Maps to `AdditionalMasterDataService.GetAdditionalMasterDataByInstitutionProfileId()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /additionalMasterData/{institution_profile_id}`
+/// `GET ?method=profiles.getAdditionalDataResponsesByInstitutionProfileIds&institutionProfileId={id}`
 pub async fn get_by_institution_profile_id(
     session: &mut Session,
     institution_profile_id: InstitutionProfileId,
 ) -> crate::Result<AdditionalMasterData> {
     session
-        .get(&format!("additionalMasterData/{institution_profile_id}"))
+        .get(&format!(
+            "?method=profiles.getAdditionalDataResponsesByInstitutionProfileIds&institutionProfileId={institution_profile_id}"
+        ))
         .await
 }
 
@@ -103,28 +103,35 @@ pub async fn get_by_institution_profile_id(
 ///
 /// Maps to `AdditionalMasterDataService.PostAdditionalMasterData()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /additionalMasterData`
+/// `POST ?method=profiles.updateAdditionalDataResponses`
 pub async fn post_additional_master_data(
     session: &mut Session,
     request: &UpdateAdditionalMasterDataRequest,
 ) -> crate::Result<serde_json::Value> {
-    session.post("additionalMasterData", request).await
+    session
+        .post("?method=profiles.updateAdditionalDataResponses", request)
+        .await
 }
 
 /// Update employee-specific additional master data.
 ///
 /// Maps to `AdditionalMasterDataService.PostAdditionalMasterDataEmployee()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /additionalMasterData/employee`
+/// `POST ?method=profiles.updateAdditionalDataResponsesEmployee`
 pub async fn post_additional_master_data_employee(
     session: &mut Session,
     request: &UpdateAdditionalMasterDataEmployeeRequest,
 ) -> crate::Result<serde_json::Value> {
-    session.post("additionalMasterData/employee", request).await
+    session
+        .post(
+            "?method=profiles.updateAdditionalDataResponsesEmployee",
+            request,
+        )
+        .await
 }
 
 // ---------------------------------------------------------------------------

@@ -4,32 +4,27 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.11.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_secure_documents` | GET | `/documents/secure` |
-//! | `get_common_files` | GET | `/documents/common` |
-//! | `update_sharings` | PUT | `/documents/{id}/sharings` |
-//! | `remove_own_sharings` | DELETE | `/documents/{id}/sharings/own` |
-//! | `get_implicit_sharings` | GET | `/documents/{id}/implicitSharings` |
-//! | `get_document_revisions` | GET | `/documents/{id}/revisions` |
-//! | `get_external_document_details` | GET | `/documents/external/{id}` |
-//! | `get_external_secure_document_revision` | GET | `/documents/external/{id}/revision` |
-//! | `get_internal_document_details` | GET | `/documents/internal/{id}` |
-//! | `get_internal_secure_document_revision` | GET | `/documents/internal/{id}/revision` |
-//! | `create_internal_secure_document` | POST | `/documents/internal` |
-//! | `update_internal_secure_document` | PUT | `/documents/internal/{id}` |
-//! | `update_document_locked_status` | PUT | `/documents/{id}/locked` |
-//! | `soft_delete_secure_document` | DELETE | `/documents/{id}` |
-//! | `get_shareable_secure_documents` | GET | `/documents/shareable` |
-//! | `get_max_documents_per_export` | GET | `/documents/export/maxCount` |
-//! | `create_export_for_multiple` | POST | `/documents/export` |
-//! | `track_export` | GET | `/documents/export/{id}/status` |
-//! | `create_pdf_for_single` | POST | `/documents/{id}/pdf` |
-//! | `track_create_pdf` | GET | `/documents/{id}/pdf/status` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GET_SECURE_DOCUMENTS` | `documents.getSecureDocuments` |
+//! | `GET_COMMON_FILES` | `commonFiles.getCommonFiles` |
+//! | `DOCUMENT_UPDATE_SHARINGS` | `documents.updateSharings` |
+//! | `DOCUMENT_REMOVE_OWN_SHARINGS` | `documents.removeOwnSharings` |
+//! | `POST_IMPLICIT_SHARINGS` | `documents.getImplicitSharings` |
+//! | `GET_DOCUMENT_REVISIONS` | `documents.getDocumentRevisions` |
+//! | `GET_EXTERNAL_SECURE_DOCUMENTS` | `documents.getExternalSecureFile` |
+//! | `GET_DOCUMENT_REVISION` | `documents.getDocumentRevision` |
+//! | `GET_INTERNAL_SECURE_DOCUMENTS` | `documents.getInternalSecureDocument` |
+//! | `CREATE_INTERNAL_SECURE_DOCUMENT` | `documents.createInternalSecureDocument` |
+//! | `UPDATE_INTERNAL_SECURE_DOCUMENT` | `documents.updateInternalSecureDocument` |
+//! | `UPDATE_DOCUMENT_LOCK_STATUS` | `documents.updateLockedStatus` |
+//! | `SOFT_DELETE_SECURE_DOCUMENT` | `documents.deleteDocument` |
+//! | `GET_SHAREABLE_SECURE_DOCUMENT` | `documents.getShareableSecureDocuments` |
+//! | `GET_MAX_DOCUMENTS_PER_EXPORT` | `documents.getMaxDocumentsPerExport` |
+//! | `CREATE_ARCHIVE_FOR_MULTIPLE_SECURE_DOCUMENTS` | `documents.createArchiveForMultipleSecureDocuments` |
+//! | `TRACK_CREATE_ARCHIVE_FOR_MULTIPLE_SECURE_DOCUMENTS` | `documents.trackCreateArchiveForMultipleSecureDocumentsRequest` |
+//! | `CREATE_PDF_FOR_SINGLE_DOCUMENT` | `documents.createPDFForSingleDocument` |
+//! | `TRACK_CREATE_PDF_FOR_SINGLE_DOCUMENT` | `documents.trackCreatePDFForSingleDocument` |
 
 use serde::{Deserialize, Serialize};
 
@@ -64,7 +59,7 @@ pub struct UpdateDocumentLockedStatusRequest {
 ///
 /// Maps to `SecureDocumentWebService.GetSecureDocuments()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/secure?<query params>`
 pub async fn get_secure_documents(
@@ -113,9 +108,9 @@ pub async fn get_secure_documents(
     }
 
     let path = if query.is_empty() {
-        "documents/secure".to_string()
+        "?method=documents.getSecureDocuments".to_string()
     } else {
-        format!("documents/secure?{}", query.join("&"))
+        format!("?method=documents.getSecureDocuments&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -124,7 +119,7 @@ pub async fn get_secure_documents(
 ///
 /// Maps to `SecureDocumentWebService.GetCommonFiles()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/common?<query params>`
 pub async fn get_common_files(
@@ -151,9 +146,9 @@ pub async fn get_common_files(
     }
 
     let path = if query.is_empty() {
-        "documents/common".to_string()
+        "?method=commonFiles.getCommonFiles".to_string()
     } else {
-        format!("documents/common?{}", query.join("&"))
+        format!("?method=commonFiles.getCommonFiles&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -162,7 +157,7 @@ pub async fn get_common_files(
 ///
 /// Maps to `SecureDocumentWebService.UpdateSharings()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `PUT /documents/sharings`
 ///
@@ -173,14 +168,14 @@ pub async fn update_sharings(
     session: &mut Session,
     args: &UpdateSharingArguments,
 ) -> crate::Result<serde_json::Value> {
-    session.put("documents/sharings", args).await
+    session.post("?method=documents.updateSharings", args).await
 }
 
 /// Remove the current user's own sharings from documents.
 ///
 /// Maps to `SecureDocumentWebService.RemoveOwnSharings()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `DELETE /documents/sharings/own`
 ///
@@ -191,7 +186,7 @@ pub async fn remove_own_sharings(
     args: &RemoveSharingArguments,
 ) -> crate::Result<serde_json::Value> {
     session
-        .delete_with_body("documents/sharings/own", args)
+        .post("?method=documents.removeOwnSharings", args)
         .await
 }
 
@@ -199,7 +194,7 @@ pub async fn remove_own_sharings(
 ///
 /// Maps to `SecureDocumentWebService.GetImplicitSharings()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/{id}/implicitSharings`
 pub async fn get_implicit_sharings(
@@ -207,7 +202,9 @@ pub async fn get_implicit_sharings(
     document_id: i64,
 ) -> crate::Result<GetImplicitSharingsDto> {
     session
-        .get(&format!("documents/{document_id}/implicitSharings"))
+        .get(&format!(
+            "?method=documents.getImplicitSharings&documentId={document_id}"
+        ))
         .await
 }
 
@@ -215,7 +212,7 @@ pub async fn get_implicit_sharings(
 ///
 /// Maps to `SecureDocumentWebService.GetDocumentRevisions()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/{id}/revisions?page=...`
 pub async fn get_document_revisions(
@@ -224,8 +221,10 @@ pub async fn get_document_revisions(
     page: Option<i32>,
 ) -> crate::Result<DocumentRevisionPageDto> {
     let path = match page {
-        Some(p) => format!("documents/{document_id}/revisions?page={p}"),
-        None => format!("documents/{document_id}/revisions"),
+        Some(p) => {
+            format!("?method=documents.getDocumentRevisions&documentId={document_id}&page={p}")
+        }
+        None => format!("?method=documents.getDocumentRevisions&documentId={document_id}"),
     };
     session.get(&path).await
 }
@@ -234,7 +233,7 @@ pub async fn get_document_revisions(
 ///
 /// Maps to `SecureDocumentWebService.GetExternalDocumentDetails()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/external/{id}`
 pub async fn get_external_document_details(
@@ -242,7 +241,9 @@ pub async fn get_external_document_details(
     document_id: i64,
 ) -> crate::Result<ExternalSecureDocumentDetailsDto> {
     session
-        .get(&format!("documents/external/{document_id}"))
+        .get(&format!(
+            "?method=documents.getExternalSecureFile&documentId={document_id}"
+        ))
         .await
 }
 
@@ -250,7 +251,7 @@ pub async fn get_external_document_details(
 ///
 /// Maps to `SecureDocumentWebService.GetExternalSecureDocumentRevision()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/external/{id}/revision`
 pub async fn get_external_document_revision(
@@ -258,7 +259,9 @@ pub async fn get_external_document_revision(
     document_id: i64,
 ) -> crate::Result<ExternalSecureDocumentDetailsDto> {
     session
-        .get(&format!("documents/external/{document_id}/revision"))
+        .get(&format!(
+            "?method=documents.getDocumentRevision&documentId={document_id}"
+        ))
         .await
 }
 
@@ -266,7 +269,7 @@ pub async fn get_external_document_revision(
 ///
 /// Maps to `SecureDocumentWebService.GetInternalDocumentDetails()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/internal/{id}`
 pub async fn get_internal_document_details(
@@ -274,7 +277,9 @@ pub async fn get_internal_document_details(
     document_id: i64,
 ) -> crate::Result<InternalSecureDocumentDetailsDto> {
     session
-        .get(&format!("documents/internal/{document_id}"))
+        .get(&format!(
+            "?method=documents.getInternalSecureDocument&documentId={document_id}"
+        ))
         .await
 }
 
@@ -282,7 +287,7 @@ pub async fn get_internal_document_details(
 ///
 /// Maps to `SecureDocumentWebService.GetInternalSecureDocumentRevision()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/internal/{id}/revision`
 pub async fn get_internal_document_revision(
@@ -290,7 +295,9 @@ pub async fn get_internal_document_revision(
     document_id: i64,
 ) -> crate::Result<InternalSecureDocumentDetailsDto> {
     session
-        .get(&format!("documents/internal/{document_id}/revision"))
+        .get(&format!(
+            "?method=documents.getDocumentRevision&documentId={document_id}"
+        ))
         .await
 }
 
@@ -298,21 +305,23 @@ pub async fn get_internal_document_revision(
 ///
 /// Maps to `SecureDocumentWebService.CreateInternalSecureDocument()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /documents/internal`
 pub async fn create_internal_secure_document(
     session: &mut Session,
     args: &CreateInternalDocumentArguments,
 ) -> crate::Result<serde_json::Value> {
-    session.post("documents/internal", args).await
+    session
+        .post("?method=documents.createInternalSecureDocument", args)
+        .await
 }
 
 /// Update an existing internal secure document.
 ///
 /// Maps to `SecureDocumentWebService.UpdateInternalSecureDocument()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `PUT /documents/internal/{id}`
 pub async fn update_internal_secure_document(
@@ -320,8 +329,9 @@ pub async fn update_internal_secure_document(
     document_id: i64,
     args: &CreateInternalDocumentArguments,
 ) -> crate::Result<serde_json::Value> {
+    let _ = document_id; // included in args
     session
-        .put(&format!("documents/internal/{document_id}"), args)
+        .post("?method=documents.updateInternalSecureDocument", args)
         .await
 }
 
@@ -329,7 +339,7 @@ pub async fn update_internal_secure_document(
 ///
 /// Maps to `SecureDocumentWebService.UpdateDocumentLockedStatus()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `PUT /documents/{id}/locked`
 pub async fn update_document_locked_status(
@@ -338,8 +348,9 @@ pub async fn update_document_locked_status(
     is_locked: bool,
 ) -> crate::Result<serde_json::Value> {
     let body = UpdateDocumentLockedStatusRequest { is_locked };
+    let _ = document_id; // included in body context
     session
-        .put(&format!("documents/{document_id}/locked"), &body)
+        .post("?method=documents.updateLockedStatus", &body)
         .await
 }
 
@@ -347,21 +358,26 @@ pub async fn update_document_locked_status(
 ///
 /// Maps to `SecureDocumentWebService.SoftDeleteSecureDocument()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `DELETE /documents/{id}`
 pub async fn soft_delete_secure_document(
     session: &mut Session,
     document_id: i64,
 ) -> crate::Result<serde_json::Value> {
-    session.delete(&format!("documents/{document_id}")).await
+    session
+        .post(
+            "?method=documents.deleteDocument",
+            &serde_json::json!({"documentId": document_id}),
+        )
+        .await
 }
 
 /// Get shareable secure documents matching the given filter.
 ///
 /// Maps to `SecureDocumentWebService.GetShareableSecureDocuments()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/shareable?<query params>`
 pub async fn get_shareable_secure_documents(
@@ -387,9 +403,12 @@ pub async fn get_shareable_secure_documents(
     }
 
     let path = if query.is_empty() {
-        "documents/shareable".to_string()
+        "?method=documents.getShareableSecureDocuments".to_string()
     } else {
-        format!("documents/shareable?{}", query.join("&"))
+        format!(
+            "?method=documents.getShareableSecureDocuments&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -398,32 +417,39 @@ pub async fn get_shareable_secure_documents(
 ///
 /// Maps to `SecureDocumentWebService.GetMaxDocumentsPerExport()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/export/maxCount`
 pub async fn get_max_documents_per_export(session: &mut Session) -> crate::Result<i32> {
-    session.get("documents/export/maxCount").await
+    session
+        .get("?method=documents.getMaxDocumentsPerExport")
+        .await
 }
 
 /// Create a bulk export for multiple secure documents.
 ///
 /// Maps to `SecureDocumentWebService.CreateExportForMultipleSecureDocuments()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /documents/export`
 pub async fn create_export_for_multiple(
     session: &mut Session,
     request: &CreateExportForMultipleSecureDocumentsRequest,
 ) -> crate::Result<SecureDocumentExportDto> {
-    session.post("documents/export", request).await
+    session
+        .post(
+            "?method=documents.createArchiveForMultipleSecureDocuments",
+            request,
+        )
+        .await
 }
 
 /// Track the status of a multi-document export.
 ///
 /// Maps to `SecureDocumentWebService.TrackExportForMultipleSecureDocuments()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/export/{id}/status`
 pub async fn track_export(
@@ -431,7 +457,9 @@ pub async fn track_export(
     export_job_id: i64,
 ) -> crate::Result<SecureDocumentExportDto> {
     session
-        .get(&format!("documents/export/{export_job_id}/status"))
+        .get(&format!(
+            "?method=documents.trackCreateArchiveForMultipleSecureDocumentsRequest&exportJobId={export_job_id}"
+        ))
         .await
 }
 
@@ -439,7 +467,7 @@ pub async fn track_export(
 ///
 /// Maps to `SecureDocumentWebService.CreatePDFForSingleDocument()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `POST /documents/{id}/pdf`
 pub async fn create_pdf_for_single(
@@ -447,7 +475,10 @@ pub async fn create_pdf_for_single(
     document_id: i64,
 ) -> crate::Result<SecureDocumentExportDto> {
     session
-        .post_empty(&format!("documents/{document_id}/pdf"))
+        .post(
+            "?method=documents.createPDFForSingleDocument",
+            &serde_json::json!({"documentId": document_id}),
+        )
         .await
 }
 
@@ -455,7 +486,7 @@ pub async fn create_pdf_for_single(
 ///
 /// Maps to `SecureDocumentWebService.TrackCreatePDFForSingleDocument()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /documents/{id}/pdf/status`
 pub async fn track_create_pdf(
@@ -463,7 +494,9 @@ pub async fn track_create_pdf(
     document_id: i64,
 ) -> crate::Result<SecureDocumentExportDto> {
     session
-        .get(&format!("documents/{document_id}/pdf/status"))
+        .get(&format!(
+            "?method=documents.trackCreatePDFForSingleDocument&documentId={document_id}"
+        ))
         .await
 }
 

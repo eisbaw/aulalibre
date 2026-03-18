@@ -4,16 +4,13 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.12.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `create_document_links` | POST | `/files/documentLinks` |
-//! | `create_attachments` | POST | `/files/attachments` |
-//! | `get_upload_links` | POST | `/files/uploadLinks` |
-//! | `complete_multipart_upload` | POST | `/files/completeMultipartUpload` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `CREATE_DOCUMENT_LINKS` | `files.createDocumentLinks` |
+//! | `CREATE_ATTACHMENTS` | `files.createAttachments` |
+//! | `UPDATE_ATTACHMENTS` | `files.updateAttachments` |
+//! | `COMPLETE_MULTIPART_UPLOADING` | `files.completeMultipartUploading` |
+//! | `GET_DOWNLOAD_URL_KEY` | `files.getDownloadUrl` |
 //!
 //! The following methods operate on **external URLs** (pre-signed S3 URLs
 //! or arbitrary download URLs) and are therefore not routed through the
@@ -43,56 +40,60 @@ use crate::session::Session;
 ///
 /// Maps to `FileWebService.CreateDocumentLinks()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /files/documentLinks`
+/// `POST ?method=files.createDocumentLinks`
 pub async fn create_document_links(
     session: &mut Session,
     document_ids: &[i64],
 ) -> crate::Result<Vec<DocumentLinkResult>> {
-    session.post("files/documentLinks", &document_ids).await
+    session
+        .post("?method=files.createDocumentLinks", &document_ids)
+        .await
 }
 
 /// Create file/media/link attachments.
 ///
 /// Maps to `FileWebService.CreateAttachments()` (part of the v2 attachment flow).
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /files/attachments`
+/// `POST ?method=files.createAttachments`
 pub async fn create_attachments(
     session: &mut Session,
     args: &CreateAttachmentsArguments,
 ) -> crate::Result<CreateAttachmentsResult> {
-    session.post("files/attachments", args).await
+    session.post("?method=files.createAttachments", args).await
 }
 
 /// Get pre-signed upload links for one or more files.
 ///
 /// Maps to `FileWebService.GetUploadLinks()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /files/uploadLinks`
+/// `POST ?method=files.getDownloadUrl`
 pub async fn get_upload_links(
     session: &mut Session,
     args: &GetUploadLinksArguments,
 ) -> crate::Result<Vec<UploadLink>> {
-    session.post("files/uploadLinks", args).await
+    session.post("?method=files.getDownloadUrl", args).await
 }
 
 /// Complete a multipart upload after all parts have been uploaded to S3.
 ///
 /// Maps to `FileWebService.CompleteMultipartUpload()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `POST /files/completeMultipartUpload`
+/// `POST ?method=files.completeMultipartUploading`
 pub async fn complete_multipart_upload(
     session: &mut Session,
     request: &CompleteMultipartUploadingRequest,
 ) -> crate::Result<serde_json::Value> {
-    session.post("files/completeMultipartUpload", request).await
+    session
+        .post("?method=files.completeMultipartUploading", request)
+        .await
 }
 
 // ---------------------------------------------------------------------------

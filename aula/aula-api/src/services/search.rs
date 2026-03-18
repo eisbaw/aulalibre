@@ -4,21 +4,17 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.15.
-//!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `global_search` | GET | `/search` |
-//! | `search_for_messages` | GET | `/search/messages` |
-//! | `search_for_profiles` | GET | `/search/profiles` |
-//! | `search_for_profiles_and_groups` | GET | `/search/profilesAndGroups` |
-//! | `search_for_recipients` | GET | `/search/recipients` |
-//! | `search_for_recipients_for_personal_reference` | GET | `/search/recipients/personalReference` |
-//! | `search_for_recipients_for_secure_document` | GET | `/search/recipients/secureDocument` |
-//! | `search_for_groups_to_associate_document` | GET | `/search/groups/document` |
-//! | `search_groups` | GET | `/search/groups` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GLOBAL_SEARCH` | `search.findGeneric` |
+//! | `SEARCH_IN_MESSAGES` | `search.findMessage` |
+//! | `FIND_PROFILES` | `search.findProfiles` |
+//! | `FIND_PROFILES_AND_GROUPS` | `search.findProfilesAndGroups` |
+//! | `FIND_RECIPIENTS` | `search.findRecipients` |
+//! | `FIND_RECIPIENTS_FOR_PERSONAL_REFERENCE` | `search.findRecipientsPersonalReferenceData` |
+//! | `FIND_RECIPIENTS_FOR_SECURED_DOCUMENT` | `search.findProfilesAndGroupsToShareDocument` |
+//! | `FIND_PROFILE_AND_GROUPS_TO_ASSOCIATE_DOCUMENT` | `search.findProfilesAndGroupsToAssociateDocument` |
+//! | `FIND_GROUPS` | `search.findGroups` |
 
 use crate::models::search::{
     GlobalSearchParameters, SearchForAssociateSecureDocumentsParameter,
@@ -36,9 +32,9 @@ use crate::session::Session;
 ///
 /// Maps to `SearchWebService.GlobalSearch()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /search?<query params>`
+/// `GET ?method=search.findGeneric`
 pub async fn global_search(
     session: &mut Session,
     params: &GlobalSearchParameters,
@@ -64,9 +60,9 @@ pub async fn global_search(
     }
 
     let path = if query.is_empty() {
-        "search".to_string()
+        "?method=search.findGeneric".to_string()
     } else {
-        format!("search?{}", query.join("&"))
+        format!("?method=search.findGeneric&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -75,25 +71,21 @@ pub async fn global_search(
 ///
 /// Maps to `SearchWebService.SearchForMessages()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /search/messages` (params as query string)
-///
-/// The .NET service may use POST for complex search bodies; the exact
-/// HTTP method has not been verified.
+/// `POST ?method=search.findMessage`
 pub async fn search_for_messages(
     session: &mut Session,
     params: &SearchMessageRequestModel,
 ) -> crate::Result<SearchResultMessagesResponse> {
-    // Complex search bodies are likely POSTed in .NET
-    session.post("search/messages", params).await
+    session.post("?method=search.findMessage", params).await
 }
 
 /// Search for profiles.
 ///
 /// Maps to `SearchWebService.SearchForProfiles()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /search/profiles`
 pub async fn search_for_profiles(
@@ -115,9 +107,9 @@ pub async fn search_for_profiles(
     }
 
     let path = if query.is_empty() {
-        "search/profiles".to_string()
+        "?method=search.findProfiles".to_string()
     } else {
-        format!("search/profiles?{}", query.join("&"))
+        format!("?method=search.findProfiles&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -126,9 +118,9 @@ pub async fn search_for_profiles(
 ///
 /// Maps to `SearchWebService.SearchForProfilesAndGroups()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
-/// `GET /search/profilesAndGroups`
+/// `GET ?method=search.findProfilesAndGroups`
 pub async fn search_for_profiles_and_groups(
     session: &mut Session,
     params: &SearchForProfilesAndGroupsParameters,
@@ -148,9 +140,9 @@ pub async fn search_for_profiles_and_groups(
     }
 
     let path = if query.is_empty() {
-        "search/profilesAndGroups".to_string()
+        "?method=search.findProfilesAndGroups".to_string()
     } else {
-        format!("search/profilesAndGroups?{}", query.join("&"))
+        format!("?method=search.findProfilesAndGroups&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -159,7 +151,7 @@ pub async fn search_for_profiles_and_groups(
 ///
 /// Maps to `SearchWebService.SearchForRecipients()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /search/recipients`
 pub async fn search_for_recipients(
@@ -178,9 +170,9 @@ pub async fn search_for_recipients(
     }
 
     let path = if query.is_empty() {
-        "search/recipients".to_string()
+        "?method=search.findRecipients".to_string()
     } else {
-        format!("search/recipients?{}", query.join("&"))
+        format!("?method=search.findRecipients&{}", query.join("&"))
     };
     session.get(&path).await
 }
@@ -189,7 +181,7 @@ pub async fn search_for_recipients(
 ///
 /// Maps to `SearchWebService.SearchForRecipientsForPersonalReference()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /search/recipients/personalReference`
 pub async fn search_for_recipients_for_personal_reference(
@@ -205,9 +197,12 @@ pub async fn search_for_recipients_for_personal_reference(
     }
 
     let path = if query.is_empty() {
-        "search/recipients/personalReference".to_string()
+        "?method=search.findRecipientsPersonalReferenceData".to_string()
     } else {
-        format!("search/recipients/personalReference?{}", query.join("&"))
+        format!(
+            "?method=search.findRecipientsPersonalReferenceData&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -216,7 +211,7 @@ pub async fn search_for_recipients_for_personal_reference(
 ///
 /// Maps to `SearchWebService.SearchForRecipientsForSecureDocument()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /search/recipients/secureDocument`
 pub async fn search_for_recipients_for_secure_document(
@@ -232,9 +227,12 @@ pub async fn search_for_recipients_for_secure_document(
     }
 
     let path = if query.is_empty() {
-        "search/recipients/secureDocument".to_string()
+        "?method=search.findProfilesAndGroupsToShareDocument".to_string()
     } else {
-        format!("search/recipients/secureDocument?{}", query.join("&"))
+        format!(
+            "?method=search.findProfilesAndGroupsToShareDocument&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -243,7 +241,7 @@ pub async fn search_for_recipients_for_secure_document(
 ///
 /// Maps to `SearchWebService.SearchForGroupsToAssociateDocument()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /search/groups/document`
 pub async fn search_for_groups_to_associate_document(
@@ -261,9 +259,12 @@ pub async fn search_for_groups_to_associate_document(
     }
 
     let path = if query.is_empty() {
-        "search/groups/document".to_string()
+        "?method=search.findProfilesAndGroupsToAssociateDocument".to_string()
     } else {
-        format!("search/groups/document?{}", query.join("&"))
+        format!(
+            "?method=search.findProfilesAndGroupsToAssociateDocument&{}",
+            query.join("&")
+        )
     };
     session.get(&path).await
 }
@@ -272,7 +273,7 @@ pub async fn search_for_groups_to_associate_document(
 ///
 /// Maps to `SearchWebService.SearchGroups()`.
 ///
-/// # Endpoint (inferred)
+/// # Endpoint
 ///
 /// `GET /search/groups`
 pub async fn search_groups(
@@ -296,9 +297,9 @@ pub async fn search_groups(
     }
 
     let path = if query.is_empty() {
-        "search/groups".to_string()
+        "?method=search.findGroups".to_string()
     } else {
-        format!("search/groups?{}", query.join("&"))
+        format!("?method=search.findGroups&{}", query.join("&"))
     };
     session.get(&path).await
 }

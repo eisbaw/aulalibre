@@ -4,18 +4,17 @@
 //!
 //! # Endpoint paths
 //!
-//! Endpoint paths are **inferred** from method names in the decompiled
-//! assembly; they have not been verified against live traffic. See
-//! `api_endpoints.md` Section 3.2.
+//! All endpoints use RPC-style routing via `?method=module.action`.
+//! Paths are sourced from the decompiled `Urls.cs` class.
 //!
-//! | Method | HTTP | Path (inferred) |
-//! |--------|------|-----------------|
-//! | `get_max_file_size` | GET | `/configuration/maxFileSize` |
-//! | `get_authorized_file_formats` | GET | `/configuration/authorizedFileFormats` |
-//! | `is_app_deprecated` | GET | `/configuration/isAppDeprecated` |
-//! | `get_privacy_policy` | GET | `/configuration/privacyPolicy` |
-//! | `get_administrative_authority` | GET | `/configuration/administrativeAuthority` |
-//! | `get_login_important_information` | GET | `/configuration/loginImportantInformation` |
+//! | Urls.cs constant | RPC method |
+//! |------------------|------------|
+//! | `GET_MAX_FILE_SIZE` | `centralConfiguration.getMaxFileSize` |
+//! | `GET_AUTHORIZED_FILE_FORMATS` | `centralConfiguration.getauthorizedfileformats` |
+//! | `IS_APP_DEPRECATED` | `centralConfiguration.isAppVersionDeprecated` |
+//! | `GET_DATA_POLICY` | `centralConfiguration.getDataPolicy` |
+//! | `LOGIN_GET_IMPORTANT_INFO` | `centralConfiguration.getLoginImportantInformation` |
+//! | `GET_ADMIN_AUTHORITIES` | `municipalConfiguration.getSameAdministrativeAuthorityInstitutions` |
 
 use serde::{Deserialize, Serialize};
 
@@ -27,14 +26,9 @@ use crate::session::Session;
 // ---------------------------------------------------------------------------
 
 /// Max file size response.
-///
-/// The API likely returns a simple numeric value wrapped in the standard
-/// envelope. We use `i64` to handle whatever unit (bytes) the API uses.
 pub type MaxFileSizeResponse = i64;
 
 /// App deprecation status response.
-///
-/// Used by the app to decide whether to show a force-update dialog.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppDeprecatedResponse {
@@ -46,8 +40,6 @@ pub struct AppDeprecatedResponse {
 }
 
 /// Privacy policy response.
-///
-/// The API likely returns HTML or structured text content.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PrivacyPolicyResponse {
@@ -58,8 +50,6 @@ pub struct PrivacyPolicyResponse {
 }
 
 /// Login important information response.
-///
-/// Shown on the login page as a banner or notice.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginImportantInformationResponse {
@@ -86,84 +76,74 @@ pub struct AdministrativeAuthorityResponse {
 
 /// Get the maximum allowed file upload size.
 ///
-/// Maps to `ConfigurationService.GetMaxFileSize()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `GET /configuration/maxFileSize`
+/// `GET ?method=centralConfiguration.getMaxFileSize`
 pub async fn get_max_file_size(session: &mut Session) -> crate::Result<MaxFileSizeResponse> {
-    session.get("configuration/maxFileSize").await
+    session
+        .get("?method=centralConfiguration.getMaxFileSize")
+        .await
 }
 
 /// Get the list of authorized (allowed) file formats for upload.
 ///
-/// Maps to `ConfigurationService.GetAuthorizedFileFormats()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `GET /configuration/authorizedFileFormats`
+/// `GET ?method=centralConfiguration.getauthorizedfileformats`
 pub async fn get_authorized_file_formats(
     session: &mut Session,
 ) -> crate::Result<Vec<AuthorizedFileFormat>> {
-    session.get("configuration/authorizedFileFormats").await
+    session
+        .get("?method=centralConfiguration.getauthorizedfileformats")
+        .await
 }
 
 /// Check whether the current app version is deprecated (force update).
 ///
-/// Maps to `ConfigurationService.IsAppDeprecated()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `GET /configuration/isAppDeprecated`
-///
-/// NOTE: The response shape is uncertain. It may return a plain boolean
-/// or a structured object. We use `AppDeprecatedResponse` as a best
-/// guess based on the method name and typical .NET API patterns.
+/// `GET ?method=centralConfiguration.isAppVersionDeprecated`
 pub async fn is_app_deprecated(session: &mut Session) -> crate::Result<AppDeprecatedResponse> {
-    session.get("configuration/isAppDeprecated").await
+    session
+        .get("?method=centralConfiguration.isAppVersionDeprecated")
+        .await
 }
 
-/// Get the privacy policy content.
+/// Get the privacy/data policy content.
 ///
-/// Maps to `ConfigurationService.GetPrivacyPolicy()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `GET /configuration/privacyPolicy`
-///
-/// NOTE: The response shape is uncertain. It may return plain HTML
-/// as a string or a structured DTO.
+/// `GET ?method=centralConfiguration.getDataPolicy`
 pub async fn get_privacy_policy(session: &mut Session) -> crate::Result<PrivacyPolicyResponse> {
-    session.get("configuration/privacyPolicy").await
+    session
+        .get("?method=centralConfiguration.getDataPolicy")
+        .await
 }
 
 /// Get the administrative authority information.
 ///
-/// Maps to `ConfigurationService.GetAdministrativeAuthority()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `GET /configuration/administrativeAuthority`
+/// `GET ?method=municipalConfiguration.getSameAdministrativeAuthorityInstitutions`
 pub async fn get_administrative_authority(
     session: &mut Session,
 ) -> crate::Result<AdministrativeAuthorityResponse> {
-    session.get("configuration/administrativeAuthority").await
+    session
+        .get("?method=municipalConfiguration.getSameAdministrativeAuthorityInstitutions")
+        .await
 }
 
 /// Get important information to display on the login page.
 ///
-/// Maps to `ConfigurationService.GetLoginImportantInformation()`.
+/// # Endpoint
 ///
-/// # Endpoint (inferred)
-///
-/// `GET /configuration/loginImportantInformation`
-///
-/// NOTE: The response shape is uncertain. It may return plain text
-/// or a structured object.
+/// `GET ?method=centralConfiguration.getLoginImportantInformation`
 pub async fn get_login_important_information(
     session: &mut Session,
 ) -> crate::Result<LoginImportantInformationResponse> {
-    session.get("configuration/loginImportantInformation").await
+    session
+        .get("?method=centralConfiguration.getLoginImportantInformation")
+        .await
 }
 
 // ---------------------------------------------------------------------------

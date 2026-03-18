@@ -38,7 +38,7 @@ fn mock_session(base_url: &str) -> Session {
 
 /// Build an `AulaClient` pointing at the given mock server (no CSRF cookie).
 fn mock_client(base_url: &str) -> AulaClient {
-    AulaClient::with_base_url(&format!("{base_url}/api/v19/")).expect("client with base URL")
+    AulaClient::with_base_url(&format!("{base_url}/api/v23/")).expect("client with base URL")
 }
 
 /// Wrap a JSON payload in the standard Aula API response envelope.
@@ -93,8 +93,8 @@ mod profiles {
         let body = fixture("profiles_response.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
-            .and(query_param("method", "profiles.getProfilesByLogin"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(body)
@@ -126,7 +126,8 @@ mod messaging {
         let body = fixture("messaging_thread_list.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/messaging/threads"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.getThreads"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(body)
@@ -184,7 +185,11 @@ mod calendar {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/calendar/events"))
+            .and(path("/api/v23/"))
+            .and(query_param(
+                "method",
+                "calendar.getEventsByProfileIdsAndResourceIds",
+            ))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(aula_envelope(data))
@@ -233,7 +238,8 @@ mod presence {
         ]);
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/presence/children/state"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "presence.getPresenceStates"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(aula_envelope(data))
@@ -267,7 +273,8 @@ mod request_validation {
         let body = fixture("profiles_response.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .and(header("csrfp-token", "test-csrf-token-42"))
             .respond_with(
                 ResponseTemplate::new(200)
@@ -293,7 +300,8 @@ mod request_validation {
         let body = fixture("profiles_response.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .and(header("user-agent", "AulaNative/2.15.4"))
             .respond_with(
                 ResponseTemplate::new(200)
@@ -317,7 +325,8 @@ mod request_validation {
         let body = fixture("profiles_response.json");
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .and(header("accept", "application/json"))
             .respond_with(
                 ResponseTemplate::new(200)
@@ -342,7 +351,8 @@ mod request_validation {
         let response_data = aula_envelope(serde_json::json!({}));
 
         Mock::given(method("POST"))
-            .and(path("/api/v19/masterdata"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.updateProfileMasterData"))
             .and(header("content-type", "application/json"))
             .and(header("csrfp-token", "test-csrf-token-42"))
             .respond_with(
@@ -384,7 +394,8 @@ mod csrf_flow {
 
         // The mock requires the csrfp-token header to match the cookie value.
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .and(header("csrfp-token", "test-csrf-token-42"))
             .respond_with(
                 ResponseTemplate::new(200)
@@ -410,7 +421,8 @@ mod csrf_flow {
         // This mock requires the csrfp-token header and should NOT match
         // when the client has no CSRF cookie.
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .and(header("csrfp-token", "test-csrf-token-42"))
             .respond_with(ResponseTemplate::new(200).set_body_string(&body))
             .expect(0) // Should NOT be called
@@ -420,7 +432,8 @@ mod csrf_flow {
 
         // Mount a fallback that matches without the csrf header constraint.
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(body)
@@ -457,7 +470,8 @@ mod error_conditions {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(ResponseTemplate::new(401))
             .expect(1)
             .mount(&server)
@@ -465,7 +479,7 @@ mod error_conditions {
 
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("profiles?method=profiles.getProfilesByLogin")
+            .get::<serde_json::Value>("?method=profiles.getprofilesbylogin")
             .await
             .unwrap_err();
 
@@ -480,7 +494,8 @@ mod error_conditions {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(ResponseTemplate::new(503))
             .expect(1)
             .mount(&server)
@@ -488,7 +503,7 @@ mod error_conditions {
 
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("profiles?method=profiles.getProfilesByLogin")
+            .get::<serde_json::Value>("?method=profiles.getprofilesbylogin")
             .await
             .unwrap_err();
 
@@ -503,7 +518,8 @@ mod error_conditions {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(aula_error_envelope(13))
@@ -515,7 +531,7 @@ mod error_conditions {
 
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("profiles?method=profiles.getProfilesByLogin")
+            .get::<serde_json::Value>("?method=profiles.getprofilesbylogin")
             .await
             .unwrap_err();
 
@@ -530,7 +546,8 @@ mod error_conditions {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(aula_error_envelope(9))
@@ -542,7 +559,7 @@ mod error_conditions {
 
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("profiles?method=profiles.getProfilesByLogin")
+            .get::<serde_json::Value>("?method=profiles.getprofilesbylogin")
             .await
             .unwrap_err();
 
@@ -557,7 +574,8 @@ mod error_conditions {
         let server = MockServer::start().await;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(aula_error_envelope(7))
@@ -569,7 +587,7 @@ mod error_conditions {
 
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("profiles?method=profiles.getProfilesByLogin")
+            .get::<serde_json::Value>("?method=profiles.getprofilesbylogin")
             .await
             .unwrap_err();
 
@@ -593,7 +611,8 @@ mod error_conditions {
         });
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_json(body)
@@ -605,7 +624,7 @@ mod error_conditions {
 
         let client = mock_client(&server.uri());
         let err = client
-            .get::<serde_json::Value>("profiles?method=profiles.getProfilesByLogin")
+            .get::<serde_json::Value>("?method=profiles.getprofilesbylogin")
             .await
             .unwrap_err();
 
@@ -624,7 +643,8 @@ mod error_conditions {
         use aula_api::services::profiles;
 
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(ResponseTemplate::new(503))
             .expect(1)
             .mount(&server)
@@ -660,7 +680,8 @@ mod helpers_and_reuse {
         // Mount mocks for two different services on the same server.
         let profiles_body = fixture("profiles_response.json");
         Mock::given(method("GET"))
-            .and(path("/api/v19/profiles"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "profiles.getprofilesbylogin"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(profiles_body)
@@ -671,7 +692,8 @@ mod helpers_and_reuse {
 
         let threads_body = fixture("messaging_thread_list.json");
         Mock::given(method("GET"))
-            .and(path("/api/v19/messaging/threads"))
+            .and(path("/api/v23/"))
+            .and(query_param("method", "messaging.getThreads"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(threads_body)

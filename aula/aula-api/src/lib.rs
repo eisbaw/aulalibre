@@ -1,8 +1,8 @@
 //! Rust client library for the Aula school platform API.
 //!
-//! This crate provides typed access to the Aula REST API,
+//! This crate provides typed access to the Aula RPC-style API (v23),
 //! including authentication, messaging, calendar, and other endpoints
-//! discovered through APK reverse engineering.
+//! discovered through APK reverse engineering of the Aula Android app.
 
 pub mod auth;
 pub mod client;

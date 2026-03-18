@@ -4,7 +4,7 @@
 **Compiled SDK**: 35 (Android 15)
 **Min SDK**: 29 (Android 10)
 **Target SDK**: 35 (Android 15)
-**App Framework**: .NET MAUI / Xamarin (confirmed by Mono runtime provider and CRC-prefixed class names)
+**App Framework**: Xamarin.Android with Microsoft.Maui.Essentials (confirmed by Mono runtime provider and CRC-prefixed class names; UI is native Xamarin.Android, not .NET MAUI)
 
 ---
 
@@ -22,7 +22,7 @@ Intent filter:
 
 Theme: `AulaDetailsPageMaterialTheme.Launcher`
 
-This is the app's entry point. The `crc64` prefix is characteristic of Xamarin/.NET MAUI -- these are CRC64 hashes of the .NET namespace, used as Java-side wrappers for .NET classes.
+This is the app's entry point. The `crc64` prefix is characteristic of Xamarin.Android -- these are CRC64 hashes of the .NET namespace, used as Java-side wrappers for .NET classes.
 
 ---
 
@@ -333,7 +333,7 @@ The app queries for the following external capabilities:
 
 ---
 
-## 9. .NET MAUI / Xamarin-Specific Observations
+## 9. Xamarin.Android / MAUI Essentials Observations
 
 1. **CRC64 class naming**: All app-specific classes use `crc64XXXX.ClassName` format. The CRC64 hash maps to a .NET namespace. The actual class structure is inside the .NET assemblies (libassemblies blob).
 
@@ -341,7 +341,7 @@ The app queries for the following external capabilities:
 
 3. **MAUI Essentials providers**: The app uses `microsoft.maui.essentials.fileProvider` alongside standard AndroidX FileProvider, indicating MAUI Essentials integration for cross-platform APIs (connectivity, battery, energy saver).
 
-4. **Hybrid architecture**: While the core app is .NET MAUI, it uses standard Android components:
+4. **Hybrid architecture**: The core app is Xamarin.Android (not .NET MAUI), with Microsoft.Maui.Essentials adopted for cross-platform utilities (connectivity, battery, file provider). It also uses standard Android components:
    - Firebase Cloud Messaging for push notifications
    - AndroidX startup for initialization
    - Google Play Services

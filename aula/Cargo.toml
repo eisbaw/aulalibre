@@ -1,0 +1,3 @@
+[workspace]
+members = ["aula-api", "aula-cli"]
+resolver = "2"

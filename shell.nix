@@ -49,7 +49,17 @@ pkgs.mkShell {
     p7zip         # Handle various archive formats
     gzip          # Gzip compression/decompression
 
+    # Rust toolchain
+    rustc         # Rust compiler
+    cargo         # Rust package manager and build tool
+    clippy        # Rust linter
+    rustfmt       # Rust code formatter
+    rust-analyzer # Rust language server
+    pkg-config    # Build dependency for native crates
+    openssl.dev   # OpenSSL headers for reqwest/native-tls
+
     # Development tools
+    just          # Command runner for project recipes
     git           # Version control for tracking analysis progress
     curl          # Download additional resources if needed
     wget          # Alternative download tool

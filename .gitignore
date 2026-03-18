@@ -1,0 +1,10 @@
+*.apk
+*.xapk
+*.extracted/
+extracted/
+decompiled/
+reports/
+analysis/
+*.log
+extraction_manifest.txt
+extraction_summary.txt

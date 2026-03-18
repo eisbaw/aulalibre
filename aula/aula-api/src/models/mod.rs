@@ -8,5 +8,6 @@ pub mod calendar;
 pub mod groups;
 pub mod institutions;
 pub mod messaging;
+pub mod presence;
 pub mod profiles;
 pub mod users;

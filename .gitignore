@@ -3,6 +3,8 @@
 *.extracted/
 extracted/
 decompiled/
+apktool_out/
+apktool_config_*/
 reports/
 analysis/
 *.log

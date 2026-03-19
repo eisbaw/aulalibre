@@ -5,9 +5,9 @@ use clap::Subcommand;
 use aula_api::enums::common::FilterAndSortType;
 use aula_api::models::messaging::{
     DeleteThreadArguments, GetFoldersArguments, GetMessagesForThreadArguments,
-    GetThreadListArguments, MessageContentRequest, MoveThreadsToFolderRequestArguments,
-    RecipientApiModel, ReplyMessageArgument, SetLastMessageRequestArguments,
-    StartNewThreadRequestArguments,
+    GetThreadListArguments, MessageContentRequest, MessageThreadSubscriptionList,
+    MoveThreadsToFolderRequestArguments, RecipientApiModel, ReplyMessageArgument,
+    SetLastMessageRequestArguments, StartNewThreadRequestArguments,
 };
 use aula_api::services::messaging;
 
@@ -28,6 +28,9 @@ pub enum MessagesCommand {
         /// Page number for pagination.
         #[arg(long)]
         page: Option<u32>,
+        /// Fetch and display all pages.
+        #[arg(long)]
+        all: bool,
         /// Show only unread threads.
         #[arg(long)]
         unread: bool,
@@ -98,10 +101,23 @@ pub async fn handle(cmd: &MessagesCommand, json: bool, env_override: Option<&str
         MessagesCommand::List {
             limit,
             page,
+            all,
             unread,
             marked,
             folder,
-        } => handle_list(*limit, *page, *unread, *marked, *folder, json, env_override).await,
+        } => {
+            handle_list(
+                *limit,
+                *page,
+                *all,
+                *unread,
+                *marked,
+                *folder,
+                json,
+                env_override,
+            )
+            .await
+        }
         MessagesCommand::Read { thread_id, page } => {
             handle_read(*thread_id, *page, json, env_override).await
         }
@@ -128,9 +144,11 @@ pub async fn handle(cmd: &MessagesCommand, json: bool, env_override: Option<&str
 // List threads
 // ---------------------------------------------------------------------------
 
+#[allow(clippy::too_many_arguments)]
 async fn handle_list(
     limit: u32,
     page: Option<u32>,
+    all: bool,
     unread: bool,
     marked: bool,
     folder: Option<i64>,
@@ -147,29 +165,75 @@ async fn handle_list(
         None
     };
 
-    let args = GetThreadListArguments {
-        folder_id: folder,
-        filter_type,
-        sort_type: Some(FilterAndSortType::SortDate),
-        sort_order: None,
-        page: page.map(|p| p as i32),
-        thread_ids: None,
-        mail_box_owner_type: None,
-        mail_box_owners: None,
-        active_children: None,
-    };
-
-    match messaging::get_thread_list(&mut session, &args).await {
-        Ok(result) => {
-            if json {
-                print_json(&result);
-            } else {
-                print_thread_list(&result, limit);
+    if all {
+        // Fetch all pages and merge threads.
+        let mut all_threads = Vec::new();
+        let mut current_page = 0i32;
+        loop {
+            let args = GetThreadListArguments {
+                folder_id: folder,
+                filter_type,
+                sort_type: Some(FilterAndSortType::SortDate),
+                sort_order: None,
+                page: Some(current_page),
+                thread_ids: None,
+                mail_box_owner_type: None,
+                mail_box_owners: None,
+                active_children: None,
+            };
+            match messaging::get_thread_list(&mut session, &args).await {
+                Ok(result) => {
+                    if let Some(threads) = result.threads {
+                        all_threads.extend(threads);
+                    }
+                    if !result.more_messages_exist {
+                        break;
+                    }
+                    current_page += 1;
+                }
+                Err(e) => {
+                    eprintln!("error: {e}");
+                    std::process::exit(1);
+                }
             }
         }
-        Err(e) => {
-            eprintln!("error: {e}");
-            std::process::exit(1);
+
+        let merged = MessageThreadSubscriptionList {
+            threads: Some(all_threads),
+            page: Some(0),
+            bundle_id: None,
+            more_messages_exist: false,
+        };
+        if json {
+            print_json(&merged);
+        } else {
+            print_thread_list(&merged, u32::MAX);
+        }
+    } else {
+        let args = GetThreadListArguments {
+            folder_id: folder,
+            filter_type,
+            sort_type: Some(FilterAndSortType::SortDate),
+            sort_order: None,
+            page: page.map(|p| p as i32),
+            thread_ids: None,
+            mail_box_owner_type: None,
+            mail_box_owners: None,
+            active_children: None,
+        };
+
+        match messaging::get_thread_list(&mut session, &args).await {
+            Ok(result) => {
+                if json {
+                    print_json(&result);
+                } else {
+                    print_thread_list(&result, limit);
+                }
+            }
+            Err(e) => {
+                eprintln!("error: {e}");
+                std::process::exit(1);
+            }
         }
     }
 }

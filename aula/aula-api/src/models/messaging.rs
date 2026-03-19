@@ -18,6 +18,24 @@ use crate::enums::profiles::PortalRole;
 use super::profiles::ProfilePictureDto;
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/// Deserialize an `Option<String>` that may arrive as a JSON string or number.
+fn deserialize_optional_string_from_any<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let v: Option<serde_json::Value> = Option::deserialize(deserializer)?;
+    match v {
+        None | Some(serde_json::Value::Null) => Ok(None),
+        Some(serde_json::Value::String(s)) => Ok(Some(s)),
+        Some(serde_json::Value::Number(n)) => Ok(Some(n.to_string())),
+        Some(other) => Ok(Some(other.to_string())),
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Shared value types
 // ---------------------------------------------------------------------------
 
@@ -121,6 +139,7 @@ pub struct ThreadEntityLinkDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageThreadLatestMessage {
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub id: Option<String>,
     pub thread_id: Option<i64>,
     pub send_date_time: Option<String>,

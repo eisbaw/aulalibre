@@ -15,6 +15,9 @@ pub enum NotificationsCommand {
         /// Maximum number of notifications to show.
         #[arg(short = 'n', long, default_value = "20")]
         limit: u32,
+        /// Show all notifications (ignore limit).
+        #[arg(long)]
+        all: bool,
     },
     /// Delete all notifications.
     DeleteAll,
@@ -31,8 +34,8 @@ pub enum NotificationsCommand {
 
 pub async fn handle(cmd: &NotificationsCommand, json: bool, env_override: Option<&str>) {
     match cmd {
-        NotificationsCommand::List { limit } => {
-            handle_list(*limit, json, env_override).await;
+        NotificationsCommand::List { limit, all } => {
+            handle_list(if *all { u32::MAX } else { *limit }, json, env_override).await;
         }
         NotificationsCommand::DeleteAll => {
             handle_delete_all(json, env_override).await;

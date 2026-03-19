@@ -134,32 +134,18 @@ folders:
 
 # Run all non-destructive showcase commands (quick smoke test)
 showcase:
-    @echo "=== Auth Status ==="
-    {{aula}} auth status
-    @echo ""
-    @echo "=== Profile ==="
-    {{aula}} profile me
-    @echo ""
-    @echo "=== Messages (5) ==="
-    {{aula}} messages list --limit 5
-    @echo ""
-    @echo "=== Calendar Today ==="
-    {{aula}} calendar today
-    @echo ""
-    @echo "=== Presence ==="
-    {{aula}} presence status
-    @echo ""
-    @echo "=== Posts (5) ==="
-    {{aula}} posts list --limit 5
-    @echo ""
-    @echo "=== Notifications (5) ==="
-    {{aula}} notifications list --limit 5
-    @echo ""
-    @echo "=== Albums (5) ==="
-    {{aula}} gallery list --limit 5
-    @echo ""
-    @echo "=== Documents (5) ==="
-    {{aula}} documents list --limit 5
-    @echo ""
-    @echo "=== Folders ==="
-    {{aula}} messages folders
+    #!/usr/bin/env bash
+    set -uo pipefail
+    run() { echo "=== $1 ==="; shift; "$@" 2>&1 || echo "(failed)"; echo; }
+    A="cargo run --manifest-path aula/Cargo.toml --bin aula-cli --"
+    run "Auth Status"       $A auth status
+    run "Profile"           $A profile me
+    run "Messages (5)"      $A messages list --limit 5
+    run "Calendar Today"    $A calendar today
+    run "Presence"          $A presence status
+    run "Posts (5)"         $A posts list --limit 5
+    run "Notifications (5)" $A notifications list --limit 5
+    run "Albums (5)"        $A gallery list --limit 5
+    run "Documents (5)"     $A documents list --limit 5
+    run "Folders"           $A messages folders
+    run "Search Probe"      $A search --probe dummy

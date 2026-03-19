@@ -693,39 +693,39 @@ mod notifications {
         // Test a representative sample of the large NotificationEventType enum
         let variants = vec![
             (
-                "\"newMessagePrivateInbox\"",
+                "\"NewMessagePrivateInbox\"",
                 NotificationEventType::NewMessagePrivateInbox,
             ),
             (
-                "\"invitedToEventResponseRequired\"",
+                "\"InvitedToEventResponseRequired\"",
                 NotificationEventType::InvitedToEventResponseRequired,
             ),
             (
-                "\"postSharedWithMe\"",
+                "\"PostSharedWithMe\"",
                 NotificationEventType::PostSharedWithMe,
             ),
-            ("\"newMedia\"", NotificationEventType::NewMedia),
+            ("\"NewMedia\"", NotificationEventType::NewMedia),
             (
-                "\"newOrUpdatedSecureDocument\"",
+                "\"NewOrUpdatedSecureDocument\"",
                 NotificationEventType::NewOrUpdatedSecureDocument,
             ),
             (
-                "\"vacationResponseRequired\"",
+                "\"VacationResponseRequired\"",
                 NotificationEventType::VacationResponseRequired,
             ),
             (
-                "\"lessonNoteChanged\"",
+                "\"LessonNoteChanged\"",
                 NotificationEventType::LessonNoteChanged,
             ),
             (
-                "\"widgetNotification\"",
+                "\"WidgetNotification\"",
                 NotificationEventType::WidgetNotification,
             ),
             (
-                "\"fileScanFailedAlbum\"",
+                "\"FileScanFailedAlbum\"",
                 NotificationEventType::FileScanFailedAlbum,
             ),
-            ("\"other\"", NotificationEventType::Other),
+            ("\"Other\"", NotificationEventType::Other),
         ];
         for (json_str, expected) in variants {
             let parsed: NotificationEventType = serde_json::from_str(json_str).unwrap();
@@ -738,18 +738,18 @@ mod notifications {
     #[test]
     fn notification_area_all_variants() {
         let variants = vec![
-            ("\"unknown\"", NotificationArea::Unknown),
-            ("\"messages\"", NotificationArea::Messages),
-            ("\"calendar\"", NotificationArea::Calendar),
-            ("\"posts\"", NotificationArea::Posts),
-            ("\"schedule\"", NotificationArea::Schedule),
-            ("\"administration\"", NotificationArea::Administration),
-            ("\"gallery\"", NotificationArea::Gallery),
-            ("\"documents\"", NotificationArea::Documents),
-            ("\"album\"", NotificationArea::Album),
-            ("\"presence\"", NotificationArea::Presence),
-            ("\"widget\"", NotificationArea::Widget),
-            ("\"fileScanning\"", NotificationArea::FileScanning),
+            ("\"Unknown\"", NotificationArea::Unknown),
+            ("\"Messages\"", NotificationArea::Messages),
+            ("\"Calendar\"", NotificationArea::Calendar),
+            ("\"Posts\"", NotificationArea::Posts),
+            ("\"Schedule\"", NotificationArea::Schedule),
+            ("\"Administration\"", NotificationArea::Administration),
+            ("\"Gallery\"", NotificationArea::Gallery),
+            ("\"Documents\"", NotificationArea::Documents),
+            ("\"Album\"", NotificationArea::Album),
+            ("\"Presence\"", NotificationArea::Presence),
+            ("\"Widget\"", NotificationArea::Widget),
+            ("\"FileScanning\"", NotificationArea::FileScanning),
         ];
         for (json_str, expected) in variants {
             let parsed: NotificationArea = serde_json::from_str(json_str).unwrap();
@@ -760,10 +760,10 @@ mod notifications {
     #[test]
     fn notification_type_all_variants() {
         let variants = vec![
-            ("\"badge\"", NotificationType::Badge),
-            ("\"alert\"", NotificationType::Alert),
-            ("\"irrelevant\"", NotificationType::Irrelevant),
-            ("\"unknown\"", NotificationType::Unknown),
+            ("\"Badge\"", NotificationType::Badge),
+            ("\"Alert\"", NotificationType::Alert),
+            ("\"Irrelevant\"", NotificationType::Irrelevant),
+            ("\"Unknown\"", NotificationType::Unknown),
         ];
         for (json_str, expected) in variants {
             let parsed: NotificationType = serde_json::from_str(json_str).unwrap();

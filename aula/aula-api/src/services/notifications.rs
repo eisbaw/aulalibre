@@ -72,9 +72,9 @@ mod tests {
         let json = r#"[
             {
                 "notificationId": "n-1",
-                "notificationEventType": "newMessagePrivateInbox",
-                "notificationArea": "messages",
-                "notificationType": "alert",
+                "notificationEventType": "NewMessagePrivateInbox",
+                "notificationArea": "Messages",
+                "notificationType": "Alert",
                 "title": "Ny besked",
                 "threadId": 42
             }

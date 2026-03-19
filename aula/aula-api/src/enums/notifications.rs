@@ -3,8 +3,9 @@
 use serde::{Deserialize, Serialize};
 
 /// Area/module a notification belongs to.
+///
+/// The Aula API returns these values in PascalCase (e.g. `"Calendar"`, `"Gallery"`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub enum NotificationArea {
     Unknown,
     Messages,
@@ -21,8 +22,9 @@ pub enum NotificationArea {
 }
 
 /// Specific notification event type.
+///
+/// The Aula API returns these values in PascalCase (e.g. `"NewMedia"`, `"PostSharedWithMe"`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub enum NotificationEventType {
     Other,
     NewMessagePrivateInbox,
@@ -155,8 +157,9 @@ pub enum NotificationSettingsEnum {
 }
 
 /// High-level notification classification.
+///
+/// The Aula API returns these values in PascalCase (e.g. `"Alert"`, `"Badge"`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub enum NotificationType {
     Badge,
     Alert,

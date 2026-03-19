@@ -233,9 +233,9 @@ mod tests {
     fn deserialize_notification_item_minimal() {
         let json = r#"{
             "notificationId": "abc-123",
-            "notificationEventType": "newMessagePrivateInbox",
-            "notificationArea": "messages",
-            "notificationType": "alert",
+            "notificationEventType": "NewMessagePrivateInbox",
+            "notificationArea": "Messages",
+            "notificationType": "Alert",
             "institutionCode": "101001",
             "title": "Ny besked",
             "threadId": 42
@@ -255,9 +255,9 @@ mod tests {
     fn deserialize_notification_item_full() {
         let json = r#"{
             "notificationId": "evt-456",
-            "notificationEventType": "invitedToEventResponseRequired",
-            "notificationArea": "calendar",
-            "notificationType": "alert",
+            "notificationEventType": "InvitedToEventResponseRequired",
+            "notificationArea": "Calendar",
+            "notificationType": "Alert",
             "institutionCode": "101001",
             "institutionProfileId": 100,
             "title": "Forældremøde",

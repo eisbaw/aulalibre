@@ -1,9 +1,11 @@
 ---
 id: TASK-0097
 title: Fix --profile flag name collision between global and groups command
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - '@claude'
 created_date: '2026-03-19 17:10'
+updated_date: '2026-03-19 18:18'
 labels:
   - rust-cli
   - bug
@@ -19,7 +21,13 @@ The global --profile flag (Option String, institution profile selector) name-col
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 groups list --profile 99002 works without panic
-- [ ] #2 Global --profile flag still works for profile selection
-- [ ] #3 No clap name collision between flags
+- [x] #1 groups list --profile 99002 works without panic
+- [x] #2 Global --profile flag still works for profile selection
+- [x] #3 No clap name collision between flags
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Renamed --profile flag to --inst-profile in groups command to avoid collision with global --profile flag. Updated help text accordingly.
+<!-- SECTION:FINAL_SUMMARY:END -->

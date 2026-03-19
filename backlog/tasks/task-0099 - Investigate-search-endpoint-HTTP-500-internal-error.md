@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-19 17:10'
-updated_date: '2026-03-19 18:47'
+updated_date: '2026-03-19 18:53'
 labels:
   - rust-cli
   - investigation
@@ -43,16 +43,5 @@ All tests pass (669+), clippy clean. Live testing confirms search works for prof
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-The search.findGeneric endpoint is broken server-side in the Aula production backend, returning HTTP 500 "intern fejl" for all parameter combinations. This is a known Aula server bug, not a client issue.
-
-Changes:
-- aula-api/src/client.rs: HTTP 5xx responses are now rejected early in handle_response(), before JSON envelope parsing. Previously a 500 with valid JSON envelope and backend_error_code=0 was incorrectly treated as success.
-- aula-api/src/services/search.rs: Fixed search_for_profiles return type to SearchResponse (actual API returns an object, not the array declared in the decompiled .NET source).
-- aula-cli/src/commands/search.rs: Implemented findGeneric -> findProfiles fallback. Search now works for profile queries.
-
-Known limitations:
-- Only profile results are returned (findProfiles does not cover posts, events, groups, messages)
-- The --counts flag produces no output since findProfiles does not populate doc_type_count
-
-Tests: 669+ pass, clippy clean. Live-tested with "lars" (5 results), "REDACTED-CHILD" (2 results), "menu" (0 results - correct, no matching profiles).
+Root cause: search.findGeneric returns HTTP 500 server-side (not fixable client-side). Fixed by: (1) adding HTTP 5xx rejection in client.rs handle_response(), (2) fixing search_for_profiles return type to SearchResponse, (3) implementing fallback pattern in CLI - tries findGeneric first, falls back to findProfiles. Created TASK-0100 for expanding search via other endpoints.
 <!-- SECTION:FINAL_SUMMARY:END -->

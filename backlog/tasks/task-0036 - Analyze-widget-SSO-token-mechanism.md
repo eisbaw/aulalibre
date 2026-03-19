@@ -1,11 +1,11 @@
 ---
 id: TASK-0036
 title: Analyze widget SSO token mechanism
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-18 15:50'
-updated_date: '2026-03-19 05:58'
+updated_date: '2026-03-19 05:59'
 labels: []
 dependencies: []
 ---

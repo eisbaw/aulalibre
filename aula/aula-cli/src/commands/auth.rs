@@ -225,7 +225,11 @@ mod tests {
             "abc123"
         );
         assert_eq!(
-            resolved.query_pairs().find(|(k, _)| k == "state").unwrap().1,
+            resolved
+                .query_pairs()
+                .find(|(k, _)| k == "state")
+                .unwrap()
+                .1,
             "xyz"
         );
     }

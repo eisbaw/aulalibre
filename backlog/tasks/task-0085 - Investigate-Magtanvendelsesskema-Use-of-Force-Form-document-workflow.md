@@ -1,11 +1,11 @@
 ---
 id: TASK-0085
 title: Investigate Magtanvendelsesskema (Use of Force Form) document workflow
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-19 05:55'
-updated_date: '2026-03-19 07:32'
+updated_date: '2026-03-19 07:33'
 labels: []
 dependencies: []
 ---
@@ -38,3 +38,22 @@ The DocumentCategoryEnum includes 'Magtanvendelsesskema' (Use of Force Form) as 
 7. Document findings in magtanvendelse_analysis.md
 8. Git commit
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Analyzed Magtanvendelsesskema (Use of Force Form) document workflow in the Aula app.
+
+Key findings:
+- Magtanvendelsesskema is a category label on generic secure documents, not a specialized form
+- The enum name ForCableSchedule is a decompiler mistranslation artifact
+- Staff-only category (employees only can create/select it)
+- Requires HANDLE_SECURE_FILES permission plus non-child or stepped-up auth
+- No structured data capture in mobile client -- form is free-text rich content
+- Server-driven ESDH journalization (no client-side submission logic)
+- Implicit sharing system auto-calculates access for related guardians/staff
+- All operations use the same documents.* RPC API as other secure document categories
+- No dedicated API endpoints for this document type
+
+Produced: magtanvendelse_analysis.md with full workflow documentation
+<!-- SECTION:FINAL_SUMMARY:END -->

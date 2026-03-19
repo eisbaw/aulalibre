@@ -1,11 +1,11 @@
 ---
 id: TASK-0078
 title: Investigate kotlinx.serialization.protobuf usage in AndroidX DataStore
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-18 23:42'
-updated_date: '2026-03-19 06:26'
+updated_date: '2026-03-19 06:27'
 labels: []
 dependencies: []
 ---

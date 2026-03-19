@@ -1,11 +1,11 @@
 ---
 id: TASK-0087
 title: Investigate BasicAuth credentials embedded in Conf class
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-19 05:59'
-updated_date: '2026-03-19 07:42'
+updated_date: '2026-03-19 07:43'
 labels: []
 dependencies: []
 ---

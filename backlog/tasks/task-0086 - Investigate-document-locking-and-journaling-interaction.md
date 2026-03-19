@@ -1,7 +1,7 @@
 ---
 id: TASK-0086
 title: Investigate document locking and journaling interaction
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-19 05:55'

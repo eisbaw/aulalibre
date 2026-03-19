@@ -1,7 +1,7 @@
 ---
 id: TASK-0080
 title: Investigate Firebase Analytics transport protocol and data collection
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-18 23:48'

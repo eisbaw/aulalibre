@@ -3,7 +3,7 @@ id: TASK-0089
 title: >-
   Investigate AulaNative.Droid.Private assembly - tiny 5KB DLL with possible
   sensitive logic
-status: In Progress
+status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-19 07:14'

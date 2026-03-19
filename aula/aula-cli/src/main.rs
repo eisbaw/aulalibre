@@ -4,6 +4,7 @@
 //! major domain: auth, messages, calendar, presence, posts, gallery, documents,
 //! notifications, search, groups, profile, and config.
 
+mod callback_server;
 mod commands;
 mod config;
 pub mod output;

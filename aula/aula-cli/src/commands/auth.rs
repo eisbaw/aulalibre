@@ -4,6 +4,12 @@
 //! flow: it starts a local HTTP server, opens the user's browser at the
 //! authorize URL, waits for the redirect callback carrying the authorization
 //! code, exchanges it for tokens, and saves them to disk.
+//!
+//! By default, the flow uses a localhost callback server to automatically
+//! capture the authorization code. If the OIDC provider rejects the localhost
+//! redirect URI, use `--manual` to fall back to the copy-paste approach.
+
+use std::time::Duration;
 
 use clap::Subcommand;
 
@@ -11,6 +17,7 @@ use aula_api::auth::{self, AuthLevel, AuthorizeParams, LoginData, OidcEndpoints,
 use aula_api::client::{AulaClient, AulaClientConfig};
 use aula_api::session::{Session, SessionConfig};
 
+use crate::callback_server;
 use crate::output::bold;
 use crate::session_util::{resolve_environment, token_store};
 
@@ -26,6 +33,13 @@ pub enum AuthCommand {
         /// Timeout in seconds waiting for the browser callback.
         #[arg(long, default_value = "120")]
         timeout: u64,
+
+        /// Use manual copy-paste flow instead of the localhost callback server.
+        ///
+        /// In manual mode, the browser redirects to a URL that won't load,
+        /// and you paste the full URL from the address bar into the terminal.
+        #[arg(long)]
+        manual: bool,
     },
     /// Log out and clear the current session.
     Logout,
@@ -45,7 +59,17 @@ fn parse_auth_level(level: u8) -> Result<AuthLevel, String> {
 
 pub async fn handle(cmd: &AuthCommand, env_override: Option<&str>) {
     match cmd {
-        AuthCommand::Login { level, timeout } => handle_login(*level, *timeout, env_override).await,
+        AuthCommand::Login {
+            level,
+            timeout,
+            manual,
+        } => {
+            if *manual {
+                handle_login_manual(*level, *timeout, env_override).await;
+            } else {
+                handle_login_auto(*level, *timeout, env_override).await;
+            }
+        }
         AuthCommand::Logout => handle_logout(env_override).await,
         AuthCommand::Status => handle_status(),
         AuthCommand::Refresh => handle_refresh(env_override).await,
@@ -53,10 +77,112 @@ pub async fn handle(cmd: &AuthCommand, env_override: Option<&str>) {
 }
 
 // ---------------------------------------------------------------------------
-// Login
+// Login (automatic callback server)
 // ---------------------------------------------------------------------------
 
-async fn handle_login(level: u8, _timeout_secs: u64, env_override: Option<&str>) {
+async fn handle_login_auto(level: u8, timeout_secs: u64, env_override: Option<&str>) {
+    let auth_level = match parse_auth_level(level) {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("error: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    let environment = resolve_environment(env_override);
+    let endpoints = OidcEndpoints::for_environment(&environment);
+    let pkce = PkceChallenge::generate();
+    let state = auth::generate_state();
+
+    // Start the local callback server on an OS-assigned port.
+    let timeout = Duration::from_secs(timeout_secs);
+    let (port, server_handle) = match callback_server::start_callback_server(timeout).await {
+        Ok(pair) => pair,
+        Err(e) => {
+            eprintln!("error: {e}");
+            eprintln!("Falling back to manual mode. Re-run with --manual flag.");
+            std::process::exit(1);
+        }
+    };
+
+    let redirect_uri = callback_server::localhost_redirect_uri(port);
+
+    let params = AuthorizeParams {
+        auth_level,
+        code_challenge: pkce.code_challenge.clone(),
+        state: state.clone(),
+        redirect_uri: Some(redirect_uri.clone()),
+    };
+
+    let authorize_url = auth::build_authorize_url(&endpoints, &params);
+
+    eprintln!("Starting Aula login ({auth_level})...");
+    eprintln!("Callback server listening on http://localhost:{port}/callback");
+    eprintln!();
+    eprintln!("Opening your browser for authentication.");
+    eprintln!("If the browser does not open, visit this URL manually:");
+    eprintln!();
+    eprintln!("  {authorize_url}");
+    eprintln!();
+    eprintln!("Waiting up to {timeout_secs} seconds for login to complete...");
+
+    if let Err(e) = open::that(authorize_url.as_str()) {
+        eprintln!("warning: failed to open browser: {e}");
+        eprintln!("Please open the URL above manually.");
+    }
+
+    // Wait for the callback.
+    let callback = match server_handle.await {
+        Ok(Ok(result)) => result,
+        Ok(Err(callback_server::CallbackError::Timeout)) => {
+            eprintln!();
+            eprintln!("error: timed out waiting for login callback ({timeout_secs}s)");
+            eprintln!("Try again with a longer --timeout, or use --manual mode.");
+            std::process::exit(1);
+        }
+        Ok(Err(e)) => {
+            eprintln!("error: {e}");
+            std::process::exit(1);
+        }
+        Err(e) => {
+            eprintln!("error: callback server task failed: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    // Extract the authorization code from the callback URI.
+    let (code, callback_state) =
+        match callback_server::extract_code_from_callback(&callback.request_uri) {
+            Ok(pair) => pair,
+            Err(e) => {
+                eprintln!("error: {e}");
+                std::process::exit(1);
+            }
+        };
+
+    // Verify state if present.
+    if let Some(ref s) = callback_state {
+        if s != &state {
+            eprintln!("error: OIDC state mismatch (possible CSRF attack)");
+            std::process::exit(1);
+        }
+    }
+
+    complete_token_exchange(
+        auth_level,
+        &endpoints,
+        &code,
+        &pkce.code_verifier,
+        Some(&redirect_uri),
+    )
+    .await;
+}
+
+// ---------------------------------------------------------------------------
+// Login (manual copy-paste)
+// ---------------------------------------------------------------------------
+
+async fn handle_login_manual(level: u8, _timeout_secs: u64, env_override: Option<&str>) {
     let auth_level = match parse_auth_level(level) {
         Ok(l) => l,
         Err(e) => {
@@ -81,7 +207,7 @@ async fn handle_login(level: u8, _timeout_secs: u64, env_override: Option<&str>)
 
     let authorize_url = auth::build_authorize_url(&endpoints, &params);
 
-    eprintln!("Starting Aula login ({auth_level})...");
+    eprintln!("Starting Aula login ({auth_level}) in manual mode...");
     eprintln!();
     eprintln!("Opening your browser for authentication.");
     eprintln!("If the browser does not open, visit this URL manually:");
@@ -116,16 +242,30 @@ async fn handle_login(level: u8, _timeout_secs: u64, env_override: Option<&str>)
         }
     };
 
+    complete_token_exchange(auth_level, &endpoints, &code, &pkce.code_verifier, None).await;
+}
+
+// ---------------------------------------------------------------------------
+// Shared: token exchange + save
+// ---------------------------------------------------------------------------
+
+async fn complete_token_exchange(
+    auth_level: AuthLevel,
+    endpoints: &OidcEndpoints,
+    code: &str,
+    code_verifier: &str,
+    redirect_uri: Option<&str>,
+) {
     eprintln!("Authorization code received, exchanging for tokens...");
 
     let http = reqwest::Client::new();
     let token_response = match auth::exchange_code(
         &http,
-        &endpoints,
+        endpoints,
         auth_level,
-        &code,
-        &pkce.code_verifier,
-        None, // uses default redirect_uri
+        code,
+        code_verifier,
+        redirect_uri,
     )
     .await
     {

@@ -37,9 +37,58 @@ pub type InstitutionCode = String;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Address {
+    #[serde(default)]
+    pub id: Option<i64>,
     pub street: Option<String>,
+    /// Postal code -- the API sometimes sends this as a number, sometimes as
+    /// a string. The custom deserializer handles both.
+    #[serde(default, deserialize_with = "deserialize_string_or_number")]
     pub postal_code: Option<String>,
     pub postal_district: Option<String>,
+}
+
+/// Deserialize a value that may be either a string or a number into `Option<String>`.
+fn deserialize_string_or_number<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de;
+
+    struct StringOrNumber;
+
+    impl<'de> de::Visitor<'de> for StringOrNumber {
+        type Value = Option<String>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a string, a number, or null")
+        }
+
+        fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+            Ok(Some(v.to_owned()))
+        }
+
+        fn visit_u64<E: de::Error>(self, v: u64) -> Result<Self::Value, E> {
+            Ok(Some(v.to_string()))
+        }
+
+        fn visit_i64<E: de::Error>(self, v: i64) -> Result<Self::Value, E> {
+            Ok(Some(v.to_string()))
+        }
+
+        fn visit_f64<E: de::Error>(self, v: f64) -> Result<Self::Value, E> {
+            Ok(Some(v.to_string()))
+        }
+
+        fn visit_none<E: de::Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+
+        fn visit_unit<E: de::Error>(self) -> Result<Self::Value, E> {
+            Ok(None)
+        }
+    }
+
+    deserializer.deserialize_any(StringOrNumber)
 }
 
 /// Profile picture stored in S3/CDN.

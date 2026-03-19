@@ -506,6 +506,7 @@ mod presence {
 
 mod profiles {
     use super::*;
+    use aula_api::models::onboarding::OnboardingProfileDto;
 
     #[test]
     fn deserialize_profiles_from_fixture() {
@@ -513,65 +514,54 @@ mod profiles {
         let json = fixture("profiles_response.json");
         let resp: AulaServiceResponse<ProfilesByLoginResponse> =
             serde_json::from_str(&json).unwrap();
-        let profiles = resp.data.profiles;
+        let profiles = &resp.data.profiles;
         assert_eq!(profiles.len(), 1);
 
         let profile = &profiles[0];
-        assert_eq!(profile.id, Some(6701));
-        assert_eq!(profile.first_name.as_deref(), Some("Henrik"));
-        assert_eq!(profile.last_name.as_deref(), Some("Jensen"));
-        assert_eq!(profile.portal_role.as_deref(), Some("Guardian"));
-        assert!(!profile.is_stepped_up);
-        assert!(!profile.is_group_home_admin);
+        assert_eq!(profile.profile_id, Some(6701));
+        assert_eq!(profile.display_name.as_deref(), Some("Henrik Jensen"));
+        assert_eq!(profile.portal_role.as_deref(), Some("guardian"));
+        assert!(profile.is_latest_data_policy_accepted);
+        assert!(!profile.support_role);
 
-        // Institution profile
-        let ip = profile.institution_profile.as_ref().unwrap();
-        assert_eq!(ip.institution_profile_id, 12055);
+        // Institution profiles (plural -- the login response has an array)
+        let ips = profile.institution_profiles.as_ref().unwrap();
+        assert_eq!(ips.len(), 1);
+        let ip = &ips[0];
+        assert_eq!(ip.id, 12055);
         assert_eq!(ip.profile_id, 6701);
-        assert_eq!(ip.institution_role, Some(InstitutionRole::Guardian));
+        assert_eq!(ip.institution_code.as_deref(), Some("280371"));
+        assert_eq!(ip.institution_name.as_deref(), Some("Bakkeskolen"));
+        assert_eq!(ip.municipality_name.as_deref(), Some("Aarhus"));
         assert_eq!(ip.email.as_deref(), Some("henrik.jensen@mail.dk"));
-        assert_eq!(ip.phone.as_deref(), Some("28456789"));
-        assert!(!ip.communication_block);
-        assert!(!ip.upload_block);
-        assert!(!ip.alias);
+        assert_eq!(ip.mobile_phone_number.as_deref(), Some("28456789"));
+        assert_eq!(ip.role.as_deref(), Some("guardian"));
+        assert!(ip.is_primary);
+        assert!(!ip.new_institution_profile);
 
-        // Address
+        // Address on the institution profile
         let addr = ip.address.as_ref().unwrap();
         assert_eq!(addr.street.as_deref(), Some("Skovvej 15"));
         assert_eq!(addr.postal_code.as_deref(), Some("8260"));
         assert_eq!(addr.postal_district.as_deref(), Some("Viby J"));
 
-        // Profile picture
-        let pic = ip.profile_picture.as_ref().unwrap();
-        assert_eq!(pic.id, Some(8811));
-        assert!(pic.url.is_some());
+        // Profile picture is a serde_json::Value
+        assert!(ip.profile_picture.is_some());
 
-        // Relations
-        let relations = ip.relations.as_ref().unwrap();
-        assert_eq!(relations.len(), 1);
-        assert_eq!(relations[0].role, Some(PortalRole::Child));
-        assert_eq!(relations[0].full_name.as_deref(), Some("Emma Jensen"));
-        let inst = relations[0].institution.as_ref().unwrap();
-        assert_eq!(inst.name.as_deref(), Some("Bakkeskolen"));
-        assert_eq!(inst.institution_code.as_deref(), Some("280371"));
+        // Children
+        let children = profile.children.as_ref().unwrap();
+        assert_eq!(children.len(), 1);
+        assert_eq!(children[0].name.as_deref(), Some("Emma Jensen"));
+        assert_eq!(children[0].id, Some(14201));
+        assert_eq!(children[0].profile_id, Some(8801));
+        assert!(children[0].has_custody_or_extended_access);
+        let child_ip = children[0].institution_profile.as_ref().unwrap();
+        assert_eq!(child_ip.full_name.as_deref(), Some("Emma Jensen"));
+        assert_eq!(child_ip.institution_name.as_deref(), Some("Bakkeskolen"));
 
-        // Institution identity
-        let identity = ip.institution.as_ref().unwrap();
-        assert_eq!(identity.institution_code.as_deref(), Some("280371"));
-        assert_eq!(identity.municipality_name.as_deref(), Some("Aarhus"));
-
-        // Groups
-        let groups = profile.groups.as_ref().unwrap();
-        assert_eq!(groups.len(), 1);
-        assert_eq!(groups[0].name.as_deref(), Some("3.A Forældre"));
-
-        // Page configuration
-        let page_config = profile.page_configuration.as_ref().unwrap();
-        let widgets = page_config.widget_configurations.as_ref().unwrap();
-        assert_eq!(widgets.len(), 1);
-        let widget = widgets[0].widget.as_ref().unwrap();
-        assert_eq!(widget.name.as_deref(), Some("Kontaktbog"));
-        assert!(widget.can_access_on_mobile);
+        // Convenience methods
+        assert_eq!(profile.first_institution_profile_id(), Some(12055));
+        assert_eq!(profile.children_names(), vec!["Emma Jensen".to_string()]);
     }
 
     #[test]
@@ -619,9 +609,9 @@ mod profiles {
             serde_json::from_str(&json).unwrap();
         let profile = &resp.data.profiles[0];
         let serialized = serde_json::to_string(profile).unwrap();
-        let roundtripped: Profile = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(roundtripped.id, profile.id);
-        assert_eq!(roundtripped.first_name, profile.first_name);
+        let roundtripped: OnboardingProfileDto = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(roundtripped.profile_id, profile.profile_id);
+        assert_eq!(roundtripped.display_name, profile.display_name);
     }
 
     #[test]
@@ -646,6 +636,7 @@ mod profiles {
             "isGroupHomeAdmin": false,
             "pageConfiguration": null
         }"#;
+        // Profile struct is still used by getProfileMasterData
         let profile: Profile = serde_json::from_str(json).unwrap();
         assert!(profile.id.is_none());
         assert!(profile.institution_profile.is_none());

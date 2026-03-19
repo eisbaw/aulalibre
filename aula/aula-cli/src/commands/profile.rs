@@ -46,45 +46,56 @@ async fn handle_me(json: bool, env_override: Option<&str>) {
                         println!("{}", dim(&"-".repeat(50)));
                     }
 
-                    let first = profile.first_name.as_deref().unwrap_or("");
-                    let last = profile.last_name.as_deref().unwrap_or("");
+                    let name = profile.display_name.as_deref().unwrap_or("(unknown)");
                     let role = profile.portal_role.as_deref().unwrap_or("(unknown)");
-                    let user_id = profile.user_id.as_deref().unwrap_or("");
 
                     println!("{}", bold(&format!("Profile #{}", i + 1)));
-                    println!("  Name: {first} {last}");
+                    println!("  Name: {name}");
                     println!("  Role: {role}");
-                    if !user_id.is_empty() {
-                        println!("  User ID: {user_id}");
-                    }
-                    if let Some(ref email) = profile.external_email {
-                        println!("  Email: {email}");
-                    }
-                    if let Some(ref phone) = profile.phonenumber {
-                        println!("  Phone: {phone}");
-                    }
-                    if let Some(ref mobile) = profile.mobile_phonenumber {
-                        println!("  Mobile: {mobile}");
+                    if let Some(pid) = profile.profile_id {
+                        println!("  Profile ID: {pid}");
                     }
 
-                    if let Some(ref inst) = profile.institution_profile {
-                        println!("  Institution profile ID: {}", inst.institution_profile_id);
-                        if let Some(ref institution) = inst.institution {
-                            if let Some(ref code) = institution.institution_code {
-                                println!("  Institution code: {code}");
+                    // Institution profiles
+                    if let Some(ref ips) = profile.institution_profiles {
+                        for ip in ips {
+                            println!();
+                            println!(
+                                "  {}",
+                                bold(&format!(
+                                    "Institution: {}",
+                                    ip.institution_name.as_deref().unwrap_or("(unknown)")
+                                ))
+                            );
+                            println!("    Institution profile ID: {}", ip.id);
+                            if let Some(ref code) = ip.institution_code {
+                                println!("    Institution code: {code}");
                             }
-                            if let Some(ref name) = institution.institution_name {
-                                println!("  Institution: {name}");
+                            if let Some(ref mun) = ip.municipality_name {
+                                println!("    Municipality: {mun}");
+                            }
+                            if let Some(ref email) = ip.email {
+                                println!("    Email: {email}");
+                            }
+                            if let Some(ref phone) = ip.mobile_phone_number {
+                                println!("    Mobile: {phone}");
+                            }
+                            if let Some(ref addr) = ip.address {
+                                let street = addr.street.as_deref().unwrap_or("");
+                                let postal = addr.postal_code.as_deref().unwrap_or("");
+                                let district = addr.postal_district.as_deref().unwrap_or("");
+                                if !street.is_empty() {
+                                    println!("    Address: {street}, {postal} {district}");
+                                }
                             }
                         }
                     }
 
-                    if let Some(ref groups) = profile.groups {
-                        if !groups.is_empty() {
-                            let group_names: Vec<&str> =
-                                groups.iter().filter_map(|g| g.name.as_deref()).collect();
-                            println!("  Groups ({}): {}", groups.len(), group_names.join(", "));
-                        }
+                    // Children
+                    let kids = profile.children_names();
+                    if !kids.is_empty() {
+                        println!();
+                        println!("  Children ({}): {}", kids.len(), kids.join(", "));
                     }
                 }
             }

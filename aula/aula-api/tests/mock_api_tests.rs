@@ -109,8 +109,11 @@ mod profiles {
         let resp = result.expect("should deserialize profiles");
 
         assert_eq!(resp.profiles.len(), 1);
-        assert_eq!(resp.profiles[0].first_name.as_deref(), Some("Henrik"));
-        assert_eq!(resp.profiles[0].last_name.as_deref(), Some("Jensen"));
+        assert_eq!(
+            resp.profiles[0].display_name.as_deref(),
+            Some("Henrik Jensen")
+        );
+        assert_eq!(resp.profiles[0].portal_role.as_deref(), Some("guardian"));
     }
 }
 

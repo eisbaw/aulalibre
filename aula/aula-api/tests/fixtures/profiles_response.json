@@ -9,144 +9,86 @@
   },
   "data": {"profiles": [
     {
-      "id": 6701,
-      "institutionProfile": {
-        "institutionProfileId": 12055,
-        "profileId": 6701,
-        "uniPersonId": 990012,
-        "mailBoxId": 7700,
-        "firstName": "Henrik",
-        "lastName": "Jensen",
-        "fullName": "Henrik Jensen",
-        "shortName": "HJ",
-        "metadata": null,
-        "role": "Guardian",
-        "encryptionKey": null,
-        "profilePicture": {
-          "id": 8811,
-          "key": "profiles/6701/pic.jpg",
-          "bucket": "aula-prod-media",
-          "isImageScalingPending": false,
-          "url": "https://media.aula.dk/profiles/6701/pic.jpg",
-          "scanningStatus": "Available"
-        },
-        "mainGroup": null,
-        "institutionRole": "Guardian",
-        "communicationBlock": false,
-        "uploadBlock": false,
-        "email": "henrik.jensen@mail.dk",
-        "phone": "28456789",
-        "address": {
-          "street": "Skovvej 15",
-          "postalCode": "8260",
-          "postalDistrict": "Viby J"
-        },
-        "birthday": "1985-06-15",
-        "relations": [
-          {
-            "institutionProfileId": 14201,
-            "profileId": 8801,
-            "firstName": "Emma",
-            "fullName": "Emma Jensen",
-            "lastName": "Jensen",
-            "mailBoxId": null,
-            "shortName": "EJ",
-            "mainGroupName": "3.A",
-            "metadata": null,
-            "profilePicture": null,
-            "institution": {
-              "children": [],
-              "institutionProfileId": 14201,
-              "name": "Bakkeskolen",
-              "institutionCode": "280371",
-              "institutionType": "School",
-              "municipalityCode": "751",
-              "institutionRole": "Child",
-              "permissions": [],
-              "groups": [],
-              "administrativeAuthority": {
-                "id": 101,
-                "name": "Aarhus Kommune",
-                "institutionCodes": ["280371", "280372"]
-              },
-              "communicationBlock": false,
-              "selected": true,
-              "mailboxId": null,
-              "shortName": "BS"
-            },
-            "role": "Child"
-          }
-        ],
-        "alias": false,
-        "groupHomeId": null,
-        "institution": {
+      "profileId": 6701,
+      "displayName": "Henrik Jensen",
+      "portalRole": "guardian",
+      "isLatestDataPolicyAccepted": true,
+      "supportRole": false,
+      "overConsentAge": null,
+      "contactInfoEditable": null,
+      "age18AndOlder": null,
+      "institutionProfiles": [
+        {
+          "id": 12055,
+          "profileId": 6701,
           "institutionCode": "280371",
           "institutionName": "Bakkeskolen",
           "municipalityCode": "751",
           "municipalityName": "Aarhus",
-          "administrativeAuthority": null
-        }
-      },
-      "groups": [
-        {
-          "id": 1501,
-          "name": "3.A Forældre",
-          "description": "Forældregruppe for 3.A",
-          "membershipType": null,
-          "membershipInstitutions": ["280371"],
-          "access": "Closed",
-          "currentUserCanAccessGroupDashBoard": false,
-          "status": "Active",
-          "role": "Indirect",
-          "dashboardEnabled": false,
-          "institutionCode": "280371",
-          "type": "Institutional",
-          "validGroupModules": [],
-          "allowMembersToBeShown": true,
-          "validGroupWidgets": [],
-          "memberships": [],
-          "endTime": null
+          "firstName": "Henrik",
+          "lastName": "Jensen",
+          "fullName": "Henrik Jensen",
+          "gender": "M",
+          "role": "guardian",
+          "shortName": "HJ",
+          "newInstitutionProfile": false,
+          "isPrimary": true,
+          "email": "henrik.jensen@mail.dk",
+          "mobilePhoneNumber": "28456789",
+          "metadata": null,
+          "address": {
+            "street": "Skovvej 15",
+            "postalCode": "8260",
+            "postalDistrict": "Viby J"
+          },
+          "profilePicture": {
+            "id": 8811,
+            "key": "profiles/6701/pic.jpg",
+            "bucket": "aula-prod-media",
+            "isImageScalingPending": false,
+            "url": "https://media.aula.dk/profiles/6701/pic.jpg",
+            "scanningStatus": "Available"
+          },
+          "groups": [
+            {
+              "id": 1501,
+              "name": "3.A Forældre",
+              "description": "Forældregruppe for 3.A"
+            }
+          ],
+          "permissions": [],
+          "mainGroup": null,
+          "pageConfiguration": null,
+          "moduleConfigurations": null,
+          "blockedCommunication": null
         }
       ],
-      "municipalGroups": [],
-      "phonenumber": "28456789",
-      "email": "henrik.jensen@mail.dk",
-      "workPhonenumber": null,
-      "homePhonenumber": null,
-      "mobilePhonenumber": "28456789",
-      "administrator": null,
-      "firstName": "Henrik",
-      "lastName": "Jensen",
-      "userId": "usr-6701",
-      "portalRole": "Guardian",
-      "isSteppedUp": false,
-      "groupHomes": [],
-      "isGroupHomeAdmin": false,
-      "pageConfiguration": {
-        "widgetConfigurations": [
-          {
-            "id": 201,
-            "widget": {
-              "id": 50,
-              "name": "Kontaktbog",
-              "icon": "contact-icon",
-              "iconEmployee": null,
-              "iconHover": null,
-              "url": "https://widgets.aula.dk/kontaktbog",
-              "type": "Widget",
-              "usableForGroups": false,
-              "ordering": 1,
-              "widgetId": "kontaktbog-v2",
-              "widgetVersion": "2.1",
-              "canAccessOnMobile": true
-            },
-            "placement": "RightOfOverview",
-            "aggregatedDisplayMode": null,
-            "order": 1
-          }
-        ],
-        "editorPluginDetails": []
-      }
+      "children": [
+        {
+          "institutionProfile": {
+            "id": 14201,
+            "profileId": 8801,
+            "institutionCode": "280371",
+            "institutionName": "Bakkeskolen",
+            "firstName": "Emma",
+            "lastName": "Jensen",
+            "fullName": "Emma Jensen",
+            "role": "child",
+            "shortName": "EJ",
+            "gender": "F",
+            "profilePicture": null,
+            "mainGroup": null
+          },
+          "id": 14201,
+          "profileId": 8801,
+          "userId": "usr-8801",
+          "name": "Emma Jensen",
+          "profilePicture": null,
+          "shortName": "EJ",
+          "institutionCode": "280371",
+          "hasCustodyOrExtendedAccess": true
+        }
+      ]
     }
   ]}
 }

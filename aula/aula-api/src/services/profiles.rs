@@ -34,14 +34,9 @@ use crate::session::Session;
 
 /// Response from `GetProfilesByLogin`.
 ///
-/// The API returns the logged-in user's profiles (typically one per
-/// institution) wrapped in the standard `AulaServiceResponse` envelope.
-/// The `data` field is `{"profiles": [...]}`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ProfilesByLoginResponse {
-    pub profiles: Vec<Profile>,
-}
+/// The real API returns an `OnboardingResponseDto` structure, not `Profile`
+/// objects. This is a type alias to make that clear at the service layer.
+pub type ProfilesByLoginResponse = OnboardingResponseDto;
 
 /// Request body for `PostMasterData`.
 ///

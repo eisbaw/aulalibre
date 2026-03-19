@@ -180,17 +180,28 @@ async fn e2e_get_profiles_by_login() {
 
     let first = &resp.profiles[0];
     eprintln!(
-        "E2E: got {} profile(s); first has institution_profile={}, portal_role={:?}",
+        "E2E: got {} profile(s); first display_name={:?}, portal_role={:?}",
         resp.profiles.len(),
-        first.institution_profile.is_some(),
+        first.display_name,
         first.portal_role,
     );
 
-    // A valid profile should have an institution profile.
+    // A valid profile should have institution profiles.
     assert!(
-        first.institution_profile.is_some(),
-        "profile should contain an institution_profile"
+        first
+            .institution_profiles
+            .as_ref()
+            .map_or(false, |ips| !ips.is_empty()),
+        "profile should contain at least one institution_profile"
     );
+
+    // Verify the institution profile has an id (the pivot entity).
+    let ip = &first.institution_profiles.as_ref().unwrap()[0];
+    eprintln!(
+        "E2E: first institution profile id={}, institution={:?}",
+        ip.id, ip.institution_name
+    );
+    assert!(ip.id > 0, "institution profile id should be positive");
 }
 
 /// AC#2: List message threads and read a thread.
@@ -268,11 +279,7 @@ async fn e2e_calendar_events_today() {
     let inst_profile_ids: Vec<i64> = resp
         .profiles
         .iter()
-        .filter_map(|p| {
-            p.institution_profile
-                .as_ref()
-                .map(|ip| ip.institution_profile_id)
-        })
+        .flat_map(|p| p.institution_profile_ids())
         .collect();
 
     if inst_profile_ids.is_empty() {
@@ -319,11 +326,7 @@ async fn e2e_presence_status() {
     let inst_profile_ids: Vec<i64> = resp
         .profiles
         .iter()
-        .filter_map(|p| {
-            p.institution_profile
-                .as_ref()
-                .map(|ip| ip.institution_profile_id)
-        })
+        .flat_map(|p| p.institution_profile_ids())
         .collect();
 
     if inst_profile_ids.is_empty() {
@@ -361,11 +364,7 @@ async fn e2e_list_posts() {
     let inst_profile_ids: Vec<i64> = resp
         .profiles
         .iter()
-        .filter_map(|p| {
-            p.institution_profile
-                .as_ref()
-                .map(|ip| ip.institution_profile_id)
-        })
+        .flat_map(|p| p.institution_profile_ids())
         .collect();
 
     let params = aula_api::models::posts::GetPostApiParameters {

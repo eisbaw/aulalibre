@@ -106,11 +106,11 @@ mod profiles {
 
         let mut session = mock_session(&server.uri());
         let result = profiles::get_profiles_by_login(&mut session).await;
-        let profiles = result.expect("should deserialize profiles");
+        let resp = result.expect("should deserialize profiles");
 
-        assert_eq!(profiles.len(), 1);
-        assert_eq!(profiles[0].first_name.as_deref(), Some("Henrik"));
-        assert_eq!(profiles[0].last_name.as_deref(), Some("Jensen"));
+        assert_eq!(resp.profiles.len(), 1);
+        assert_eq!(resp.profiles[0].first_name.as_deref(), Some("Henrik"));
+        assert_eq!(resp.profiles[0].last_name.as_deref(), Some("Jensen"));
     }
 }
 
@@ -302,7 +302,7 @@ mod request_validation {
         Mock::given(method("GET"))
             .and(path("/api/v23/"))
             .and(query_param("method", "profiles.getprofilesbylogin"))
-            .and(header("user-agent", "AulaNative/2.15.4"))
+            .and(header("user-agent", "Android"))
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_body_string(body)
@@ -708,7 +708,7 @@ mod helpers_and_reuse {
         let profs = profiles::get_profiles_by_login(&mut session)
             .await
             .expect("profiles should work");
-        assert!(!profs.is_empty());
+        assert!(!profs.profiles.is_empty());
 
         let args = GetThreadListArguments {
             page: None,

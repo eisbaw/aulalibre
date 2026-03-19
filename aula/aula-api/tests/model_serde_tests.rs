@@ -509,9 +509,11 @@ mod profiles {
 
     #[test]
     fn deserialize_profiles_from_fixture() {
+        use aula_api::services::profiles::ProfilesByLoginResponse;
         let json = fixture("profiles_response.json");
-        let resp: AulaServiceResponse<Vec<Profile>> = serde_json::from_str(&json).unwrap();
-        let profiles = resp.data;
+        let resp: AulaServiceResponse<ProfilesByLoginResponse> =
+            serde_json::from_str(&json).unwrap();
+        let profiles = resp.data.profiles;
         assert_eq!(profiles.len(), 1);
 
         let profile = &profiles[0];
@@ -611,9 +613,11 @@ mod profiles {
 
     #[test]
     fn profile_roundtrip() {
+        use aula_api::services::profiles::ProfilesByLoginResponse;
         let json = fixture("profiles_response.json");
-        let resp: AulaServiceResponse<Vec<Profile>> = serde_json::from_str(&json).unwrap();
-        let profile = &resp.data[0];
+        let resp: AulaServiceResponse<ProfilesByLoginResponse> =
+            serde_json::from_str(&json).unwrap();
+        let profile = &resp.data.profiles[0];
         let serialized = serde_json::to_string(profile).unwrap();
         let roundtripped: Profile = serde_json::from_str(&serialized).unwrap();
         assert_eq!(roundtripped.id, profile.id);

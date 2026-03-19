@@ -13,7 +13,8 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WebResponseStatus {
-    /// HTTP status code echoed by the API.
+    /// HTTP status code echoed by the API (not always present).
+    #[serde(default)]
     pub http_code: i32,
 
     /// Backend-specific error code (0 typically means success).
@@ -201,12 +202,12 @@ mod tests {
 
     #[test]
     fn deserialize_minimal_status() {
-        // Only httpCode required; everything else defaults
-        let json = r#"{"httpCode": 200}"#;
+        // All fields optional/defaulted; real API often omits httpCode
+        let json = r#"{"code": 0, "message": "OK"}"#;
         let status: WebResponseStatus = serde_json::from_str(json).expect("should deserialize");
-        assert_eq!(status.http_code, 200);
+        assert_eq!(status.http_code, 0);
         assert_eq!(status.backend_error_code, 0);
-        assert!(status.message.is_none());
+        assert_eq!(status.message.as_deref(), Some("OK"));
         assert!(status.sub_code.is_none());
     }
 

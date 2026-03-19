@@ -44,7 +44,7 @@ pub fn build_session(env_override: Option<&str>) -> Session {
 
     let client = match AulaClient::with_config(AulaClientConfig {
         environment,
-        api_version: 19,
+        api_version: 23,
     }) {
         Ok(c) => c,
         Err(e) => {

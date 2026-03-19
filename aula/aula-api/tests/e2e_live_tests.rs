@@ -169,19 +169,19 @@ async fn e2e_get_profiles_by_login() {
         return;
     };
 
-    let profiles = aula_api::services::profiles::get_profiles_by_login(&mut session)
+    let resp = aula_api::services::profiles::get_profiles_by_login(&mut session)
         .await
         .expect("get_profiles_by_login should succeed");
 
     assert!(
-        !profiles.is_empty(),
+        !resp.profiles.is_empty(),
         "logged-in user should have at least one profile"
     );
 
-    let first = &profiles[0];
+    let first = &resp.profiles[0];
     eprintln!(
         "E2E: got {} profile(s); first has institution_profile={}, portal_role={:?}",
-        profiles.len(),
+        resp.profiles.len(),
         first.institution_profile.is_some(),
         first.portal_role,
     );
@@ -261,11 +261,12 @@ async fn e2e_calendar_events_today() {
     };
 
     // Get institution profile IDs from the logged-in user's profiles.
-    let profiles = aula_api::services::profiles::get_profiles_by_login(&mut session)
+    let resp = aula_api::services::profiles::get_profiles_by_login(&mut session)
         .await
         .expect("get_profiles_by_login should succeed");
 
-    let inst_profile_ids: Vec<i64> = profiles
+    let inst_profile_ids: Vec<i64> = resp
+        .profiles
         .iter()
         .filter_map(|p| {
             p.institution_profile
@@ -311,11 +312,12 @@ async fn e2e_presence_status() {
         return;
     };
 
-    let profiles = aula_api::services::profiles::get_profiles_by_login(&mut session)
+    let resp = aula_api::services::profiles::get_profiles_by_login(&mut session)
         .await
         .expect("get_profiles_by_login should succeed");
 
-    let inst_profile_ids: Vec<i64> = profiles
+    let inst_profile_ids: Vec<i64> = resp
+        .profiles
         .iter()
         .filter_map(|p| {
             p.institution_profile
@@ -352,11 +354,12 @@ async fn e2e_list_posts() {
     };
 
     // Get institution profile IDs for the query.
-    let profiles = aula_api::services::profiles::get_profiles_by_login(&mut session)
+    let resp = aula_api::services::profiles::get_profiles_by_login(&mut session)
         .await
         .expect("get_profiles_by_login should succeed");
 
-    let inst_profile_ids: Vec<i64> = profiles
+    let inst_profile_ids: Vec<i64> = resp
+        .profiles
         .iter()
         .filter_map(|p| {
             p.institution_profile

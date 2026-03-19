@@ -130,6 +130,8 @@ impl Default for AulaClientConfig {
 /// - A [`reqwest::Client`] with an attached cookie store.
 /// - Automatic CSRF token extraction from the `Csrfp-Token` cookie and
 ///   injection as the `csrfp-token` request header.
+/// - Access token injection as a query parameter (`&access_token=<JWT>`)
+///   matching the mobile app's `OAuth2Request.GetAuthenticatedUrl()` pattern.
 /// - Base URL construction per environment.
 /// - Non-production basic auth.
 pub struct AulaClient {
@@ -139,6 +141,8 @@ pub struct AulaClient {
     environment: Environment,
     /// Whether to send basic auth on every request.
     use_basic_auth: bool,
+    /// OIDC access token, appended as `&access_token=` query parameter.
+    access_token: std::sync::Mutex<Option<String>>,
 }
 
 impl AulaClient {
@@ -164,7 +168,7 @@ impl AulaClient {
         let builder = reqwest::Client::builder()
             .cookie_provider(Arc::clone(&cookie_jar))
             .default_headers(default_headers)
-            .user_agent("AulaNative/2.15.4");
+            .user_agent("Android");
 
         let http = builder.build()?;
 
@@ -176,6 +180,7 @@ impl AulaClient {
             base_url,
             environment: config.environment,
             use_basic_auth,
+            access_token: std::sync::Mutex::new(None),
         })
     }
 
@@ -194,7 +199,7 @@ impl AulaClient {
         let http = reqwest::Client::builder()
             .cookie_provider(Arc::clone(&cookie_jar))
             .default_headers(default_headers)
-            .user_agent("AulaNative/2.15.4")
+            .user_agent("Android")
             .build()?;
 
         Ok(Self {
@@ -203,6 +208,7 @@ impl AulaClient {
             base_url,
             environment: Environment::Production,
             use_basic_auth: false,
+            access_token: std::sync::Mutex::new(None),
         })
     }
 
@@ -223,10 +229,28 @@ impl AulaClient {
         &self.http
     }
 
+    /// Set the access token for OIDC-authenticated API calls.
+    ///
+    /// This is called by [`Session`] after login or token refresh to keep the
+    /// client in sync with the current access token. The token is appended
+    /// as an `access_token` query parameter on every request, matching the
+    /// mobile app's `OAuth2Request.GetAuthenticatedUrl()` pattern.
+    pub fn set_access_token(&self, token: Option<String>) {
+        *self.access_token.lock().expect("access_token lock") = token;
+    }
+
     // -- Request decoration -------------------------------------------------
 
-    /// Apply common headers to a request builder: CSRF token and basic auth.
+    /// Apply common query parameters and headers: access_token query param,
+    /// CSRF token header, and basic auth.
+    ///
+    /// The access token is passed as a query parameter (not a Bearer header)
+    /// to match the mobile app's `OAuth2Request.GetAuthenticatedUrl()`. This
+    /// is Netcompany's design; a Bearer header returns HTTP 403/error 448.
     fn decorate(&self, mut req: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        if let Some(ref token) = *self.access_token.lock().expect("access_token lock") {
+            req = req.query(&[("access_token", token.as_str())]);
+        }
         if let Some(token) = self.csrf_token() {
             req = req.header(CSRF_HEADER_NAME, token);
         }

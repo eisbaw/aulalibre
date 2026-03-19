@@ -56,7 +56,7 @@ pub async fn handle(cmd: &AuthCommand, env_override: Option<&str>) {
 // Login
 // ---------------------------------------------------------------------------
 
-async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) {
+async fn handle_login(level: u8, _timeout_secs: u64, env_override: Option<&str>) {
     let auth_level = match parse_auth_level(level) {
         Ok(l) => l,
         Err(e) => {
@@ -70,23 +70,13 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
     let pkce = PkceChallenge::generate();
     let state = auth::generate_state();
 
-    // Start local HTTP server on a random port.
-    let listener = match tokio::net::TcpListener::bind("127.0.0.1:0").await {
-        Ok(l) => l,
-        Err(e) => {
-            eprintln!("error: failed to bind local HTTP server: {e}");
-            std::process::exit(1);
-        }
-    };
-
-    let local_addr = listener.local_addr().unwrap();
-    let redirect_uri = format!("http://127.0.0.1:{}/callback", local_addr.port());
-
+    // Use the app's registered redirect URI. The OIDC provider only accepts
+    // this specific URI; localhost callbacks are rejected.
     let params = AuthorizeParams {
         auth_level,
         code_challenge: pkce.code_challenge.clone(),
         state: state.clone(),
-        redirect_uri: Some(redirect_uri.clone()),
+        redirect_uri: None, // uses default: https://app-private.aula.dk
     };
 
     let authorize_url = auth::build_authorize_url(&endpoints, &params);
@@ -98,20 +88,30 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
     eprintln!();
     eprintln!("  {authorize_url}");
     eprintln!();
-    eprintln!(
-        "Waiting for callback on http://127.0.0.1:{} (timeout: {timeout_secs}s)...",
-        local_addr.port()
-    );
 
     if let Err(e) = open::that(authorize_url.as_str()) {
         eprintln!("warning: failed to open browser: {e}");
         eprintln!("Please open the URL above manually.");
     }
 
-    let code = match wait_for_callback(&listener, &state, timeout_secs).await {
-        Ok(code) => code,
+    eprintln!("After authenticating, your browser will redirect to a page that");
+    eprintln!("won't load (https://app-private.aula.dk?code=...). This is expected.");
+    eprintln!();
+    eprintln!("Copy the FULL URL from your browser's address bar and paste it here:");
+    eprintln!();
+
+    let callback_url = match read_callback_url() {
+        Ok(url) => url,
         Err(e) => {
             eprintln!("error: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    let code = match auth::extract_code_from_redirect(&callback_url, Some(&state)) {
+        Ok(code) => code,
+        Err(e) => {
+            eprintln!("error: failed to extract authorization code: {e}");
             std::process::exit(1);
         }
     };
@@ -125,7 +125,7 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
         auth_level,
         &code,
         &pkce.code_verifier,
-        Some(&redirect_uri),
+        None, // uses default redirect_uri
     )
     .await
     {
@@ -153,65 +153,96 @@ async fn handle_login(level: u8, timeout_secs: u64, env_override: Option<&str>) 
     eprintln!("  Tokens saved to: {}", store.dir().display());
 }
 
-// ---------------------------------------------------------------------------
-// Callback server
-// ---------------------------------------------------------------------------
+/// Read a callback URL from stdin.
+///
+/// Handles the `app-redirect.aula.dk` intermediate redirect: if the user
+/// pastes `https://app-redirect.aula.dk/?returnUri=<base64>`, we decode
+/// the base64 `returnUri` to extract the real callback URL.
+fn read_callback_url() -> Result<url::Url, String> {
+    use std::io::BufRead;
 
-async fn wait_for_callback(
-    listener: &tokio::net::TcpListener,
-    expected_state: &str,
-    timeout_secs: u64,
-) -> Result<String, String> {
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::time::{timeout, Duration};
-
-    let duration = Duration::from_secs(timeout_secs);
-
-    let (mut stream, _addr) = timeout(duration, listener.accept())
-        .await
-        .map_err(|_| format!("timed out after {timeout_secs}s waiting for browser callback"))?
-        .map_err(|e| format!("failed to accept connection: {e}"))?;
-
-    let mut buf = vec![0u8; 4096];
-    let n = stream
-        .read(&mut buf)
-        .await
-        .map_err(|e| format!("failed to read request: {e}"))?;
-    let request = String::from_utf8_lossy(&buf[..n]);
-
-    let request_line = request
+    let stdin = std::io::stdin();
+    let line = stdin
+        .lock()
         .lines()
         .next()
-        .ok_or_else(|| "empty HTTP request".to_string())?;
+        .ok_or_else(|| "no input received".to_string())?
+        .map_err(|e| format!("failed to read input: {e}"))?;
 
-    let path = request_line
-        .split_whitespace()
-        .nth(1)
-        .ok_or_else(|| "malformed HTTP request line".to_string())?;
+    let trimmed = line.trim();
+    if trimmed.is_empty() {
+        return Err("empty input".to_string());
+    }
 
-    let full_url = format!("http://localhost{path}");
-    let parsed =
-        url::Url::parse(&full_url).map_err(|e| format!("failed to parse callback URL: {e}"))?;
+    let parsed = url::Url::parse(trimmed).map_err(|e| format!("invalid URL: {e}"))?;
+    resolve_redirect_url(&parsed)
+}
 
-    let result = auth::extract_code_from_redirect(&parsed, Some(expected_state));
+/// Resolve an `app-redirect.aula.dk` intermediate URL to the real callback.
+///
+/// The OIDC flow redirects through `app-redirect.aula.dk/?returnUri=<base64>`
+/// where the base64 decodes to `https://app-private.aula.dk/?code=...&state=...`.
+/// If the URL is not from app-redirect, it is returned unchanged.
+fn resolve_redirect_url(url: &url::Url) -> Result<url::Url, String> {
+    if url.host_str() != Some("app-redirect.aula.dk") {
+        return Ok(url.clone());
+    }
 
-    let (status_line, body) = match &result {
-        Ok(_) => (
-            "HTTP/1.1 200 OK",
-            "<html><body><h2>Login successful!</h2><p>You can close this tab and return to the terminal.</p></body></html>",
-        ),
-        Err(_) => (
-            "HTTP/1.1 400 Bad Request",
-            "<html><body><h2>Login failed</h2><p>Check the terminal for details.</p></body></html>",
-        ),
-    };
+    let return_uri = url
+        .query_pairs()
+        .find(|(k, _)| k == "returnUri")
+        .map(|(_, v)| v.to_string())
+        .ok_or_else(|| "app-redirect URL missing returnUri parameter".to_string())?;
 
-    let response =
-        format!("{status_line}\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n{body}");
-    let _ = stream.write_all(response.as_bytes()).await;
-    let _ = stream.shutdown().await;
+    use base64::Engine;
+    let decoded = base64::engine::general_purpose::STANDARD
+        .decode(&return_uri)
+        .map_err(|e| format!("failed to decode returnUri base64: {e}"))?;
 
-    result.map_err(|e| format!("authorization failed: {e}"))
+    let url_str =
+        String::from_utf8(decoded).map_err(|e| format!("returnUri is not valid UTF-8: {e}"))?;
+
+    eprintln!("Decoded redirect URL from app-redirect.aula.dk");
+    url::Url::parse(&url_str).map_err(|e| format!("decoded URL is invalid: {e}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_redirect_decodes_base64_return_uri() {
+        use base64::Engine;
+        let inner = "https://app-private.aula.dk/?code=abc123&state=xyz";
+        let encoded = base64::engine::general_purpose::STANDARD.encode(inner);
+        let url_str = format!("https://app-redirect.aula.dk/?returnUri={encoded}");
+        let url = url::Url::parse(&url_str).unwrap();
+
+        let resolved = resolve_redirect_url(&url).unwrap();
+        assert_eq!(resolved.host_str(), Some("app-private.aula.dk"));
+        assert_eq!(
+            resolved.query_pairs().find(|(k, _)| k == "code").unwrap().1,
+            "abc123"
+        );
+        assert_eq!(
+            resolved.query_pairs().find(|(k, _)| k == "state").unwrap().1,
+            "xyz"
+        );
+    }
+
+    #[test]
+    fn resolve_redirect_passes_through_non_redirect_url() {
+        let url = url::Url::parse("https://app-private.aula.dk/?code=abc&state=xyz").unwrap();
+        let resolved = resolve_redirect_url(&url).unwrap();
+        assert_eq!(resolved, url);
+    }
+
+    #[test]
+    fn resolve_redirect_errors_on_missing_return_uri() {
+        let url = url::Url::parse("https://app-redirect.aula.dk/?other=value").unwrap();
+        let err = resolve_redirect_url(&url).unwrap_err();
+        assert!(err.contains("missing returnUri"));
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -229,7 +260,7 @@ async fn handle_logout(env_override: Option<&str>) {
 
     let client = match AulaClient::with_config(AulaClientConfig {
         environment,
-        api_version: 19,
+        api_version: 23,
     }) {
         Ok(c) => c,
         Err(e) => {
@@ -335,7 +366,7 @@ async fn handle_refresh(env_override: Option<&str>) {
 
     let client = match AulaClient::with_config(AulaClientConfig {
         environment,
-        api_version: 19,
+        api_version: 23,
     }) {
         Ok(c) => c,
         Err(e) => {

@@ -7,7 +7,7 @@
     "subCode": null,
     "htmlContentIfError": null
   },
-  "data": [
+  "data": {"profiles": [
     {
       "id": 6701,
       "institutionProfile": {
@@ -148,5 +148,5 @@
         "editorPluginDetails": []
       }
     }
-  ]
+  ]}
 }

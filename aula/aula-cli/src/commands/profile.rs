@@ -35,13 +35,13 @@ async fn handle_me(json: bool, env_override: Option<&str>) {
     let mut session = build_session(env_override);
 
     match profiles::get_profiles_by_login(&mut session).await {
-        Ok(profile_list) => {
+        Ok(resp) => {
             if json {
-                print_json(&profile_list);
-            } else if profile_list.is_empty() {
+                print_json(&resp);
+            } else if resp.profiles.is_empty() {
                 println!("No profiles found.");
             } else {
-                for (i, profile) in profile_list.iter().enumerate() {
+                for (i, profile) in resp.profiles.iter().enumerate() {
                     if i > 0 {
                         println!("{}", dim(&"-".repeat(50)));
                     }

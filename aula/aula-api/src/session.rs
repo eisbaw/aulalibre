@@ -15,7 +15,7 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::auth::{self, AuthLevel, LoginData, OidcEndpoints};
+use crate::auth::{self, LoginData, OidcEndpoints};
 use crate::client::AulaClient;
 use crate::error::AulaError;
 use crate::token_store::TokenStore;
@@ -41,17 +41,12 @@ pub struct SessionConfig {
     /// Seconds before actual token expiry to trigger refresh.
     /// Default: 60.
     pub expiry_buffer_secs: u64,
-
-    /// Authentication level for token refresh.
-    /// Default: [`AuthLevel::Level2`].
-    pub auth_level: AuthLevel,
 }
 
 impl Default for SessionConfig {
     fn default() -> Self {
         Self {
             expiry_buffer_secs: DEFAULT_EXPIRY_BUFFER_SECS,
-            auth_level: AuthLevel::Level2,
         }
     }
 }
@@ -95,6 +90,13 @@ impl Session {
         let endpoints = OidcEndpoints::for_environment(client.environment());
         let login_data = store.load()?;
 
+        // Sync persisted token to the HTTP client.
+        if let Some(ref ld) = login_data {
+            if !ld.access_token.is_empty() {
+                client.set_access_token(Some(ld.access_token.clone()));
+            }
+        }
+
         Ok(Self {
             client,
             store,
@@ -123,8 +125,15 @@ impl Session {
     }
 
     /// Set login data (e.g., after initial OIDC login flow) and persist it.
+    ///
+    /// Also syncs the access token to the HTTP client so subsequent API
+    /// calls include the `access_token` query parameter.
     pub fn set_login_data(&mut self, data: LoginData) -> crate::Result<()> {
         self.store.save(&data)?;
+        if !data.access_token.is_empty() {
+            self.client
+                .set_access_token(Some(data.access_token.clone()));
+        }
         self.login_data = Some(data);
         Ok(())
     }
@@ -166,16 +175,19 @@ impl Session {
                 description: Some("stored tokens have no refresh token".to_string()),
             })?;
 
-        let token_response = auth::refresh_token(
-            self.client.http(),
-            &self.endpoints,
-            self.config.auth_level,
-            refresh_tok,
-        )
-        .await?;
+        // Use the auth level from the stored token, not the default config,
+        // because the refresh endpoint requires the same client_id that was
+        // used to obtain the original token.
+        let auth_level = login_data.auth_level;
 
-        let new_data = LoginData::from_token_response(token_response, self.config.auth_level);
+        let token_response =
+            auth::refresh_token(self.client.http(), &self.endpoints, auth_level, refresh_tok)
+                .await?;
+
+        let new_data = LoginData::from_token_response(token_response, auth_level);
         self.store.save(&new_data)?;
+        self.client
+            .set_access_token(Some(new_data.access_token.clone()));
         self.login_data = Some(new_data);
 
         Ok(())
@@ -293,9 +305,10 @@ impl Session {
     /// Mirrors `AuthenticationManager.OpenLogoutAndReturnToAppWithUniversalLink()`
     /// and `AuthenticationManager.ResetData()` from the APK.
     pub async fn logout(&mut self) -> crate::Result<()> {
-        // Clear persisted tokens.
+        // Clear persisted tokens and access token.
         self.store.clear()?;
         self.login_data = None;
+        self.client.set_access_token(None);
 
         // Hit the logout endpoint on the auth backend.
         let logout_url = format!(
@@ -363,7 +376,6 @@ mod tests {
     fn session_config_defaults() {
         let cfg = SessionConfig::default();
         assert_eq!(cfg.expiry_buffer_secs, 60);
-        assert_eq!(cfg.auth_level, AuthLevel::Level2);
     }
 
     #[test]
@@ -515,7 +527,6 @@ mod tests {
 
         let config = SessionConfig {
             expiry_buffer_secs: 120,
-            auth_level: AuthLevel::Level3,
         };
         let session = Session::new(client, store, config).unwrap();
 

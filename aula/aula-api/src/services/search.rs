@@ -20,7 +20,7 @@ use crate::models::search::{
     GlobalSearchParameters, SearchForAssociateSecureDocumentsParameter,
     SearchForProfilesAndGroupsParameters, SearchGroupRequestModel, SearchGroupResultModel,
     SearchMessageRequestModel, SearchRecipientParameters, SearchRecipientResponse, SearchResponse,
-    SearchResultMessagesResponse, SearchResultProfileItemGlobalSearch,
+    SearchResultMessagesResponse,
 };
 use crate::services::query::encode_value;
 use crate::session::Session;
@@ -94,10 +94,18 @@ pub async fn search_for_messages(
 /// # Endpoint
 ///
 /// `GET ?method=search.findProfiles`
+///
+/// # Note
+///
+/// The decompiled .NET code declares the return type as
+/// `List<SearchResultProfileItemGlobalSearch>`, but the actual API returns a
+/// `SearchResponse`-shaped envelope with `results`, `from`, `query`, etc.
+/// We use `SearchResponse` which captures the `results` field. Extra fields
+/// like `from`, `query`, `mediaResults` are silently ignored.
 pub async fn search_for_profiles(
     session: &mut Session,
     params: &SearchForProfilesAndGroupsParameters,
-) -> crate::Result<Vec<SearchResultProfileItemGlobalSearch>> {
+) -> crate::Result<SearchResponse> {
     let mut query = Vec::new();
     if let Some(ref text) = params.text {
         query.push(format!("text={}", encode_value(text)));

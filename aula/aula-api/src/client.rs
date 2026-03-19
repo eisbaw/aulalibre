@@ -440,6 +440,16 @@ impl AulaClient {
 
         let body = resp.text().await?;
 
+        // Handle server errors (5xx) early. Without this check, a 500
+        // response with `{"status": {"code": 0, ...}, "data": "intern fejl"}`
+        // would be treated as success because backend_error_code is 0.
+        if status_code.is_server_error() {
+            return Err(AulaError::Api {
+                message: format!("HTTP {status_code}: {body}"),
+                status: None,
+            });
+        }
+
         let envelope: AulaServiceResponse<T> = serde_json::from_str(&body).map_err(|e| {
             // If we can't parse the envelope at all and the status was not 2xx,
             // return a generic API error rather than a confusing JSON error.
@@ -856,6 +866,41 @@ mod tests {
                 assert!(
                     message.contains("500"),
                     "message should contain status code"
+                );
+            }
+            other => panic!("expected Api error, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_response_server_error_with_valid_json_envelope() {
+        use serde_json::json;
+
+        // The Aula "intern fejl" pattern: HTTP 500 with a valid JSON envelope
+        // where backend_error_code is 0. Before the fix, this would be treated
+        // as success and return the string "intern fejl" as data.
+        let body = json!({
+            "status": {"code": 0, "message": "intern fejl"},
+            "data": "intern fejl"
+        });
+
+        let resp = http::Response::builder()
+            .status(500)
+            .header("content-type", "application/json")
+            .body(body.to_string())
+            .unwrap();
+
+        let client = AulaClient::new().unwrap();
+        let err = client
+            .handle_response::<serde_json::Value>(reqwest::Response::from(resp))
+            .await
+            .unwrap_err();
+        match err {
+            AulaError::Api { message, .. } => {
+                assert!(message.contains("500"), "should contain status code");
+                assert!(
+                    message.contains("intern fejl"),
+                    "should contain error message"
                 );
             }
             other => panic!("expected Api error, got {other:?}"),

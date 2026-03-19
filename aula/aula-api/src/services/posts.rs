@@ -48,7 +48,7 @@ pub async fn get_posts(
     }
     if let Some(ref ids) = params.institution_profile_ids {
         for id in ids {
-            query.push(format!("institutionProfileIds={id}"));
+            query.push(format!("institutionProfileIds[]={id}"));
         }
     }
     if let Some(ref insts) = params.related_institutions {

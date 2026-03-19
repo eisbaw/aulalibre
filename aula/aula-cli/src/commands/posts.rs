@@ -124,11 +124,25 @@ async fn handle_list(
 ) {
     let mut session = build_session(env_override);
 
+    // Auto-populate institution profile IDs from session.
+    if let Err(e) = session.ensure_context_initialized().await {
+        eprintln!("error: failed to initialize session: {e}");
+        std::process::exit(1);
+    }
+    let inst_profile_ids = {
+        let ids = session.institution_profile_ids();
+        if ids.is_empty() {
+            None
+        } else {
+            Some(ids)
+        }
+    };
+
     let params = GetPostApiParameters {
         group_id: group,
         is_important: if important { Some(true) } else { None },
         creator_portal_role: None,
-        institution_profile_ids: None,
+        institution_profile_ids: inst_profile_ids,
         related_institutions: None,
         own_post: false,
         is_unread: unread,

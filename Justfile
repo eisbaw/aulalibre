@@ -148,4 +148,3 @@ showcase:
     run "Albums (5)"        $A gallery list --limit 5
     run "Documents (5)"     $A documents list --limit 5
     run "Folders"           $A messages folders
-    run "Search Probe"      $A search --probe dummy

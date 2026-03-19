@@ -230,8 +230,63 @@ The OAuth callback activities are necessarily exported (they receive redirects f
 
 ## 6. Other Security Observations
 
-### 6.1 Hardcoded Test Credentials
-Non-production environments use basic auth: `aula-user:Aula-1337`. These credentials are compiled into the app in `Conf.cs`. While this only affects test environments (gated by `EnvConfig.IsProduction`), shipping test credentials in a production APK is poor practice.
+### 6.1 Hardcoded BasicAuth Credentials (TASK-87)
+
+Non-production environments use HTTP Basic Auth credentials `aula-user:Aula-1337`, hardcoded in `Conf.cs`. These are compiled into every production APK.
+
+#### 6.1.1 Credential Definition
+
+In `Conf.cs`, `BasicAuthUserName` and `BasicAuthUserPassword` are static properties gated by `EnvConfig.IsProduction`:
+- Non-production (TEST1, TEST3, DEV1, DEV3, DEV11, DEV21, DEV22, DEV31, DEV32, CI): returns `"aula-user"` / `"Aula-1337"`
+- Production (PROD, PREPROD, HOTFIX): returns `""` / `""`
+
+The default `CurrentEnvironment` is `AulaEnvironment.PROD`, so in normal operation these return empty strings. The `CreateBasicAuthorizationHeaderValue()` method in `HttpClientManager` produces `"Basic :"` (base64 of `":"`) for production -- a no-op Authorization header.
+
+Note: PREPROD and HOTFIX are marked `isProduction: true` in `EnvironmentFactory`, so they also get empty credentials despite using `ncaula.com` hosts for some services.
+
+#### 6.1.2 All Injection Points
+
+The credentials are consumed in five distinct locations:
+
+**1. HttpClientManager constructor (default headers on all API requests)**
+`HttpClientManager.cs:220` -- adds `Authorization: Basic <base64>` as a default header on the singleton `HttpClient`. Since the singleton is used for all authenticated API requests via `SimpleService.Get()`, `Post()`, `SimplePost()`, and `ExecuteAsyncWithToken()`, this means every API request to `www.aula.dk/api/v23/` carries a BasicAuth header. In production, the header value is `Basic Og==` (base64 of `":"`), which the server presumably ignores. In non-production, it carries the actual `aula-user:Aula-1337` credentials.
+
+**2. SimpleService.GenericGetRequest (unauthenticated GET requests)**
+`SimpleService.cs:369,2047` -- creates a fresh `DefaultHttpClientAccessor` (separate from the singleton) and explicitly adds `Authorization: CreateBasicAuthorizationHeaderValue()`. This method is used for pre-login or unauthenticated requests (e.g., configuration queries). Same environment gating applies.
+
+**3. IsAliveService.AulaIsAlive (health check)**
+`IsAliveService.cs:86,189` -- creates its own `DefaultHttpClientAccessor` and adds BasicAuth to check the `alivecheck/` endpoint. This runs before login to verify the backend is responsive.
+
+**4. AulaPortalWebView.OnReceivedHttpAuthRequest (WebView auto-response)**
+`AulaPortalWebView.cs:29` -- the WebView client auto-responds to any HTTP 401 Basic Auth challenge by calling `handler.Proceed(Conf.BasicAuthUserName, Conf.BasicAuthUserPassword)`. This is the most security-relevant injection point because:
+- The WebView loads portal content including third-party widgets
+- Any server that returns an HTTP 401 with `WWW-Authenticate: Basic` will automatically receive these credentials
+- The whitelist (`WhiteListAulaPortalInAppConf`) only controls URL navigation, not auth challenge responses
+- In production, the credentials are empty strings, so the auto-response sends empty username/password -- essentially a no-op
+- In non-production, any widget or resource loaded in the WebView that issues a Basic Auth challenge receives `aula-user:Aula-1337`
+
+**5. Urls.LOGOUT_DEV_URL (dev logout with inline credentials)**
+`Urls.cs:8` -- constructs `https://aula-user:Aula-1337@{AuthHost}/auth/logout.php` for non-production. This embeds credentials directly in the URL using the `user:pass@host` syntax. Used only for dev/test logout flows.
+
+#### 6.1.3 What BasicAuth Protects
+
+The BasicAuth credentials protect **infrastructure-level access to non-production environments**, not user-level access. They serve as a gate to prevent unauthorized access to test/dev servers at `*.ncaula.com`. This is a common pattern: a shared credential that sits in front of the entire test environment, separate from the OIDC-based user authentication that happens afterward.
+
+In production (`www.aula.dk`, `login.aula.dk`), BasicAuth is not required. The Authorization header is sent but contains empty credentials (`Basic Og==`), which the production server ignores -- OIDC bearer tokens (added separately by `AulaRequest`) handle real authentication.
+
+#### 6.1.4 Security Assessment
+
+**Low severity** overall. Key observations:
+
+1. **Production is unaffected**: Credentials are empty strings in production. The `Basic Og==` header is inert.
+
+2. **Test environment credentials shipped in production APK**: Anyone who decompiles the APK can extract `aula-user:Aula-1337` and access Netcompany's non-production Aula environments. This is information disclosure, but these are test environments with synthetic data.
+
+3. **WebView auto-response is architecturally concerning**: The `OnReceivedHttpAuthRequest` handler responds to ALL Basic Auth challenges from any origin, not just Aula domains. While credentials are empty in production, the pattern itself is dangerous -- if credentials were ever non-empty in production, any malicious widget could harvest them by issuing a 401 challenge. The handler should at minimum check the `host` parameter against Aula domains before responding.
+
+4. **URL-embedded credentials**: `LOGOUT_DEV_URL` puts credentials in the URL, which can leak via HTTP Referer headers, server logs, and browser history. Only relevant for non-production.
+
+5. **Single shared credential**: All non-production environments share the same `aula-user:Aula-1337` credential. Compromise of one test environment's credentials compromises all of them.
 
 ### 6.2 No android:debuggable Flag
 The manifest does not explicitly set `android:debuggable`. With targetSdkVersion=35, this defaults to `false` in release builds, which is correct.
@@ -273,7 +328,7 @@ This is standard for mobile OIDC (public clients), and PKCE mitigates the risk. 
 | 2 | PBKDF2 with 300 iterations | Low-Medium | SQLite encryption key derivation uses only 300 PBKDF2 iterations with a hardcoded salt. Far below OWASP minimum of 600,000. |
 | 3 | SYSTEM_ALERT_WINDOW permission | Low | Explicitly declared by app developer but completely unused -- no code references in C#, smali, or Java. Not a Xamarin artifact (Xamarin only auto-adds INTERNET and READ_EXTERNAL_STORAGE). Not contributed by any library via manifest merger. Grants overlay capability that could be exploited if the app is compromised. Should be removed. |
 | 4 | No root detection | Medium | No checks for rooted devices. Android Keystore is weaker on rooted devices, potentially exposing SecureStorage contents. |
-| 5 | Test credentials in production APK | Low | `aula-user:Aula-1337` for test environments compiled into app. Information disclosure. |
+| 5 | Test credentials in production APK | Low | `aula-user:Aula-1337` for non-prod environments compiled into every production APK. Injected via 5 code paths: HttpClientManager default headers, SimpleService.GenericGetRequest, IsAliveService, WebView OnReceivedHttpAuthRequest auto-response, and URL-embedded LOGOUT_DEV_URL. Empty strings in production. See section 6.1 for full analysis (TASK-87). |
 | 6 | Hardcoded PBKDF2 salt | Low | Same salt across all installations reduces key derivation entropy. |
 | 7 | Cert pinning bypass for non-aula domains | Info | Non-aula.dk connections (third-party services) are not pin-validated. By design, but worth noting. |
 | 8 | No JWT validation on client | Info | App trusts token endpoint implicitly. Standard for mobile OIDC but reduces defense-in-depth. |

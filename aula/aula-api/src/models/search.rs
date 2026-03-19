@@ -630,13 +630,41 @@ pub struct ChildRelationsResponse {
 /// Group search result model.
 ///
 /// Maps to `Models.Search.SearchResultItems.SearchGroupItemResultModel`.
+///
+/// Note: the `id` field is returned as a string by some endpoints (e.g.
+/// `findGroups`) and as an integer by others. We accept both via a custom
+/// deserializer.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchGroupItemResultModel {
     pub institution_code: Option<String>,
     pub institution_name: Option<String>,
     pub name: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_optional_i64_from_any")]
     pub id: Option<i64>,
+}
+
+/// Deserialize an `Option<i64>` that may arrive as a JSON number or a JSON string.
+fn deserialize_optional_i64_from_any<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::Error;
+    let v: Option<serde_json::Value> = Option::deserialize(deserializer)?;
+    match v {
+        None | Some(serde_json::Value::Null) => Ok(None),
+        Some(serde_json::Value::Number(n)) => n
+            .as_i64()
+            .map(Some)
+            .ok_or_else(|| D::Error::custom("number out of i64 range")),
+        Some(serde_json::Value::String(s)) => s
+            .parse::<i64>()
+            .map(Some)
+            .map_err(|_| D::Error::custom(format!("cannot parse '{s}' as i64"))),
+        Some(other) => Err(D::Error::custom(format!(
+            "expected number or string, got {other}"
+        ))),
+    }
 }
 
 /// Group search response.

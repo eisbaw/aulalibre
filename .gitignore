@@ -24,6 +24,7 @@ credentials.json
 
 # Extracted/decompiled assemblies
 extracted_assemblies/
+extracted_assemblies_all/
 
 # monodis managed resource extraction artifacts
 AulaNative.*.html

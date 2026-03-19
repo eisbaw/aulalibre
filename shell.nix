@@ -70,6 +70,7 @@ pkgs.mkShell {
     python3Packages.requests  # HTTP library
     python3Packages.lxml      # XML processing
     python3Packages.beautifulsoup4  # HTML/XML parsing
+    python3Packages.lz4             # LZ4 compression (for Xamarin blob extraction)
 
     # Forensics and security tools
     sleuthkit     # Digital forensics toolkit

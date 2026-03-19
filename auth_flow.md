@@ -565,6 +565,179 @@ To implement the auth flow in Rust:
 15. **Session timeout**: 60 minutes from last activity, with 2-minute token refresh buffer
 16. **Retry logic**: Retry auth once on first failure
 
+## 14. Step-Up Authentication: Triggers, Affected Operations, and Flow
+
+The step-up mechanism elevates a user from Level 2 (standard UniLogin, scope `aula`) to Level 3 (MitID/NemID, scope `aula-sensitive`). This section documents exactly when step-up is triggered, what operations require it, and how the server signals the requirement.
+
+### 14.1 When Step-Up Is Triggered at Login
+
+Step-up is determined during the `FetchProfileValidateLogin` flow (in `LoginPageViewModel`) and `CheckForLoginConflicts` (in `PinCodeViewModel`). The level is derived from the server-returned profile: `ProfileManager.Instance.Profile.IsSteppedUp` maps to level 3 if true, level 2 if false.
+
+The triggers differ by user role:
+
+**Guardians and Employees (mandatory step-up)**:
+- If a guardian or employee somehow logged in at Level 2, they are **forced** to step up. The app calls `WarningStepupIsNeeded()` which presents a non-optional dialog. The log message is explicit: "The user might experience a login loop because we ask them to stepup instantly."
+- This means guardians and employees effectively always need Level 3 / MitID authentication.
+
+**Children older than 15 at Level 2 (conditional step-up)**:
+- If the child has pending onboarding (unanswered consents or additional masterdata), `WarningStepupIsNeeded()` is called -- mandatory step-up.
+- If no pending onboarding, `WarningSuggestStepUp()` is called -- voluntary/suggested step-up. The user can decline and continue at Level 2.
+
+**Children younger than 15 at Level 2**:
+- Level 2 is accepted. No step-up prompt.
+
+**Any user at Level 3**:
+- No step-up needed. The `CheckForLoginConflicts` method returns `ShowConfirmBox = false` immediately.
+
+### 14.2 Step-Up Dialog Types
+
+The `IAuthUIController` interface defines two distinct step-up methods:
+
+| Method | Behavior | When Used |
+|---|---|---|
+| `WarningStepupIsNeeded(title, message, ok, cancel)` | Mandatory. User must re-authenticate at Level 3 or log out. On OK, calls `StepUp()`. | Guardians/employees at L2; children with pending onboarding |
+| `WarningSuggestStepUp(title, message, ok, cancel)` | Optional. User can decline and continue at Level 2. On OK, calls `StepUp()`. | Children >=15 without pending onboarding |
+
+### 14.3 The StepUp() Method
+
+When the user accepts step-up (from either dialog), `LoginActivity.StepUp()` is called:
+
+1. Logs "StepUp: PortalRole {role}"
+2. Calls `AuthenticationManager.ResetData()` (clears current session, logs out)
+3. The user is then taken back to the login flow, but this time the auth level is set to 3
+4. The OIDC client is constructed with the Level 3 client ID and `aula-sensitive` scope
+5. The SimpleSAMLphp server presents MitID/NemID authentication (instead of UniLogin)
+
+### 14.4 Operations That Require Step-Up (Level 3 / IsSteppedUp)
+
+The `Profile.IsSteppedUp` boolean property controls access to the following features. This value comes from the backend API in the user profile response.
+
+#### Secure Documents ("Sikre Filer")
+
+All secure document operations gate on `IsSteppedUp` via `PermissionManager.HasSecureFilePermission()`:
+
+```
+HasSecureFilePermission(PermissionEnum permission):
+    if profile != null AND profile.IsSteppedUp:
+        return PermissionUtils.HasPermissionsOnAnyInstitution(permission)
+    return false
+```
+
+Affected permissions (all require IsSteppedUp = true AND the permission on the institution):
+- `ACCESS_SECURE_FILESHARING` (26) -- `CanAccessSecureFilesAndSharing()`: full access to secure file sharing
+- `READ_SECURE_FILES` (116) -- `CanViewSecureFiles()`: read-only access to secure files
+
+Additionally, `CanHandleSecureFiles()` has its own step-up check:
+```
+CanHandleSecureFiles(institutionCode):
+    flag = NOT IsChild() OR IsSteppedUp
+    return HasPermission(HANDLE_SECURE_FILES) AND flag
+```
+
+When a user navigates to the Document Overview and `IsStepUpRequired` is true (i.e., `!CanAccessSecureFilesAndSharing()`), the `DocumentOverviewPageViewModel.InformAboutStepUpIsNeeded()` method shows a dialog. The dialog message differs by age:
+- Users >= 15: "DOCUMENTS_SECURE_FILES_STEP_UP_IS_NEEDED_DESCRIPTION" (suggests re-login with MitID)
+- Users < 15: "DOCUMENTS_SECURE_FILES_UNDER_15_CAN_NOT_ACCESS_DESCRIPTION" (cannot access at all)
+
+Related permissions that also require step-up context:
+- `SHARE_SECURE_FILES` (48) -- sharing secure files
+- `EXPORT_SECURE_FILES` (115) -- exporting secure files
+- `HANDLE_SECURE_FILES` (27) -- editing/managing secure files
+- `HANDLE_SECURE_FILES_LIMITED` (28) -- limited handling
+- `SECURE_DOCUMENTS_ACCESS_ALL` (101) -- deleting secure documents
+
+#### Sensitive Messages
+
+Message threads have a `SensitivityLevel` enum and a `RequiredStepUp` boolean:
+
+```csharp
+enum SensitivityLevel { Level1 = 1, Level2 = 2, Level3 = 3 }
+```
+
+- **Marking messages as sensitive**: `MessageFormViewModel.AllowToChooseSensitive` returns `ProfileManager.Instance.Profile.IsSteppedUp`. Only stepped-up users can mark a message thread as sensitive.
+- **Setting sensitivity level API**: `SetSensitivityLevelRequest(threadId, isSensitive, bundleId)` sets `SensitivityLevel = isSensitive ? 3 : 2`. The API endpoint is `{BackendUrlApi}messaging/setSensitivityLevel`.
+- **Viewing sensitive threads**: `ThreadSubscriptionInfoViewModel.SurpassedSensitiveLevel` returns `true` if the thread is not sensitive, or if it is sensitive AND the user is stepped up. Non-stepped-up users cannot view sensitive thread content.
+- **Step-up dialog in messaging**: `ThreadSubscriptionInfoViewModel.ShowStepUpDialog()` is called when users try to interact with sensitive messages without being stepped up. This is triggered from both `MessagesOverviewFragment` (thread list) and `MessageServiceManager` (when opening/replying to sensitive threads).
+
+The `MessageThread` model from the API contains:
+- `RequiredStepUp: bool` -- whether this thread requires elevated auth
+- `SensitivityLevel: SensitivityLevel` -- the sensitivity classification of the thread
+
+#### Aula Document Links
+
+`AulaDocumentLinkRenderingHandler` checks `IsSteppedUp` before rendering links to secure Aula documents. If the user is not stepped up, the link handler returns `LinkHandlerResponsibleType.Ignore`, hiding the document link entirely.
+
+#### Consents
+
+`ConsentViewModel` gates consent editing on `IsSteppedUp`. The method that checks whether consent modification is allowed returns `ProfileManager.Instance.Profile.IsSteppedUp`.
+
+### 14.5 Server-Side Step-Up Enforcement
+
+The backend also enforces step-up requirements via HTTP responses:
+
+**Sub-code signaling**: `WebResponseStatusSubCodeConstants.AUTHORIZATION_STEP_UP_REQUIRED = 8`. When the server returns HTTP 401 with this sub-code, it means the operation requires elevated authentication.
+
+**Error handler**: `StepUpNeededErrorHandler` catches HTTP 401 responses and shows a localized error:
+- Title: `MOBILE_STEP_UP_ERROR_TITLE`
+- Message: `MOBILE_STEP_UP_ERROR_MESSAGE`
+- Does NOT log to backend (`ShouldLogToBackend() = false`)
+
+This error handler is registered in `ErrorHandlerManagerFactory.FullServiceManager` alongside other error handlers (session expired, unauthorized, maintenance, etc.). It is NOT present in the `SilentFailServiceHandlerManager`, meaning step-up errors are always shown to the user.
+
+### 14.6 Permission Model and Step-Up
+
+The `Permission` class from the API includes a `StepUp: bool` field, indicating whether a specific permission requires step-up authentication at the institution level. This means the backend can configure per-permission step-up requirements on a per-institution basis, not just globally.
+
+### 14.7 Step-Up Flow Sequence Diagram
+
+```
+User logged in at Level 2 (UniLogin, scope "aula")
+    |
+    v
+Attempts operation requiring Level 3
+    |
+    +-- Client-side check: IsSteppedUp == false
+    |   |
+    |   v
+    |   Shows step-up dialog (varies by context):
+    |     - Secure docs: SecureDocumentAccessUtils.ShowStepUpDialogIfRequired()
+    |     - Messages: ThreadSubscriptionInfoViewModel.ShowStepUpDialog()
+    |     - Login: WarningSuggestStepUp() or WarningStepupIsNeeded()
+    |
+    +-- Server-side check: returns HTTP 401 + sub-code 8
+        |
+        v
+        StepUpNeededErrorHandler shows error dialog
+
+If user accepts step-up:
+    |
+    v
+LoginActivity.StepUp()
+    -> AuthenticationManager.ResetData() (logout)
+    -> Re-enter login flow with authenticator level = 3
+    -> CreateOidcClient() uses:
+         ClientId = _99949a54b8b65423862aac1bf629599ed64231607a
+         Scope = "aula-sensitive"
+    -> SimpleSAMLphp presents MitID/NemID instead of UniLogin
+    -> On success: Profile.IsSteppedUp = true (from backend)
+    -> SaveSensitivityLevel(3) -> persists as LoginAuthenticationMethod.Level3NemId
+```
+
+### 14.8 Summary Table: What Requires Step-Up
+
+| Feature | Check Method | Behavior Without Step-Up |
+|---|---|---|
+| View secure documents | `CanAccessSecureFilesAndSharing()` | Hidden from document list; dialog shown |
+| Read secure files | `CanViewSecureFiles()` | Not accessible |
+| Handle/edit secure files | `CanHandleSecureFiles()` | Blocked (children only; adults always stepped up) |
+| Share/export secure files | `CanShareSecureFiles()`, `CanExportSecureFiles()` | Permission denied |
+| Mark message as sensitive | `AllowToChooseSensitive` | Option not available |
+| View sensitive message content | `SurpassedSensitiveLevel` | Content hidden; step-up dialog shown |
+| Open/reply to sensitive thread | `MessageServiceManager` calls | Step-up dialog shown |
+| Render Aula document links | `AulaDocumentLinkRenderingHandler` | Link ignored/hidden |
+| Edit consents | `ConsentViewModel` | Not allowed |
+| Guardian/employee login | `FetchProfileValidateLogin` | Forced step-up at login |
+| Child >=15 with pending onboarding | `FetchProfileValidateLogin` | Forced step-up at login |
+
 ## Appendix A: Source File Index
 
 | File | Namespace | Purpose |
@@ -587,5 +760,22 @@ To implement the auth flow in Rust:
 | `LoginWithPinActivity.cs` | `AulaNative.Droid.Activities.Login` | Android PIN entry |
 | `SessionPromptManager.cs` | `AulaNative.Services.Singleton` | Session timeout management |
 | `LoginAuthenticationMethod.cs` | `AulaNative.Enums` | Auth level enum |
+| `SensitivityLevel.cs` | `AulaNative.Enums` | Message sensitivity levels (1-3) |
+| `Permission.cs` | `AulaNative.Models.Institutions` | Permission model with StepUp flag |
+| `PermissionEnum.cs` | `AulaNative.Models.Institutions` | All permission constants |
+| `PermissionManager.cs` | `AulaNative.Services.Singleton` | Permission checks including step-up gates |
+| `Profile.cs` | `AulaNative.Models.ProfileModels` | User profile with IsSteppedUp property |
+| `SecureDocumentAccessUtils.cs` | `AulaNative.Utils` | Step-up dialog for secure documents |
+| `StepUpNeededErrorHandler.cs` | `AulaNative.ServiceManagers.ServiceHandling.ErrorHandlers` | HTTP 401 step-up error handler |
+| `ErrorHandlerManagerFactory.cs` | `AulaNative.ServiceManagers.ServiceHandling` | Error handler registration |
+| `WebResponseStatusSubCodeConstants.cs` | `AulaNative.Models.Web` | HTTP sub-codes including AUTHORIZATION_STEP_UP_REQUIRED (8) |
+| `MessageThread.cs` | `AulaNative.Models.MessageThreads` | Message thread with RequiredStepUp and SensitivityLevel |
+| `SetSensitivityLevelRequest.cs` | `AulaNative.Models.MessageThreads.Argument` | Set sensitivity level API request |
+| `ThreadSubscriptionInfoViewModel.cs` | `AulaNative.ViewModels.MessageThreads` | Thread view model with step-up dialog |
+| `MessageFormViewModel.cs` | `AulaNative.ViewModels.Message` | Message form with AllowToChooseSensitive |
+| `DocumentOverviewPageViewModel.cs` | `AulaNative.ViewModels.Document.Overview` | Document overview with step-up check |
+| `ConsentViewModel.cs` | `AulaNative.ViewModels.Consent` | Consent editing step-up check |
+| `PinCodeViewModel.cs` | `AulaNative.ViewModels` | PIN login with CheckForLoginConflicts step-up logic |
+| `IAuthUIController.cs` | `AulaNative.OAuth` | Auth UI interface with step-up dialog methods |
 | `GoogleDriveViewModel.cs` | `AulaNative.ViewModels.CloudStorageIntegration.GoogleDrive` | Google Drive auth info provider |
 | `OneDriveViewModel.cs` | `AulaNative.ViewModels.CloudStorageIntegration.OneDrive` | OneDrive auth info provider |

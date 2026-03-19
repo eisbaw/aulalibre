@@ -35,3 +35,4 @@ AulaNative.*.json
 target/
 Cargo.lock
 decompiled_csharp/
+jadx_classes2_output/

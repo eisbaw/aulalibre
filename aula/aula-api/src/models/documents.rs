@@ -656,7 +656,7 @@ mod tests {
             "canEdit": true,
             "canEditLockedStatus": false,
             "isLocked": false,
-            "journalingStatus": "NotProcessed",
+            "journalingStatus": "notProcessed",
             "category": "Agenda",
             "documentTemplateTitle": null,
             "institutionCode": "101001",
@@ -716,7 +716,7 @@ mod tests {
             "createdBy": "Lars Hansen",
             "createdAt": "2024-01-15T10:00:00",
             "title": "Meeting notes",
-            "changeType": "Created",
+            "changeType": "created",
             "sharedWith": [],
             "unsharedWith": [],
             "isAvailable": true,
@@ -750,7 +750,7 @@ mod tests {
 
     #[test]
     fn deserialize_sorting_model() {
-        let json = r#"{"field": "Title", "order": "Ascending"}"#;
+        let json = r#"{"field": "title", "order": "ascending"}"#;
         let s: SortingModel = serde_json::from_str(json).unwrap();
         assert_eq!(s.field, Some(SecureDocumentSortEnum::Title));
         assert_eq!(s.order, Some(SortOrderEnum::Ascending));
@@ -760,7 +760,7 @@ mod tests {
     fn deserialize_secure_document_export() {
         let json = r#"{
             "requestExportJobId": 77,
-            "status": "Completed",
+            "status": "completed",
             "progress": 1.0,
             "fileUrl": "https://cdn.aula.dk/export/77.pdf",
             "fileName": "export.pdf"

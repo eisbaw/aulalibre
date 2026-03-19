@@ -18,12 +18,12 @@
       "endDateTime": "2026-04-10T21:00:00",
       "allDay": false,
       "private": false,
-      "type": "ParentalMeeting",
+      "type": "parentalMeeting",
       "responseRequired": true,
       "responseDeadline": "2026-04-05T23:59:59",
-      "responseType": "Waiting",
+      "responseType": "waiting",
       "repeating": false,
-      "repeatType": "Never",
+      "repeatType": "never",
       "location": {
         "id": 301,
         "name": "Lokale 201",
@@ -52,7 +52,7 @@
       ],
       "resources": [],
       "attachments": [],
-      "eventClass": "Basic",
+      "eventClass": "basic",
       "lesson": null,
       "hideFromGuardians": false,
       "institutionCode": "280371",
@@ -60,7 +60,7 @@
         "html": "<p>Medbring gerne notebook.</p>"
       },
       "addedToPersonalCalendar": false,
-      "responseStatus": "Waiting"
+      "responseStatus": "waiting"
     },
     {
       "id": 22151,
@@ -70,21 +70,21 @@
       "endDateTime": "2026-04-11T08:45:00",
       "allDay": false,
       "private": false,
-      "type": "Lesson",
+      "type": "lesson",
       "responseRequired": false,
       "responseDeadline": null,
       "responseType": null,
       "repeating": true,
-      "repeatType": "Weekly",
+      "repeatType": "weekly",
       "location": null,
       "creator": null,
       "groups": [],
       "resources": [],
       "attachments": [],
-      "eventClass": "Lesson",
+      "eventClass": "lesson",
       "lesson": {
         "id": 88001,
-        "status": "Normal",
+        "status": "normal",
         "note": {
           "html": "<p>Side 42-45 i matematikbogen</p>"
         },
@@ -97,7 +97,7 @@
           {
             "participantId": 4401,
             "teacherName": "Mette Frederiksen",
-            "participantRole": "PrimaryTeacher"
+            "participantRole": "primaryTeacher"
           }
         ]
       },

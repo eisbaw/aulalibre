@@ -506,7 +506,7 @@ mod tests {
         );
         assert_eq!(json["filterUnread"], false);
         assert_eq!(json["filterEditable"], true);
-        assert_eq!(json["documentType"], "Internal");
+        assert_eq!(json["documentType"], "internal");
         assert_eq!(json["index"], 0);
         assert_eq!(json["limit"], 20);
     }
@@ -520,8 +520,8 @@ mod tests {
         };
         let json = serde_json::to_value(&args).unwrap();
         assert_eq!(json["page"], 1);
-        assert_eq!(json["sortType"], "Title");
-        assert_eq!(json["sortOrder"], "Ascending");
+        assert_eq!(json["sortType"], "title");
+        assert_eq!(json["sortOrder"], "ascending");
     }
 
     #[test]
@@ -625,7 +625,7 @@ mod tests {
     fn deserialize_export_dto_tracking() {
         let json = r#"{
             "requestExportJobId": 99,
-            "status": "Processing",
+            "status": "processing",
             "progress": 0.5,
             "fileUrl": null,
             "fileName": null
@@ -685,7 +685,7 @@ mod tests {
                     "createdBy": "Test User",
                     "createdAt": "2024-01-15T10:00:00",
                     "title": "Initial",
-                    "changeType": "Created",
+                    "changeType": "created",
                     "sharedWith": [],
                     "unsharedWith": [],
                     "isAvailable": true

@@ -916,7 +916,7 @@ mod tests {
         };
         let json = serde_json::to_value(&req).unwrap();
         assert_eq!(json["eventId"], 42);
-        assert_eq!(json["responseType"], "Accepted");
+        assert_eq!(json["responseType"], "accepted");
         assert_eq!(json["numberOfAdultParticipants"], 2);
     }
 

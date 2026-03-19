@@ -863,7 +863,7 @@ mod tests {
             "pageNumber": 1,
             "groupId": null,
             "docTypeCount": true,
-            "docType": "Event",
+            "docType": "event",
             "groupTypes": ["Institutional"]
         }"#;
         let p: GlobalSearchParameters = serde_json::from_str(json).unwrap();

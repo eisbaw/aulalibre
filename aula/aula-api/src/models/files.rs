@@ -646,7 +646,7 @@ mod tests {
             "bucket": "aula-prod",
             "key": "files/42/photo.jpg",
             "created": "2024-01-15T10:00:00",
-            "scanningStatus": "Available"
+            "scanningStatus": "available"
         }"#;
         let f: AulaFileContent = serde_json::from_str(json).unwrap();
         assert_eq!(f.id, Some(42));
@@ -663,7 +663,7 @@ mod tests {
             "media": null,
             "link": null,
             "document": null,
-            "status": "Available"
+            "status": "available"
         }"#;
         let r: AulaFileResultDto = serde_json::from_str(json).unwrap();
         assert_eq!(r.id, Some(100));

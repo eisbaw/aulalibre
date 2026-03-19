@@ -15,7 +15,7 @@
         "canEdit": true,
         "canEditLockedStatus": true,
         "isLocked": false,
-        "journalingStatus": "NotProcessed",
+        "journalingStatus": "notProcessed",
         "category": "Agenda",
         "documentTemplateTitle": "Mødereferat skabelon",
         "institutionCode": "280371",

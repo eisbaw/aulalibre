@@ -175,7 +175,7 @@ mod tests {
         let json = serde_json::to_value(&req).unwrap();
         assert_eq!(json["content"], "Great post!");
         assert_eq!(json["creatorInstProfileId"], 55);
-        assert_eq!(json["commentableItem"]["type"], "Post");
+        assert_eq!(json["commentableItem"]["type"], "post");
         assert_eq!(json["commentableItem"]["id"], 42);
     }
 
@@ -188,7 +188,7 @@ mod tests {
             limit: Some(20),
         };
         let json = serde_json::to_value(&req).unwrap();
-        assert_eq!(json["parentType"], "Post");
+        assert_eq!(json["parentType"], "post");
         assert_eq!(json["parentId"], 42);
         assert_eq!(json["startIndex"], 0);
         assert_eq!(json["limit"], 20);
@@ -213,6 +213,6 @@ mod tests {
         };
         let json = serde_json::to_value(&req).unwrap();
         assert_eq!(json["commentId"], 10);
-        assert_eq!(json["parentType"], "Post");
+        assert_eq!(json["parentType"], "post");
     }
 }

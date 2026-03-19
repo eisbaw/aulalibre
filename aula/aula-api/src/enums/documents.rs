@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Category of a secure document.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum DocumentCategoryEnum {
     Agenda,
     AgendaAllUser,
@@ -23,6 +24,7 @@ pub enum DocumentCategoryEnum {
 
 /// Type of document.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum DocumentTypeEnum {
     Unknown,
     External,
@@ -33,6 +35,7 @@ pub enum DocumentTypeEnum {
 
 /// Sort field for common files.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum CommonFileSortEnum {
     Title,
     UpdatedTime,
@@ -40,6 +43,7 @@ pub enum CommonFileSortEnum {
 
 /// Filter for document lists.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum DocumentFilterEnum {
     All,
     Unread,
@@ -51,6 +55,7 @@ pub enum DocumentFilterEnum {
 
 /// Page type in document overview.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum DocumentOverviewPageTypeEnum {
     SecureDocument,
     CommonFiles,
@@ -60,6 +65,7 @@ pub enum DocumentOverviewPageTypeEnum {
 
 /// Permission override for implicit sharing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ImplicitSharingPermissionOverride {
     Read,
     Write,
@@ -68,6 +74,7 @@ pub enum ImplicitSharingPermissionOverride {
 
 /// Journaling status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum JournalingStatusEnum {
     NotProcessed,
     InProgress,
@@ -77,6 +84,7 @@ pub enum JournalingStatusEnum {
 
 /// Type of change in a document revision.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RevisionChangeTypeEnum {
     Unshared,
     Shared,
@@ -100,6 +108,7 @@ pub enum RevisionChangeTypeEnum {
 
 /// Export status of a secure document.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SecureDocumentExportStatus {
     Created,
     Processing,
@@ -110,6 +119,7 @@ pub enum SecureDocumentExportStatus {
 
 /// Selection mode for secure documents.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SecureDocumentSelectingMode {
     Attachment,
     SecureDocumentExport,
@@ -119,6 +129,7 @@ pub enum SecureDocumentSelectingMode {
 
 /// Sort field for secure documents.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SecureDocumentSortEnum {
     Unknown,
     Title,
@@ -127,6 +138,7 @@ pub enum SecureDocumentSortEnum {
 
 /// Error type for file attachments.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FileAttachmentErrorType {
     UnsupportedFileType,
     FileSizeTooBig,
@@ -136,6 +148,7 @@ pub enum FileAttachmentErrorType {
 
 /// File scanning status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FileScanningStatus {
     Available,
     Blocked,
@@ -145,6 +158,7 @@ pub enum FileScanningStatus {
 
 /// File availability status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FileStatusEnum {
     Available,
     Pending,
@@ -154,6 +168,7 @@ pub enum FileStatusEnum {
 
 /// Type of file (from common files API).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FileTypeEnum {
     Unknown,
     Media,
@@ -163,6 +178,7 @@ pub enum FileTypeEnum {
 
 /// Cloud storage file type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum CloudStorageFileType {
     Folder,
     Docs,
@@ -180,6 +196,7 @@ pub enum CloudStorageFileType {
 
 /// Cloud storage service provider.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum CloudStorageService {
     Unknown,
     GoogleDrive,

@@ -233,9 +233,9 @@ mod tests {
     fn deserialize_notification_item_minimal() {
         let json = r#"{
             "notificationId": "abc-123",
-            "notificationEventType": "NewMessagePrivateInbox",
-            "notificationArea": "Messages",
-            "notificationType": "Alert",
+            "notificationEventType": "newMessagePrivateInbox",
+            "notificationArea": "messages",
+            "notificationType": "alert",
             "institutionCode": "101001",
             "title": "Ny besked",
             "threadId": 42
@@ -255,9 +255,9 @@ mod tests {
     fn deserialize_notification_item_full() {
         let json = r#"{
             "notificationId": "evt-456",
-            "notificationEventType": "InvitedToEventResponseRequired",
-            "notificationArea": "Calendar",
-            "notificationType": "Alert",
+            "notificationEventType": "invitedToEventResponseRequired",
+            "notificationArea": "calendar",
+            "notificationType": "alert",
             "institutionCode": "101001",
             "institutionProfileId": 100,
             "title": "Forældremøde",
@@ -328,7 +328,7 @@ mod tests {
             "deviceId": "device-001",
             "deviceDescription": "Samsung Galaxy S24",
             "deviceAccessGranted": true,
-            "platform": "Android"
+            "platform": "android"
         }"#;
         let d: ConfigureDeviceModel = serde_json::from_str(json).unwrap();
         assert_eq!(d.current_token.as_deref(), Some("fcm-token-xyz"));

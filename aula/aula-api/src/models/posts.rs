@@ -395,7 +395,7 @@ mod tests {
 
     #[test]
     fn deserialize_comment_item() {
-        let json = r#"{"type": "Post", "id": 42}"#;
+        let json = r#"{"type": "post", "id": 42}"#;
         let c: CommentItem = serde_json::from_str(json).unwrap();
         assert_eq!(c.comment_type, Some(CommentType::Post));
         assert_eq!(c.id, Some(42));

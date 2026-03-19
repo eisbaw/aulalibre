@@ -14,7 +14,7 @@ pub enum GroupsCommand {
     List {
         /// Institution profile ID to list groups for.
         #[arg(long)]
-        profile: i64,
+        inst_profile: i64,
     },
     /// Show group details.
     Show {
@@ -34,7 +34,9 @@ pub enum GroupsCommand {
 
 pub async fn handle(cmd: &GroupsCommand, json: bool, env_override: Option<&str>) {
     match cmd {
-        GroupsCommand::List { profile } => handle_list(*profile, json, env_override).await,
+        GroupsCommand::List { inst_profile } => {
+            handle_list(*inst_profile, json, env_override).await
+        }
         GroupsCommand::Show { group_id } => handle_show(*group_id, json, env_override).await,
         GroupsCommand::Members { group_id } => {
             handle_members(*group_id, json, env_override).await;

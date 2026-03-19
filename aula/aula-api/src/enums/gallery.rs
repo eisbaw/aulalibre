@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Media type classification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum MediaTypeEnum {
     Unknown,
     Image,
@@ -15,6 +16,7 @@ pub enum MediaTypeEnum {
 
 /// Conversion/processing status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ConversionStatusEnum {
     Completed,
     Processing,
@@ -23,6 +25,7 @@ pub enum ConversionStatusEnum {
 
 /// Document change type in gallery context.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum DocumentChangeType {
     Create,
     Update,
@@ -31,6 +34,7 @@ pub enum DocumentChangeType {
 
 /// Dropdown menu actions for gallery items.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum GalleryDropDownEnumeration {
     Download,
     Delete,
@@ -41,6 +45,7 @@ pub enum GalleryDropDownEnumeration {
 
 /// Image size presets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ImageSizeEnum {
     Original,
     Max200,
@@ -49,6 +54,7 @@ pub enum ImageSizeEnum {
 
 /// Cell type in media grid.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum MediaCellType {
     TagCell,
     TaggedCell,
@@ -58,6 +64,7 @@ pub enum MediaCellType {
 
 /// Batch action on selected media.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum MediaSelectManyAction {
     AddTags,
     Download,
@@ -68,6 +75,7 @@ pub enum MediaSelectManyAction {
 
 /// Rotation angle for images.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RotatingEnum {
     Rotating0,
     Rotating90,
@@ -77,6 +85,7 @@ pub enum RotatingEnum {
 
 /// Thumbnail size presets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ThumbnailSizeEnum {
     XS,
     S,

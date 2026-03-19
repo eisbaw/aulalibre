@@ -295,37 +295,37 @@ mod calendar {
         let event1: serde_json::Value = events[0].clone();
         assert_eq!(event1["id"], 22150);
         assert_eq!(event1["title"], "Forældremøde 3.A");
-        assert_eq!(event1["type"], "ParentalMeeting");
+        assert_eq!(event1["type"], "parentalMeeting");
         assert_eq!(event1["responseRequired"], true);
         assert_eq!(event1["repeating"], false);
-        assert_eq!(event1["repeatType"], "Never");
+        assert_eq!(event1["repeatType"], "never");
 
         // Lesson event
         let event2: serde_json::Value = events[1].clone();
         assert_eq!(event2["id"], 22151);
-        assert_eq!(event2["type"], "Lesson");
+        assert_eq!(event2["type"], "lesson");
         assert_eq!(event2["repeating"], true);
-        assert_eq!(event2["repeatType"], "Weekly");
+        assert_eq!(event2["repeatType"], "weekly");
         assert!(event2["lesson"].is_object());
     }
 
     #[test]
     fn event_type_enum_all_variants() {
         let variants = vec![
-            ("\"Event\"", EventType::Event),
-            ("\"Holiday\"", EventType::Holiday),
-            ("\"PresenceHoliday\"", EventType::PresenceHoliday),
-            ("\"VacationRegistration\"", EventType::VacationRegistration),
-            ("\"Birthday\"", EventType::Birthday),
-            ("\"Meeting\"", EventType::Meeting),
-            ("\"Other\"", EventType::Other),
-            ("\"Excursion\"", EventType::Excursion),
-            ("\"SchoolHomeMeeting\"", EventType::SchoolHomeMeeting),
-            ("\"ClassMeeting\"", EventType::ClassMeeting),
-            ("\"ParentalMeeting\"", EventType::ParentalMeeting),
-            ("\"PerformanceMeeting\"", EventType::PerformanceMeeting),
-            ("\"Lesson\"", EventType::Lesson),
-            ("\"Unknown\"", EventType::Unknown),
+            ("\"event\"", EventType::Event),
+            ("\"holiday\"", EventType::Holiday),
+            ("\"presenceHoliday\"", EventType::PresenceHoliday),
+            ("\"vacationRegistration\"", EventType::VacationRegistration),
+            ("\"birthday\"", EventType::Birthday),
+            ("\"meeting\"", EventType::Meeting),
+            ("\"other\"", EventType::Other),
+            ("\"excursion\"", EventType::Excursion),
+            ("\"schoolHomeMeeting\"", EventType::SchoolHomeMeeting),
+            ("\"classMeeting\"", EventType::ClassMeeting),
+            ("\"parentalMeeting\"", EventType::ParentalMeeting),
+            ("\"performanceMeeting\"", EventType::PerformanceMeeting),
+            ("\"lesson\"", EventType::Lesson),
+            ("\"unknown\"", EventType::Unknown),
         ];
         for (json_str, expected) in variants {
             let parsed: EventType = serde_json::from_str(json_str).unwrap();
@@ -338,10 +338,10 @@ mod calendar {
     #[test]
     fn response_type_all_variants() {
         let variants = vec![
-            ("\"Waiting\"", ResponseType::Waiting),
-            ("\"Declined\"", ResponseType::Declined),
-            ("\"Accepted\"", ResponseType::Accepted),
-            ("\"Tentative\"", ResponseType::Tentative),
+            ("\"waiting\"", ResponseType::Waiting),
+            ("\"declined\"", ResponseType::Declined),
+            ("\"accepted\"", ResponseType::Accepted),
+            ("\"tentative\"", ResponseType::Tentative),
         ];
         for (json_str, expected) in variants {
             let parsed: ResponseType = serde_json::from_str(json_str).unwrap();
@@ -354,10 +354,10 @@ mod calendar {
     #[test]
     fn repeat_type_all_variants() {
         let variants = vec![
-            ("\"Never\"", RepeatType::Never),
-            ("\"Daily\"", RepeatType::Daily),
-            ("\"Weekly\"", RepeatType::Weekly),
-            ("\"Monthly\"", RepeatType::Monthly),
+            ("\"never\"", RepeatType::Never),
+            ("\"daily\"", RepeatType::Daily),
+            ("\"weekly\"", RepeatType::Weekly),
+            ("\"monthly\"", RepeatType::Monthly),
         ];
         for (json_str, expected) in variants {
             let parsed: RepeatType = serde_json::from_str(json_str).unwrap();
@@ -368,11 +368,11 @@ mod calendar {
     #[test]
     fn participant_role_all_variants() {
         let variants = vec![
-            ("\"PrimaryTeacher\"", ParticipantRole::PrimaryTeacher),
-            ("\"SubstituteTeacher\"", ParticipantRole::SubstituteTeacher),
-            ("\"HelpTeacher\"", ParticipantRole::HelpTeacher),
-            ("\"Pedagogue\"", ParticipantRole::Pedagogue),
-            ("\"NotChosen\"", ParticipantRole::NotChosen),
+            ("\"primaryTeacher\"", ParticipantRole::PrimaryTeacher),
+            ("\"substituteTeacher\"", ParticipantRole::SubstituteTeacher),
+            ("\"helpTeacher\"", ParticipantRole::HelpTeacher),
+            ("\"pedagogue\"", ParticipantRole::Pedagogue),
+            ("\"notChosen\"", ParticipantRole::NotChosen),
         ];
         for (json_str, expected) in variants {
             let parsed: ParticipantRole = serde_json::from_str(json_str).unwrap();
@@ -693,39 +693,39 @@ mod notifications {
         // Test a representative sample of the large NotificationEventType enum
         let variants = vec![
             (
-                "\"NewMessagePrivateInbox\"",
+                "\"newMessagePrivateInbox\"",
                 NotificationEventType::NewMessagePrivateInbox,
             ),
             (
-                "\"InvitedToEventResponseRequired\"",
+                "\"invitedToEventResponseRequired\"",
                 NotificationEventType::InvitedToEventResponseRequired,
             ),
             (
-                "\"PostSharedWithMe\"",
+                "\"postSharedWithMe\"",
                 NotificationEventType::PostSharedWithMe,
             ),
-            ("\"NewMedia\"", NotificationEventType::NewMedia),
+            ("\"newMedia\"", NotificationEventType::NewMedia),
             (
-                "\"NewOrUpdatedSecureDocument\"",
+                "\"newOrUpdatedSecureDocument\"",
                 NotificationEventType::NewOrUpdatedSecureDocument,
             ),
             (
-                "\"VacationResponseRequired\"",
+                "\"vacationResponseRequired\"",
                 NotificationEventType::VacationResponseRequired,
             ),
             (
-                "\"LessonNoteChanged\"",
+                "\"lessonNoteChanged\"",
                 NotificationEventType::LessonNoteChanged,
             ),
             (
-                "\"WidgetNotification\"",
+                "\"widgetNotification\"",
                 NotificationEventType::WidgetNotification,
             ),
             (
-                "\"FileScanFailedAlbum\"",
+                "\"fileScanFailedAlbum\"",
                 NotificationEventType::FileScanFailedAlbum,
             ),
-            ("\"Other\"", NotificationEventType::Other),
+            ("\"other\"", NotificationEventType::Other),
         ];
         for (json_str, expected) in variants {
             let parsed: NotificationEventType = serde_json::from_str(json_str).unwrap();
@@ -738,18 +738,18 @@ mod notifications {
     #[test]
     fn notification_area_all_variants() {
         let variants = vec![
-            ("\"Unknown\"", NotificationArea::Unknown),
-            ("\"Messages\"", NotificationArea::Messages),
-            ("\"Calendar\"", NotificationArea::Calendar),
-            ("\"Posts\"", NotificationArea::Posts),
-            ("\"Schedule\"", NotificationArea::Schedule),
-            ("\"Administration\"", NotificationArea::Administration),
-            ("\"Gallery\"", NotificationArea::Gallery),
-            ("\"Documents\"", NotificationArea::Documents),
-            ("\"Album\"", NotificationArea::Album),
-            ("\"Presence\"", NotificationArea::Presence),
-            ("\"Widget\"", NotificationArea::Widget),
-            ("\"FileScanning\"", NotificationArea::FileScanning),
+            ("\"unknown\"", NotificationArea::Unknown),
+            ("\"messages\"", NotificationArea::Messages),
+            ("\"calendar\"", NotificationArea::Calendar),
+            ("\"posts\"", NotificationArea::Posts),
+            ("\"schedule\"", NotificationArea::Schedule),
+            ("\"administration\"", NotificationArea::Administration),
+            ("\"gallery\"", NotificationArea::Gallery),
+            ("\"documents\"", NotificationArea::Documents),
+            ("\"album\"", NotificationArea::Album),
+            ("\"presence\"", NotificationArea::Presence),
+            ("\"widget\"", NotificationArea::Widget),
+            ("\"fileScanning\"", NotificationArea::FileScanning),
         ];
         for (json_str, expected) in variants {
             let parsed: NotificationArea = serde_json::from_str(json_str).unwrap();
@@ -760,10 +760,10 @@ mod notifications {
     #[test]
     fn notification_type_all_variants() {
         let variants = vec![
-            ("\"Badge\"", NotificationType::Badge),
-            ("\"Alert\"", NotificationType::Alert),
-            ("\"Irrelevant\"", NotificationType::Irrelevant),
-            ("\"Unknown\"", NotificationType::Unknown),
+            ("\"badge\"", NotificationType::Badge),
+            ("\"alert\"", NotificationType::Alert),
+            ("\"irrelevant\"", NotificationType::Irrelevant),
+            ("\"unknown\"", NotificationType::Unknown),
         ];
         for (json_str, expected) in variants {
             let parsed: NotificationType = serde_json::from_str(json_str).unwrap();
@@ -929,10 +929,10 @@ mod documents {
     #[test]
     fn journaling_status_all_variants() {
         let variants = vec![
-            ("\"NotProcessed\"", JournalingStatusEnum::NotProcessed),
-            ("\"InProgress\"", JournalingStatusEnum::InProgress),
-            ("\"Failed\"", JournalingStatusEnum::Failed),
-            ("\"Completed\"", JournalingStatusEnum::Completed),
+            ("\"notProcessed\"", JournalingStatusEnum::NotProcessed),
+            ("\"inProgress\"", JournalingStatusEnum::InProgress),
+            ("\"failed\"", JournalingStatusEnum::Failed),
+            ("\"completed\"", JournalingStatusEnum::Completed),
         ];
         for (json_str, expected) in variants {
             let parsed: JournalingStatusEnum = serde_json::from_str(json_str).unwrap();

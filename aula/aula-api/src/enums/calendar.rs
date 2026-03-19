@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Classification of a calendar event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum EventClass {
     Basic,
     Series,
@@ -14,6 +15,7 @@ pub enum EventClass {
 
 /// How an event is placed relative to a given date/time.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum EventPlacementComparedToDateTime {
     NotOnTheDate,
     StartAndEndOnDate,
@@ -24,6 +26,7 @@ pub enum EventPlacementComparedToDateTime {
 
 /// Portrait display type for calendar events.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum EventPortraitType {
     Event,
     Birthday,
@@ -32,6 +35,7 @@ pub enum EventPortraitType {
 
 /// Type of calendar event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum EventType {
     Event,
     Holiday,
@@ -51,6 +55,7 @@ pub enum EventType {
 
 /// Status of a lesson in the schedule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum LessonStatus {
     Cancelled,
     Normal,
@@ -63,6 +68,7 @@ pub enum LessonStatus {
 
 /// Role of a participant in a calendar event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ParticipantRole {
     PrimaryTeacher,
     SubstituteTeacher,
@@ -73,6 +79,7 @@ pub enum ParticipantRole {
 
 /// How an event repeats.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RepeatType {
     Never,
     Daily,
@@ -82,6 +89,7 @@ pub enum RepeatType {
 
 /// Dropdown option when editing a repeating event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RepeatingEventDropdownEnum {
     ForSeries,
     ForSingleOccurrence,
@@ -89,6 +97,7 @@ pub enum RepeatingEventDropdownEnum {
 
 /// Response to an event invitation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ResponseType {
     Waiting,
     Declined,
@@ -98,6 +107,7 @@ pub enum ResponseType {
 
 /// Availability status for a timeslot.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum TimeslotResponseType {
     Blocked,
     NotBooked,
@@ -106,6 +116,7 @@ pub enum TimeslotResponseType {
 
 /// Vacation registration response status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum VacationRegistrationResponseStatus {
     Answered,
     Unanswered,
@@ -113,6 +124,7 @@ pub enum VacationRegistrationResponseStatus {
 
 /// Vacation response status (from DTOs.Calendar.Vacation).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum VacationResponseStatusEnum {
     IsComing,
     IsNotComing,
@@ -121,6 +133,7 @@ pub enum VacationResponseStatusEnum {
 
 /// Relation mode for calendar views.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RelationMode {
     ChildMode,
     Institution,
@@ -128,6 +141,7 @@ pub enum RelationMode {
 
 /// Calendar item type (event vs title vs birthday).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum CalendarItemType {
     Event,
     Title,
@@ -136,6 +150,7 @@ pub enum CalendarItemType {
 
 /// My-calendar item type (body vs title).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum MyCalendarItemType {
     Body,
     Title,

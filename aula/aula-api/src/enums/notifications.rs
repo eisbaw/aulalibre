@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Area/module a notification belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum NotificationArea {
     Unknown,
     Messages,
@@ -21,6 +22,7 @@ pub enum NotificationArea {
 
 /// Specific notification event type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum NotificationEventType {
     Other,
     NewMessagePrivateInbox,
@@ -86,6 +88,7 @@ pub enum NotificationEventType {
 
 /// Category grouping for notification event types.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum NotificationEventTypeCategories {
     AlertInviteWithResponse,
     AlertChangedWithResponse,
@@ -108,6 +111,7 @@ pub enum NotificationEventTypeCategories {
 
 /// Notification settings section/subsection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum NotificationSettingsEnum {
     ContentSettingsSection,
     PlatformSettingsSection,
@@ -152,6 +156,7 @@ pub enum NotificationSettingsEnum {
 
 /// High-level notification classification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum NotificationType {
     Badge,
     Alert,
@@ -161,6 +166,7 @@ pub enum NotificationType {
 
 /// Remote/push notification event type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RemoteNotificationType {
     PostSharedWithMe,
     NewMessagePrivateInbox,

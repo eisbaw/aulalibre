@@ -1369,7 +1369,7 @@ mod documents_service {
 
         let data = serde_json::json!({
             "requestExportJobId": 42,
-            "status": "Created",
+            "status": "created",
             "progress": 0.0,
             "fileUrl": null,
             "fileName": null
@@ -2034,7 +2034,7 @@ mod comments_service {
         Mock::given(method("GET"))
             .and(path("/api/v23/"))
             .and(query_param("method", "comments.getComments"))
-            .and(query_param("parentType", "Post"))
+            .and(query_param("parentType", "post"))
             .and(query_param("parentId", "33001"))
             .respond_with(json_response(data))
             .expect(1)

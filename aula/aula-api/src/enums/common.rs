@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Platform identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Platform {
     Android,
     #[serde(rename = "iOS")]
@@ -13,6 +14,7 @@ pub enum Platform {
 
 /// Day of the week.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum WeekDay {
     Monday,
     Tuesday,
@@ -25,6 +27,7 @@ pub enum WeekDay {
 
 /// Sort order direction.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SortOrderEnum {
     Unknown,
     Ascending,
@@ -33,6 +36,7 @@ pub enum SortOrderEnum {
 
 /// Answer type for additional master data responses.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum AdditionalMasterDataResponseAnswerTypeEnum {
     YesNo,
     PhoneNumber,
@@ -41,6 +45,7 @@ pub enum AdditionalMasterDataResponseAnswerTypeEnum {
 
 /// Application type (Staff vs Private vs Unknown).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum AppTypeEnum {
     Staff,
     Private,
@@ -49,6 +54,7 @@ pub enum AppTypeEnum {
 
 /// Association mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum AssociationModeEnum {
     None,
     Select,
@@ -57,6 +63,7 @@ pub enum AssociationModeEnum {
 
 /// Source for file picker.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum AulaFilePickerEnum {
     Files,
     MediaLibrary,
@@ -84,6 +91,7 @@ pub enum CacheType {
 
 /// Filter and sort type for lists.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FilterAndSortType {
     FilterAll,
     FilterUnread,
@@ -101,6 +109,7 @@ pub enum FilterAndSortType {
 
 /// Loading/pagination type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum LoadingType {
     LoadMore,
     Action,
@@ -109,6 +118,7 @@ pub enum LoadingType {
 
 /// Log level.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum LogLevel {
     All,
     Trace,
@@ -121,6 +131,7 @@ pub enum LogLevel {
 
 /// Report target type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ReportEnum {
     Post,
     Media,
@@ -130,6 +141,7 @@ pub enum ReportEnum {
 
 /// Resource type for calendar resources.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ResourceType {
     Location,
     Other,
@@ -140,6 +152,7 @@ pub enum ResourceType {
 
 /// Time period selection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum TimePeriod {
     None,
     TwoWeeks,
@@ -151,12 +164,14 @@ pub enum TimePeriod {
 
 /// Bottom bar long-press option.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum BottomBarLongPressOption {
     EditShortcuts,
 }
 
 /// Front page configuration setting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FrontPageSettingConfigurationEnum {
     ActivityFeed,
     Messages,
@@ -171,6 +186,7 @@ pub enum FrontPageSettingConfigurationEnum {
 
 /// Biometric authentication status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum BioAuthStatus {
     CanTryAgain,
     CanNotTryAgain,
@@ -180,6 +196,7 @@ pub enum BioAuthStatus {
 
 /// Blocked communication level.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum BlockedLevel {
     Central,
     Municipal,
@@ -198,6 +215,7 @@ pub enum Consent {
 
 /// Consent answer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ConsentAnswerEnum {
     Accepted,
     Declined,
@@ -210,6 +228,7 @@ pub enum ConsentAnswerEnum {
 
 /// Consent status.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ConsentStatus {
     Active,
     Deactive,
@@ -218,6 +237,7 @@ pub enum ConsentStatus {
 
 /// Comment dropdown action.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum CommentDropDownEnumeration {
     Delete,
     Edit,
@@ -226,6 +246,7 @@ pub enum CommentDropDownEnumeration {
 
 /// Comment type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum CommentType {
     Comment,
     Media,
@@ -235,12 +256,14 @@ pub enum CommentType {
 
 /// Post detail more-menu action.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum PostDetailMoreMenuEnum {
     ReportPost,
 }
 
 /// Post filter type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum PostFilterTypeEnum {
     All,
     Unread,
@@ -254,6 +277,7 @@ pub enum PostFilterTypeEnum {
 
 /// Widget placement location.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum WidgetPlacementEnum {
     OwnPage,
     RightOfOverview,
@@ -386,6 +410,7 @@ pub enum PermissionEnum {
 
 /// Search profile document type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SearchProfileDocTypeEnum {
     Profile,
     Group,
@@ -395,6 +420,7 @@ pub enum SearchProfileDocTypeEnum {
 
 /// Search profile portal role filter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SearchProfilePortalRoleEnum {
     Employee,
     Child,
@@ -402,6 +428,7 @@ pub enum SearchProfilePortalRoleEnum {
 
 /// Search result item type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SearchResultItemType {
     None,
     Group,
@@ -423,6 +450,7 @@ pub enum SearchResultItemType {
 
 /// Group search scope.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum GroupSearchScopeEnum {
     Institutional,
     AdministrativeAuthority,
@@ -432,6 +460,7 @@ pub enum GroupSearchScopeEnum {
 
 /// Search recipient document type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SearchRecipientDocTypeEnum {
     Profile,
     Group,
@@ -441,6 +470,7 @@ pub enum SearchRecipientDocTypeEnum {
 
 /// Search recipient mailbox owner type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SearchRecipientMailBoxOwnerType {
     InstitutionProfile,
     CommonInbox,
@@ -449,6 +479,7 @@ pub enum SearchRecipientMailBoxOwnerType {
 
 /// Search recipient module context.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SearchRecipientModuleEnum {
     Event,
     Messages,
@@ -461,6 +492,7 @@ pub enum SearchRecipientModuleEnum {
 
 /// Search recipient portal role filter.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SearchRecipientPortalRoleEnum {
     Employee,
     Child,
@@ -471,6 +503,7 @@ pub enum SearchRecipientPortalRoleEnum {
 
 /// Search resource type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SearchResourceTypeEnum {
     Location,
 }

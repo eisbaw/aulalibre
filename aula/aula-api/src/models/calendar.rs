@@ -1489,7 +1489,7 @@ mod tests {
             "primaryResource": null,
             "additionalResources": [],
             "repeating": null,
-            "responseStatus": "Accepted",
+            "responseStatus": "accepted",
             "directlyRelated": true,
             "maximumNumberOfParticipants": null,
             "actualNumberOfParticipants": null,
@@ -1523,7 +1523,7 @@ mod tests {
                 "institutionProfileId": 100,
                 "profilePictureUrl": null
             },
-            "responseType": "Accepted",
+            "responseType": "accepted",
             "responseDateTime": "2024-03-10T09:00:00",
             "numberOfAdultParticipants": 2,
             "numberOfChildParticipants": 1
@@ -1634,7 +1634,7 @@ mod tests {
             "eventId": null,
             "fromInstProfileId": 100,
             "title": "New event",
-            "eventTypeEnum": "Event",
+            "eventTypeEnum": "event",
             "description": "Test event",
             "inviteeIds": [200, 300],
             "inviteeGroups": [],
@@ -1670,7 +1670,7 @@ mod tests {
     fn deserialize_respond_timeslot_request() {
         let json = r#"{
             "eventId": 42,
-            "responseTypeEnum": "Accepted",
+            "responseTypeEnum": "accepted",
             "timeSlotId": 5,
             "timeSlotIndex": 2,
             "institutionProfileId": 100,
@@ -1693,7 +1693,7 @@ mod tests {
                 "metadata": null,
                 "profilePicture": null
             },
-            "status": "IsComing",
+            "status": "isComing",
             "vacationRegistrationResponseId": 99
         }"#;
         let vc: VacationChildrenDto = serde_json::from_str(json).unwrap();
@@ -1750,7 +1750,7 @@ mod tests {
             institution_code: Some("101001".to_string()),
         };
         let json = serde_json::to_string(&req).unwrap();
-        assert!(json.contains("\"eventTypeEnum\":\"Event\""));
+        assert!(json.contains("\"eventTypeEnum\":\"event\""));
         assert!(json.contains("\"fromInstProfileId\":100"));
     }
 }

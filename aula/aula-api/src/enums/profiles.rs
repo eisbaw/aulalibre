@@ -3,7 +3,11 @@
 use serde::{Deserialize, Serialize};
 
 /// Portal-level role for a user.
+///
+/// The API returns lowercase values (`"guardian"`, `"employee"`, etc.) so we
+/// use `rename_all = "camelCase"` which maps PascalCase variants to lowercase.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum PortalRole {
     Other,
     Employee,
@@ -14,6 +18,7 @@ pub enum PortalRole {
 
 /// Role within an institution.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum InstitutionRole {
     Unknown,
     Guardian,

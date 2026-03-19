@@ -567,11 +567,11 @@ mod profiles {
     #[test]
     fn portal_role_all_variants() {
         let variants = vec![
-            ("\"Other\"", PortalRole::Other),
-            ("\"Employee\"", PortalRole::Employee),
-            ("\"Child\"", PortalRole::Child),
-            ("\"Guardian\"", PortalRole::Guardian),
-            ("\"Otp\"", PortalRole::Otp),
+            ("\"other\"", PortalRole::Other),
+            ("\"employee\"", PortalRole::Employee),
+            ("\"child\"", PortalRole::Child),
+            ("\"guardian\"", PortalRole::Guardian),
+            ("\"otp\"", PortalRole::Otp),
         ];
         for (json_str, expected) in variants {
             let parsed: PortalRole = serde_json::from_str(json_str).unwrap();
@@ -584,16 +584,16 @@ mod profiles {
     #[test]
     fn institution_role_all_variants() {
         let variants = vec![
-            ("\"Unknown\"", InstitutionRole::Unknown),
-            ("\"Guardian\"", InstitutionRole::Guardian),
-            ("\"Daycare\"", InstitutionRole::Daycare),
-            ("\"Leader\"", InstitutionRole::Leader),
-            ("\"PreschoolTeacher\"", InstitutionRole::PreschoolTeacher),
-            ("\"Teacher\"", InstitutionRole::Teacher),
-            ("\"EarlyStudent\"", InstitutionRole::EarlyStudent),
-            ("\"MiddleLateStudent\"", InstitutionRole::MiddleLateStudent),
-            ("\"Child\"", InstitutionRole::Child),
-            ("\"Other\"", InstitutionRole::Other),
+            ("\"unknown\"", InstitutionRole::Unknown),
+            ("\"guardian\"", InstitutionRole::Guardian),
+            ("\"daycare\"", InstitutionRole::Daycare),
+            ("\"leader\"", InstitutionRole::Leader),
+            ("\"preschoolTeacher\"", InstitutionRole::PreschoolTeacher),
+            ("\"teacher\"", InstitutionRole::Teacher),
+            ("\"earlyStudent\"", InstitutionRole::EarlyStudent),
+            ("\"middleLateStudent\"", InstitutionRole::MiddleLateStudent),
+            ("\"child\"", InstitutionRole::Child),
+            ("\"other\"", InstitutionRole::Other),
         ];
         for (json_str, expected) in variants {
             let parsed: InstitutionRole = serde_json::from_str(json_str).unwrap();

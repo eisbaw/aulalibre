@@ -698,7 +698,7 @@ mod tests {
             "institution": {"institutionCode": "101001", "name": "Test Skole"},
             "isDataPolicy": false,
             "title": "School rules",
-            "profileTypeRestrictions": ["Guardian", "Employee"],
+            "profileTypeRestrictions": ["guardian", "employee"],
             "groupRestrictions": [{"id": 5, "name": "3.A", "institutionCode": "101001"}]
         }"#;
         let f: CommonFileDto = serde_json::from_str(json).unwrap();

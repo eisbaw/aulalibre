@@ -675,7 +675,7 @@ mod tests {
     fn deserialize_share_with_group_dto() {
         let json = r#"{
             "id": 5,
-            "portalRoles": ["Guardian", "Employee"],
+            "portalRoles": ["guardian", "employee"],
             "name": "3.A",
             "shortName": "3A",
             "institutionCode": "101001",

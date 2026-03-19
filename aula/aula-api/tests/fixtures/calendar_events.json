@@ -35,12 +35,12 @@
         "profileId": 2201,
         "fullName": "Mette Frederiksen",
         "shortName": "MF",
-        "role": "Employee",
+        "role": "employee",
         "profilePicture": null,
         "metadata": null,
         "institutionCode": "280371",
         "institutionName": "Bakkeskolen",
-        "institutionRole": "Teacher"
+        "institutionRole": "teacher"
       },
       "groups": [
         {

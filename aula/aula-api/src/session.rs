@@ -75,6 +75,10 @@ pub struct Session {
     endpoints: OidcEndpoints,
     /// Cached login data (mirrors what's on disk).
     login_data: Option<LoginData>,
+    /// Whether `getProfileContext` has been called to initialize the
+    /// server-side session context. The Aula backend requires this call
+    /// before most API endpoints will work.
+    context_initialized: bool,
 }
 
 impl Session {
@@ -103,6 +107,7 @@ impl Session {
             config,
             endpoints,
             login_data,
+            context_initialized: false,
         })
     }
 
@@ -193,21 +198,72 @@ impl Session {
         Ok(())
     }
 
+    // -- Session context initialization --------------------------------------
+
+    /// Ensure the server-side profile context has been initialized.
+    ///
+    /// The Aula backend requires two calls after OIDC authentication before
+    /// most API endpoints will work:
+    ///
+    /// 1. `profiles.getProfilesByLogin` -- establishes the PHP session
+    ///    (sets `PHPSESSID` and `Csrfp-Token` cookies).
+    /// 2. `profiles.getProfileContext` -- initializes the active profile in
+    ///    the backend session, requires `portalrole` and `deviceId` query
+    ///    parameters.
+    ///
+    /// Without this initialization, most endpoints return HTTP 400 (code 40)
+    /// or error code 10 (no active session context).
+    ///
+    /// This mirrors the mobile app's `UpdateAllProfileInformation` sequence
+    /// and the web frontend's initialization flow observed in HAR captures.
+    ///
+    /// This method is idempotent: it only makes the network calls once per
+    /// session lifetime. Subsequent calls are no-ops.
+    pub async fn ensure_context_initialized(&mut self) -> crate::Result<()> {
+        if self.context_initialized {
+            return Ok(());
+        }
+
+        // Step 1: Call getProfilesByLogin to establish the PHP session.
+        // This sets the PHPSESSID cookie in the cookie jar, which is required
+        // for all subsequent API calls.
+        // We use the client directly (not self.get) to avoid infinite
+        // recursion since self.get calls pre_request which calls this.
+        let _: serde_json::Value = self
+            .client
+            .get("?method=profiles.getprofilesbylogin")
+            .await?;
+
+        // Step 2: Call getProfileContext with portalrole to activate the
+        // profile in the server session. The mobile app passes the current
+        // portal role and a device identifier.
+        let _: serde_json::Value = self
+            .client
+            .get("?method=profiles.getProfileContext&portalrole=guardian&deviceId=aula-cli")
+            .await?;
+
+        self.context_initialized = true;
+        Ok(())
+    }
+
     // -- API call wrappers with auto-refresh --------------------------------
 
-    /// Proactively refresh if token is about to expire, then execute the
-    /// request. On 401/InvalidAccessToken, refresh and retry once.
-    async fn pre_refresh(&mut self) {
+    /// Proactively refresh if token is about to expire, then ensure the
+    /// server-side profile context is initialized.
+    async fn pre_request(&mut self) {
         if self.login_data.is_some() {
             if let Err(e) = self.ensure_valid_token().await {
-                eprintln!("pre_refresh: proactive token refresh failed: {e}");
+                eprintln!("pre_request: proactive token refresh failed: {e}");
+            }
+            if let Err(e) = self.ensure_context_initialized().await {
+                eprintln!("pre_request: profile context initialization failed: {e}");
             }
         }
     }
 
     /// Execute a GET request with automatic token refresh and 401 retry.
     pub async fn get<T: DeserializeOwned>(&mut self, path: &str) -> crate::Result<T> {
-        self.pre_refresh().await;
+        self.pre_request().await;
         match self.client.get(path).await {
             Err(AulaError::Unauthorized | AulaError::InvalidAccessToken) => {
                 self.refresh_token().await?;
@@ -223,7 +279,7 @@ impl Session {
         path: &str,
         body: &B,
     ) -> crate::Result<T> {
-        self.pre_refresh().await;
+        self.pre_request().await;
         match self.client.post(path, body).await {
             Err(AulaError::Unauthorized | AulaError::InvalidAccessToken) => {
                 self.refresh_token().await?;
@@ -235,7 +291,7 @@ impl Session {
 
     /// Execute a POST request (no body) with automatic token refresh and 401 retry.
     pub async fn post_empty<T: DeserializeOwned>(&mut self, path: &str) -> crate::Result<T> {
-        self.pre_refresh().await;
+        self.pre_request().await;
         match self.client.post_empty(path).await {
             Err(AulaError::Unauthorized | AulaError::InvalidAccessToken) => {
                 self.refresh_token().await?;
@@ -251,7 +307,7 @@ impl Session {
         path: &str,
         body: &B,
     ) -> crate::Result<T> {
-        self.pre_refresh().await;
+        self.pre_request().await;
         match self.client.put(path, body).await {
             Err(AulaError::Unauthorized | AulaError::InvalidAccessToken) => {
                 self.refresh_token().await?;
@@ -263,7 +319,7 @@ impl Session {
 
     /// Execute a DELETE request with automatic token refresh and 401 retry.
     pub async fn delete<T: DeserializeOwned>(&mut self, path: &str) -> crate::Result<T> {
-        self.pre_refresh().await;
+        self.pre_request().await;
         match self.client.delete(path).await {
             Err(AulaError::Unauthorized | AulaError::InvalidAccessToken) => {
                 self.refresh_token().await?;
@@ -279,7 +335,7 @@ impl Session {
         path: &str,
         body: &B,
     ) -> crate::Result<T> {
-        self.pre_refresh().await;
+        self.pre_request().await;
         match self.client.delete_with_body(path, body).await {
             Err(AulaError::Unauthorized | AulaError::InvalidAccessToken) => {
                 self.refresh_token().await?;

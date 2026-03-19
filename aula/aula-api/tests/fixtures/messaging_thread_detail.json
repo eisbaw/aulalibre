@@ -27,7 +27,7 @@
           "profileId": 4401,
           "isDeactivated": false,
           "isDeleted": false,
-          "portalRole": "Employee"
+          "portalRole": "employee"
         },
         "profilePicture": null,
         "metadata": null
@@ -107,7 +107,7 @@
         "profileId": 4401,
         "isDeactivated": false,
         "isDeleted": false,
-        "portalRole": "Employee"
+        "portalRole": "employee"
       },
       "metadata": null,
       "profilePicture": null

@@ -119,7 +119,7 @@ mod tests {
             "institutionCode": "101001",
             "institutionType": "School",
             "municipalityCode": "751",
-            "institutionRole": "Guardian",
+            "institutionRole": "guardian",
             "permissions": [],
             "groups": [],
             "administrativeAuthority": null,

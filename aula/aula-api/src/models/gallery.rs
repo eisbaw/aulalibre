@@ -245,7 +245,7 @@ mod tests {
             "title": "New Album",
             "albumId": null,
             "creatorInstitutionProfileId": 42,
-            "sharedWithGroups": [{"groupId": 5, "portalRolesEnum": ["Guardian"]}],
+            "sharedWithGroups": [{"groupId": 5, "portalRolesEnum": ["guardian"]}],
             "description": "Test album"
         }"#;
         let p: CreateAlbumParameters = serde_json::from_str(json).unwrap();

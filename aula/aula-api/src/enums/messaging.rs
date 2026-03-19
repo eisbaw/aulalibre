@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Type of message in a thread.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum MessageType {
     AllMessageRelatedType,
     Message,
@@ -23,6 +24,7 @@ pub enum MessageType {
 
 /// Sensitivity level for messages.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SensitivityLevel {
     Level1,
     Level2,
@@ -31,6 +33,7 @@ pub enum SensitivityLevel {
 
 /// Read/unread status of a thread subscription.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SubscriptionStatus {
     Read,
     Unread,
@@ -38,6 +41,7 @@ pub enum SubscriptionStatus {
 
 /// Type of message recipient.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RecipientType {
     Profile,
     Group,
@@ -47,6 +51,7 @@ pub enum RecipientType {
 
 /// Target area for recipients.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RecipientsTarget {
     MessageRecipients,
     MessageBccRecipients,
@@ -57,6 +62,7 @@ pub enum RecipientsTarget {
 
 /// Click action on a message thread.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum MessageThreadClickType {
     ItemClick,
     Move,
@@ -69,6 +75,7 @@ pub enum MessageThreadClickType {
 
 /// Bundled message display type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum BundledMessageType {
     IsRegularMessage,
     FirstMessage,
@@ -81,6 +88,7 @@ pub enum BundledMessageType {
 
 /// Type of common inbox.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum CommonInboxType {
     Institutional,
     CrossInstitutional,
@@ -88,6 +96,7 @@ pub enum CommonInboxType {
 
 /// Form type when composing a message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum MessageFormType {
     StartNewThread,
     ReplyInThread,
@@ -99,6 +108,7 @@ pub enum MessageFormType {
 
 /// More-menu action on a message thread cell.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum MessageThreadCellMoreMenuActionEnum {
     MoveToFolder,
     MarkAsImportant,
@@ -115,6 +125,7 @@ pub enum SendMessageButton {
 
 /// Subscription type for message threads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum SubscriptionType {
     Bundle,
     BundleItem,
@@ -123,6 +134,7 @@ pub enum SubscriptionType {
 
 /// Dropdown action in thread details.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum DropdownActionEnum {
     AddRecipient,
     Forwarding,
@@ -139,6 +151,7 @@ pub enum DropdownActionEnum {
 
 /// More option on a single message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum MessageMoreOption {
     Edit,
     Delete,
@@ -147,6 +160,7 @@ pub enum MessageMoreOption {
 
 /// Thread type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum ThreadType {
     Thread,
     EventReminder,
@@ -155,6 +169,7 @@ pub enum ThreadType {
 
 /// Recipient API type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RecipientApiType {
     Unknown,
     InstitutionProfile,
@@ -164,6 +179,7 @@ pub enum RecipientApiType {
 
 /// Folder type for message folders.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum FolderType {
     Normal,
     Deleted,

@@ -94,6 +94,27 @@ pub async fn get_profiles_by_login(
     session.get("?method=profiles.getprofilesbylogin").await
 }
 
+/// Fetch the profile context for the current session.
+///
+/// Maps to `ProfileServiceManager.GetProfileContext()` and the
+/// `ProfileService.GetProfileContext()` web call in the APK.
+///
+/// **This call is essential for session initialization.** The Aula backend
+/// uses it to establish which institution profile is active in the PHP
+/// session. Without it, most API endpoints return HTTP 400 (code 40) or
+/// HTTP 403 (code 10, subCode 23).
+///
+/// The mobile app calls this immediately after `getProfilesByLogin` during
+/// its `UpdateAllProfileInformation` sequence. The web frontend does the
+/// same (observed in HAR captures).
+///
+/// # Endpoint
+///
+/// `GET ?method=profiles.getProfileContext`
+pub async fn get_profile_context(session: &mut Session) -> crate::Result<serde_json::Value> {
+    session.get("?method=profiles.getProfileContext").await
+}
+
 /// Fetch profile master data for the current user.
 ///
 /// Maps to `ProfileServiceManager.GetProfileMasterData()`.

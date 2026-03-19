@@ -388,6 +388,16 @@ impl AulaClient {
         Ok(())
     }
 
+    // -- Debug helpers -------------------------------------------------------
+
+    /// Return a debug representation of cookies in the cookie jar.
+    pub fn debug_cookies(&self) -> String {
+        match self.cookie_jar.cookies(&self.base_url) {
+            Some(header) => header.to_str().unwrap_or("(non-utf8)").to_string(),
+            None => "(no cookies)".to_string(),
+        }
+    }
+
     // -- Test helpers -------------------------------------------------------
 
     /// Add a cookie string to the client's cookie jar for the base URL.

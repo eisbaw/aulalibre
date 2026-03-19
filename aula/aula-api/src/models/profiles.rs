@@ -617,7 +617,7 @@ mod tests {
             "metadata": null,
             "profilePicture": null,
             "institution": null,
-            "role": "Guardian"
+            "role": "guardian"
         }"#;
         let rel: RelationProfile = serde_json::from_str(json).unwrap();
         assert_eq!(rel.institution_profile_id, Some(55));
@@ -668,7 +668,7 @@ mod tests {
             "encryptionKey": null,
             "profilePicture": null,
             "mainGroup": "5.B",
-            "institutionRole": "Teacher",
+            "institutionRole": "teacher",
             "communicationBlock": false,
             "uploadBlock": false,
             "email": "test@school.dk",

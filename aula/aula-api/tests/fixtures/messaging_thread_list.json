@@ -26,7 +26,7 @@
             "profileId": 4401,
             "isDeactivated": false,
             "isDeleted": false,
-            "portalRole": "Employee"
+            "portalRole": "employee"
           },
           "fullName": "Mette Frederiksen",
           "metadata": null,
@@ -51,7 +51,7 @@
               "profileId": 6701,
               "isDeactivated": false,
               "isDeleted": false,
-              "portalRole": "Guardian"
+              "portalRole": "guardian"
             },
             "fullName": "Henrik Jensen",
             "metadata": null,
@@ -98,16 +98,16 @@
           "profileId": 6701,
           "isDeactivated": false,
           "isDeleted": false,
-          "portalRole": "Guardian"
+          "portalRole": "guardian"
         },
         "currentFolder": {
           "id": 1,
           "name": "Indbakke",
-          "type": "Normal"
+          "type": "normal"
         },
         "subscriptionId": 91023,
         "isThreadOrSubscriptionDeleted": false,
-        "subscriptionType": "Unbundled",
+        "subscriptionType": "unbundled",
         "numberOfBundleItems": null,
         "extraRecipientsCount": 0,
         "bundleId": null,
@@ -136,17 +136,17 @@
         "currentFolder": {
           "id": 2,
           "name": "Slettet",
-          "type": "Deleted"
+          "type": "deleted"
         },
         "subscriptionId": 91022,
         "isThreadOrSubscriptionDeleted": false,
-        "subscriptionType": "Bundle",
+        "subscriptionType": "bundle",
         "numberOfBundleItems": 3,
         "extraRecipientsCount": 5,
         "bundleId": 7701,
         "threadEntityLinkDto": {
           "entityId": "event-4455",
-          "threadType": "EventReminder"
+          "threadType": "eventReminder"
         },
         "primarySubscriptionId": 91020
       }

@@ -858,11 +858,11 @@ mod tests {
         let json = r#"{
             "id": 100,
             "otpInboxId": 0,
-            "mailBoxOwnerType": "InstitutionProfile",
+            "mailBoxOwnerType": "institutionProfile",
             "profileId": 55,
             "isDeactivated": false,
             "isDeleted": false,
-            "portalRole": "Guardian"
+            "portalRole": "guardian"
         }"#;
         let r: RecipientApiModel = serde_json::from_str(json).unwrap();
         assert_eq!(r.id, Some(100));
@@ -876,7 +876,7 @@ mod tests {
         let json = r#"{
             "id": 1,
             "name": "Inbox",
-            "type": "Normal"
+            "type": "normal"
         }"#;
         let f: Folder = serde_json::from_str(json).unwrap();
         assert_eq!(f.id, Some(1));
@@ -890,7 +890,7 @@ mod tests {
             "startedDateTime": "2024-01-15T10:30:00",
             "subject": "School trip permission",
             "requiredStepUp": false,
-            "sensitivityLevel": "Level1",
+            "sensitivityLevel": "level1",
             "creator": null,
             "otherRecipients": [
                 {"displayName": "Anne Hansen", "relation": "Guardian", "shortName": "AH"}
@@ -925,10 +925,10 @@ mod tests {
             "subject": "Homework reminder",
             "messageDraft": null,
             "mailBoxOwner": null,
-            "currentFolder": {"id": 1, "name": "Inbox", "type": "Normal"},
+            "currentFolder": {"id": 1, "name": "Inbox", "type": "normal"},
             "subscriptionId": 888,
             "isThreadOrSubscriptionDeleted": false,
-            "subscriptionType": "Unbundled",
+            "subscriptionType": "unbundled",
             "numberOfBundleItems": null,
             "extraRecipientsCount": null,
             "bundleId": null,
@@ -988,7 +988,7 @@ mod tests {
             "participants": [],
             "institutionCode": "101001",
             "institutionName": "Test Skole",
-            "commonInboxType": "Institutional"
+            "commonInboxType": "institutional"
         }"#;
         let ci: CommonInboxesDto = serde_json::from_str(json).unwrap();
         assert_eq!(ci.id, Some(5));
@@ -1064,7 +1064,7 @@ mod tests {
     fn deserialize_thread_entity_link() {
         let json = r#"{
             "entityId": "event-123",
-            "threadType": "EventReminder"
+            "threadType": "eventReminder"
         }"#;
         let link: ThreadEntityLinkDto = serde_json::from_str(json).unwrap();
         assert_eq!(link.entity_id.as_deref(), Some("event-123"));

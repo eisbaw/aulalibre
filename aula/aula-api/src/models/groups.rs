@@ -230,7 +230,7 @@ mod tests {
             "institutionProfile": null,
             "groupId": 1,
             "memberGroup": null,
-            "institutionRole": "Teacher"
+            "institutionRole": "teacher"
         }"#;
         let gm: GroupMembership = serde_json::from_str(json).unwrap();
         assert_eq!(gm.id, Some(10));

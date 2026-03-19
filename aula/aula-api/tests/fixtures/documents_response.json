@@ -37,7 +37,7 @@
             "canEdit": false,
             "alias": false,
             "metadata": null,
-            "role": "Guardian"
+            "role": "guardian"
           }
         ],
         "implicitSharings": [],

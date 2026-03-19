@@ -319,7 +319,7 @@ mod tests {
             "isImportant": false,
             "importantFrom": null,
             "importantTo": null,
-            "sharedWithGroups": [{"groupId": 5, "portalRolesEnum": ["Guardian"]}],
+            "sharedWithGroups": [{"groupId": 5, "portalRolesEnum": ["guardian"]}],
             "attachmentIds": [1, 2],
             "publishAt": "2024-03-15T08:00:00",
             "expireAt": "2024-06-15T23:59:59"
@@ -354,7 +354,7 @@ mod tests {
                 "institutionCode": "101001",
                 "institutionName": "Test Skole",
                 "name": "Lars Hansen",
-                "role": "Employee",
+                "role": "employee",
                 "mainGroup": "3.A",
                 "profilePicture": null,
                 "shortName": "LH",

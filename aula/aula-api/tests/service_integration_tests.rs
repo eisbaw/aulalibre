@@ -1623,7 +1623,7 @@ mod groups_service {
                 "groupRole": "Member",
                 "institutionProfile": null,
                 "groupId": 1501,
-                "institutionRole": "Guardian"
+                "institutionRole": "guardian"
             }
         ]);
 

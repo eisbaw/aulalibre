@@ -877,9 +877,9 @@ mod tests {
         let json = r#"{
             "id": 100,
             "subject": "Viktig besked",
-            "sensitivityLevel": "Level1",
+            "sensitivityLevel": "level1",
             "isForwarded": false,
-            "threadType": "Thread"
+            "threadType": "thread"
         }"#;
         let t: SearchResultMessageThreadItem = serde_json::from_str(json).unwrap();
         assert_eq!(t.id, Some(100));

@@ -148,9 +148,9 @@ pub async fn get_thread_list(
     args: &GetThreadListArguments,
 ) -> crate::Result<MessageThreadSubscriptionList> {
     let mut params = vec!["method=messaging.getThreads".to_string()];
-    if let Some(page) = args.page {
-        params.push(format!("page={page}"));
-    }
+    // The `page` parameter is required by the API -- without it, the backend
+    // returns code 40 (bad request). Default to page 0.
+    params.push(format!("page={}", args.page.unwrap_or(0)));
     if let Some(folder_id) = args.folder_id {
         params.push(format!("folderId={folder_id}"));
     }

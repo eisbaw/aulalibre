@@ -154,7 +154,7 @@ mod tests {
                 "institutionProfile": null,
                 "groupId": 1,
                 "memberGroup": null,
-                "institutionRole": "Teacher"
+                "institutionRole": "teacher"
             }
         ]"#;
         let members: Vec<GroupMembership> = serde_json::from_str(json).unwrap();

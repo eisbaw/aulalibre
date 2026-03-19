@@ -1,9 +1,11 @@
 ---
 id: TASK-0019
 title: Map CRC64 hashes to .NET namespace/class names
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-03-18 14:06'
+updated_date: '2026-03-19 05:22'
 labels: []
 dependencies: []
 ---
@@ -19,3 +21,13 @@ The AndroidManifest uses Xamarin CRC64 hashes as Java package names (e.g., crc64
 - [ ] #1 CRC64 hash to .NET namespace mapping table produced
 - [ ] #2 At least the major namespace groups (auth, calendar, messaging, etc.) identified
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1. Extract CRC64 hashes from AndroidManifest.xml
+2. Extract .NET type registrations from smali register() calls
+3. Cross-reference hashes between manifest and smali
+4. Categorize namespaces by functional domain
+5. Generate mapping table as markdown
+<!-- SECTION:PLAN:END -->

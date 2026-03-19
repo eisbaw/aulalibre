@@ -21,18 +21,25 @@ The authentication backend is a **SimpleSAMLphp** instance with an OIDC module:
 
 The app supports multiple environments, selected via `AulaNative.Configuration.EnvironmentFactory`:
 
-| Environment | Backend Host | Auth Host |
-|---|---|---|
-| **Production** | `www.aula.dk` | `login.aula.dk` |
-| **Pre-prod** | `www1-preprod.aula.dk` | `login-preprod.aula.dk` |
-| **Hotfix** | `www1-hotfix.aula.dk` | `login-hotfix.aula.dk` |
-| **Test1** | `www1-test1.ncaula.com` | `www1-test1.ncaula.com` |
-| **Test3** | `www1-test3.ncaula.com` | `www1-test3.ncaula.com` |
-| **Dev1** | `www1-dev1.ncaula.com` | `www1-dev1.ncaula.com` |
-| **Dev3** | `www1-dev3.ncaula.com` | `www1-dev3.ncaula.com` |
-| **Dev11** | `www1-dev11.ncaula.com` | `www1-dev11.ncaula.com` |
+| Environment | Backend Host | Auth Host | IsProduction |
+|---|---|---|---|
+| **Production** | `www.aula.dk` | `login.aula.dk` | true |
+| **Pre-prod** | `www1-preprod.aula.dk` | `login-preprod.aula.dk` | true |
+| **Hotfix** | `www1-hotfix.aula.dk` | `login-hotfix.aula.dk` | true |
+| **Test1** | `www1-test1.ncaula.com` | `www1-test1.ncaula.com` | false |
+| **Test3** | `www1-test3.ncaula.com` | `www1-test3.ncaula.com` | false |
+| **Dev1** | `www1-dev1.ncaula.com` | `www1-dev1.ncaula.com` | false |
+| **Dev3** | `www1-dev3.ncaula.com` | `www1-dev3.ncaula.com` | false |
+| **Dev11** | `www1-dev11.ncaula.com` | `www1-dev11.ncaula.com` | false |
+| **Dev21** | `www1-dev21.ncaula.com` | `www1-dev21.ncaula.com` | false |
+| **Dev22** | `www1-dev22.ncaula.com` | `www1-dev22.ncaula.com` | false |
+| **Dev31** | `www1-dev31.ncaula.com` | `www1-dev31.ncaula.com` | false |
+| **Dev32** | `www1-dev32.ncaula.com` | `www1-dev32.ncaula.com` | false |
+| **CI** | `www1-dev1.ncaula.com` | `www1-dev1.ncaula.com` | false |
 
-Non-production environments use basic auth credentials: `aula-user:Aula-1337`.
+Non-production environments (`IsProduction: false`) use basic auth credentials: `aula-user:Aula-1337`.
+Pre-prod and Hotfix are marked `IsProduction: true` (no basic auth) but use `ncaula.com` data/notification hosts.
+See `ncaula_staging_domain.md` for the complete 6-field environment matrix including data and notification hosts.
 
 ## 2. Step-Up Authentication (Levels 2 and 3)
 

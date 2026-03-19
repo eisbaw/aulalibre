@@ -80,7 +80,7 @@ From the packed assembly names (not native .so, but .NET bindings):
 | Unity Container | Dependency injection | `Unity.Abstractions.dll`, `Unity.Container.dll` |
 | AndroidX DataStore | Key-value preferences | `Xamarin.AndroidX.DataStore.*.dll` + `libdatastore_shared_counter.so` |
 | Glide | Image loading/caching | `Xamarin.Android.Glide.*.dll` |
-| Google Tink | Crypto (for EncryptedSharedPrefs) | `Xamarin.Google.Crypto.Tink.Android.dll` |
+| Google Tink | Crypto (bundled but unused -- transitive dependency of AndroidX Security) | `Xamarin.Google.Crypto.Tink.Android.dll` |
 | I18NPortable | Localization | `I18NPortable.dll` |
 | Square OkIO | I/O primitives | `Square.OkIO.dll` |
 

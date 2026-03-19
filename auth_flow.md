@@ -265,9 +265,9 @@ Note: `SecureStorageManager` stores each value by wrapping it in a `Dictionary<s
 
 ### Android Implementation
 
-On Android, `DroidSecureStorageHelper` wraps **Microsoft.Maui.Essentials SecureStorage**, which on Android:
-- Uses the **Android Keystore** for encryption key storage
-- Stores encrypted values in **SharedPreferences** (EncryptedSharedPreferences on API 23+)
+On Android, `DroidSecureStorageHelper` wraps **Plugin.SecureStorage** (`CrossSecureStorage.Current`), which on Android:
+- Uses `ProtectedFileImplementation` with AES `SecretKey` objects backed by the **Android Keystore**
+- Stores encrypted values in files (NOT EncryptedSharedPreferences -- see security_analysis.md section 4.3)
 - Values are serialized to JSON via `Newtonsoft.Json.JsonConvert.SerializeObject/DeserializeObject`
 
 ### Thread Safety

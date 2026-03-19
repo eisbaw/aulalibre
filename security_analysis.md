@@ -78,7 +78,7 @@ Tokens are stored via:
 ```
 SecureStorageManager -> SecureStorageHelper -> ISecureStorageHelper
   -> DroidSecureStorageHelper -> Plugin.SecureStorage (CrossSecureStorage)
-    -> Android Keystore (encryption keys) + EncryptedSharedPreferences (encrypted values)
+    -> ProtectedFileImplementation (file-based AES encryption with Android Keystore-backed keys)
 ```
 
 Values are JSON-serialized via Newtonsoft.Json before storage. Thread-safe via `SemaphoreSlim(1,1)`.
@@ -145,9 +145,46 @@ The app uses a custom `EncryptionManager` for encrypting SQLite data:
 
 ### 4.2 Secure Storage
 
-`DroidSecureStorageHelper` wraps `Plugin.SecureStorage` (`CrossSecureStorage`), which on Android uses the Android Keystore + EncryptedSharedPreferences. This is the correct approach for sensitive values on Android.
+`DroidSecureStorageHelper` wraps `Plugin.SecureStorage` (`CrossSecureStorage`), which on Android uses `ProtectedFileImplementation` -- a file-based encryption scheme with AES keys stored in the Android Keystore. This does NOT use `EncryptedSharedPreferences` (see section 4.3 for details on why EncryptedSharedPreferences/Tink are bundled but unused).
 
 **Notable quirk**: The `Save<T>` method loops to delete existing keys before saving (`while (CrossSecureStorage.Current.HasKey(key)) { DeleteKey(key); }`). This suggests the underlying storage sometimes returns stale values.
+
+### 4.3 Google Tink Cryptographic Library (Bundled but Unused)
+
+The APK includes the full Google Tink cryptographic library (486 Java classes in `com.google.crypto.tink.*` across classes2.dex) along with AndroidX Security Crypto (`EncryptedSharedPreferences`, `EncryptedFile`, `MasterKey` in classes.dex). Despite this substantial presence, **no app-level code actually calls into these libraries**.
+
+**Evidence of non-use**:
+- Zero cross-references from any CRC64 Xamarin Android Callable Wrapper to `EncryptedSharedPreferences`, `EncryptedFile`, `MasterKey`, or any Tink class
+- Zero imports of `androidx.security.crypto.*` or `com.google.crypto.tink.*` outside the library packages themselves
+- Zero smali cross-references from app code to these library classes
+- The .NET `AulaNative.Droid.csproj` does not reference `Xamarin.Google.Crypto.Tink.Android.dll`
+- The .NET `EncryptionManager` uses `System.Security.Cryptography.Aes` (standard .NET BCL), not Tink
+
+**Why Tink is bundled**: Tink is a transitive dependency of `androidx.security:security-crypto`, which is commonly pulled in by AndroidX dependency graphs or Xamarin NuGet packages. The `EncryptedSharedPreferences` and `EncryptedFile` classes are present because the library was included at build time, but the app never instantiates them.
+
+**Tink modules bundled** (all unused):
+
+| Module | Key Types | Purpose |
+|--------|-----------|---------|
+| `tink.aead` | AES-GCM, AES-CTR-HMAC, AES-EAX, AES-GCM-SIV, ChaCha20-Poly1305, XChaCha20-Poly1305 | Authenticated Encryption with Associated Data |
+| `tink.daead` | AES-SIV | Deterministic AEAD (for encrypting preference keys) |
+| `tink.streamingaead` | AES-GCM-HKDF, AES-CTR-HMAC streaming | Streaming file encryption |
+| `tink.mac` | HMAC, AES-CMAC | Message authentication codes |
+| `tink.prf` | HMAC-based PRF | Pseudorandom functions |
+| `tink.hybrid` | ECIES | Hybrid encryption |
+| `tink.jwt` | JWT signing/verification | JSON Web Token handling |
+| `tink.integration.android` | AndroidKeysetManager, AndroidKeystoreKmsClient | Android Keystore integration |
+| `tink.shaded.protobuf` | N/A | Shaded protobuf runtime for key serialization |
+
+**Actual crypto mechanisms used by the app** (separate from Tink):
+
+| Component | Crypto Used | Key Management |
+|-----------|-------------|----------------|
+| `.NET EncryptionManager` | AES-CBC (System.Security.Cryptography) | PBKDF2-derived key (300 iterations, hardcoded salt), password stored in Plugin.SecureStorage |
+| `Plugin.SecureStorage` | File-based AES via `ProtectedFileImplementation` with `SecretKey` | Android Keystore-backed AES keys |
+| `libSystem.Security.Cryptography.Native.Android.so` | .NET BCL crypto (AES, RSA, ECDSA, etc.) | JNI bridge to Android crypto provider |
+
+**Conclusion**: Tink and EncryptedSharedPreferences add approximately 500+ classes of dead code to the APK. The app relies entirely on its own .NET `EncryptionManager` (for SQLite field encryption) and `Plugin.SecureStorage`/`ProtectedFileImplementation` (for credential/token storage), both backed by the Android Keystore but not through Tink.
 
 ## 5. Exported Components
 

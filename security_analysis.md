@@ -96,8 +96,30 @@ string pinCode = SecureStorageManager.GetPinCode();
 ShowConfirmBox = (pinCode != enteredPin);
 ```
 
+**Brute-force investigation** (TASK-84): A thorough trace of the entire PIN validation flow from UI to storage confirms there are **zero compensating controls** for PIN brute-force at any layer:
+
+**UI layer (`LoginWithPinActivity`)**:
+- `_lockLoginAttempt` field: A boolean that prevents concurrent async operations (e.g., blocks a second tap while the first is still processing). Resets to `false` after each failed attempt dialog is shown. Not an attempt counter and not persisted.
+- `HandlingStressClickHelper`: A 1-second UI debounce via semaphore. Prevents double-tap, resets after 1 second. Not rate limiting.
+- The `EnterPressed` flow calls `_pinVM.ValidatePin(pin)`, checks `ShowConfirmBox`, and on failure shows a `CustomDialog` with the "wrong PIN" message. After the dialog, the PIN input is cleared and the user can immediately try again.
+
+**ViewModel layer (`PinCodeViewModel`)**:
+- `ValidatePin()` performs a single `pinCode != enteredPin` comparison against the stored PIN. No attempt counter, no lockout timer, no exponential backoff, no maximum attempt limit. Returns a `ConfirmBoxTexts` indicating whether to show an error dialog -- nothing more.
+
+**Storage layer (`SecureStorageManager`)**:
+- Stores PIN under `PRIVATE_KEYSTORE_PINCODE_KEY` as a raw string (not hashed).
+- No attempt counter keys exist in the storage schema. All stored keys are: PINCODE, MIGRATION_COUNT, PORTAL_ROLE, AUTH_LEVEL, BIO_AUTH_ACTIVATED, PERSISTED_AUTH_TYPE, COUNT_USAGE_MESSAGE_MODULE, DID_PROMPT_REVIEW.
+
+**Server-side**: PIN is never transmitted to any server. `ValidatePin()` reads from local `SecureStorageManager.GetPinCode()` and compares locally. Server-side lockout is impossible by design.
+
+**Java/smali layer**: No Aula-specific PIN logic exists at the DEX level. All PIN handling is in the Xamarin/.NET C# layer.
+
+**PIN keyspace**: Exactly 6 numeric digits, enforced during onboarding (`pin.Length != 6 || !int.TryParse(Pin, ref num)`). Keyspace = 1,000,000 combinations.
+
+**Practical attack**: An attacker with physical device access can enter PINs at approximately 1 attempt per 2-3 seconds (limited only by the `HandlingStressClickHelper` 1-second debounce and UI rendering). The full 6-digit keyspace could be exhausted in roughly 11-34 days of continuous manual input. Automated input via ADB or accessibility services would be significantly faster.
+
 Concerns:
-- **No brute-force protection**: No lockout after failed attempts, no rate limiting, no exponential backoff. A user (or attacker with device access) can try unlimited PINs.
+- **No brute-force protection**: No lockout after failed attempts, no rate limiting, no exponential backoff. A user (or attacker with device access) can try unlimited PINs. This was confirmed by tracing every layer of the PIN validation flow.
 - **PIN stored as plaintext string**: The PIN is stored as a raw string in SecureStorage, not hashed. While SecureStorage provides encryption-at-rest, the PIN is decrypted into memory for comparison.
 - **No timing-safe comparison**: Uses `!=` operator which may be vulnerable to timing attacks (though practically difficult to exploit on a local device).
 - **PIN login bypasses OIDC**: Successful PIN validation reuses persisted tokens without contacting the identity provider, which is the expected behavior but means PIN compromise = full session compromise.
@@ -105,6 +127,8 @@ Concerns:
 ### 3.4 Biometric Authentication
 
 Uses `Plugin.Fingerprint` library via `BiometricPrompt` API. If biometric succeeds, the persisted tokens are used directly (same as PIN login). No separate cryptographic binding between biometric and token storage (biometric just gates access to the already-stored tokens).
+
+**Lockout behavior** (TASK-84): Unlike PIN, biometric authentication benefits from **Android OS-level lockout**. The `AuthenticationHandler` maps BiometricPrompt error code 7 to `FingerprintAuthenticationResultStatus.TooManyAttempts`. When this triggers, `BiometricUtils.AuthenticateBiometric()` returns `BioAuthStatus.CanNotTryAgain` with message `MODAL_AUTH_DENIED_TOO_MANY_TRIES`, and the app shows a non-retryable error dialog. However, this is entirely the Android OS enforcing its biometric attempt limits (typically 5 attempts before a 30-second cooldown, then device credential required) -- the app adds no additional lockout logic on top. After the OS lockout expires, the user can retry biometric authentication without restriction.
 
 ### 3.5 Session Management
 
@@ -245,7 +269,7 @@ This is standard for mobile OIDC (public clients), and PKCE mitigates the risk. 
 
 | # | Finding | Severity | Description |
 |---|---------|----------|-------------|
-| 1 | PIN brute-force | Medium | No lockout or rate limiting on PIN attempts. Local attacker with device access can try all 4-6 digit PINs quickly. |
+| 1 | PIN brute-force | Medium | No lockout or rate limiting on PIN attempts at any layer (UI, ViewModel, storage, or server). Confirmed by full code trace (TASK-84). PIN is 6 numeric digits (1M keyspace), validated locally via plain string comparison, with only a 1-second UI debounce between attempts. |
 | 2 | PBKDF2 with 300 iterations | Low-Medium | SQLite encryption key derivation uses only 300 PBKDF2 iterations with a hardcoded salt. Far below OWASP minimum of 600,000. |
 | 3 | SYSTEM_ALERT_WINDOW permission | Low | Explicitly declared by app developer but completely unused -- no code references in C#, smali, or Java. Not a Xamarin artifact (Xamarin only auto-adds INTERNET and READ_EXTERNAL_STORAGE). Not contributed by any library via manifest merger. Grants overlay capability that could be exploited if the app is compromised. Should be removed. |
 | 4 | No root detection | Medium | No checks for rooted devices. Android Keystore is weaker on rooted devices, potentially exposing SecureStorage contents. |

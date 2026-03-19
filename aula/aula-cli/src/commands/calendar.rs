@@ -172,8 +172,25 @@ async fn handle_list(
 ) {
     let mut session = build_session(env_override);
 
+    // Auto-populate institution profile IDs from session when not specified.
+    let inst_profile_ids = if let Some(id) = inst_profile_id {
+        Some(vec![id])
+    } else {
+        // Ensure context is initialized so profile data is available.
+        if let Err(e) = session.ensure_context_initialized().await {
+            eprintln!("error: failed to initialize session: {e}");
+            std::process::exit(1);
+        }
+        let ids = session.children_inst_profile_ids();
+        if ids.is_empty() {
+            None
+        } else {
+            Some(ids)
+        }
+    };
+
     let params = GetEventsParameters {
-        inst_profile_ids: inst_profile_id.map(|id| vec![id]),
+        inst_profile_ids,
         resource_ids: None,
         start: Some(start.to_string()),
         end: Some(end.to_string()),

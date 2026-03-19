@@ -61,58 +61,18 @@ pub struct UpdateDocumentLockedStatusRequest {
 ///
 /// # Endpoint
 ///
-/// `GET /documents/secure?<query params>`
+/// `POST ?method=documents.getSecureDocuments`
+///
+/// Despite the `GET_SECURE_DOCUMENTS` name in `Urls.cs`, the decompiled C#
+/// code shows `documentService.Post<GetSecureDocumentsResult>(GET_SECURE_DOCUMENTS, arguments)`
+/// -- this endpoint uses POST with the arguments as a JSON body.
 pub async fn get_secure_documents(
     session: &mut Session,
     args: &GetSecureDocumentsArguments,
 ) -> crate::Result<GetSecureDocumentsResult> {
-    let mut query = Vec::new();
-    if let Some(ref ids) = args.filter_institution_profile_ids {
-        for id in ids {
-            query.push(format!("filterInstitutionProfileIds={id}"));
-        }
-    }
-    if let Some(ref ids) = args.filter_regarding_group_ids {
-        for id in ids {
-            query.push(format!("filterRegardingGroupIds={id}"));
-        }
-    }
-    if let Some(unread) = args.filter_unread {
-        query.push(format!("filterUnread={unread}"));
-    }
-    if let Some(locked) = args.filter_locked {
-        query.push(format!("filterLocked={locked}"));
-    }
-    if let Some(ref status) = args.filter_journaling_status {
-        let s = serde_json::to_string(status)
-            .unwrap_or_default()
-            .trim_matches('"')
-            .to_string();
-        query.push(format!("filterJournalingStatus={s}"));
-    }
-    if args.filter_editable {
-        query.push("filterEditable=true".to_string());
-    }
-    if let Some(ref dt) = args.document_type {
-        let s = serde_json::to_string(dt)
-            .unwrap_or_default()
-            .trim_matches('"')
-            .to_string();
-        query.push(format!("documentType={s}"));
-    }
-    if let Some(index) = args.index {
-        query.push(format!("index={index}"));
-    }
-    if let Some(limit) = args.limit {
-        query.push(format!("limit={limit}"));
-    }
-
-    let path = if query.is_empty() {
-        "?method=documents.getSecureDocuments".to_string()
-    } else {
-        format!("?method=documents.getSecureDocuments&{}", query.join("&"))
-    };
-    session.get(&path).await
+    session
+        .post("?method=documents.getSecureDocuments", args)
+        .await
 }
 
 /// Fetch common (institution-level) files.

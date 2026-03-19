@@ -853,41 +853,63 @@ mod presence_extended {
     use aula_api::services::presence;
 
     #[tokio::test]
-    async fn get_presence_registrations() {
+    async fn get_daily_overview() {
         let server = MockServer::start().await;
 
-        let body = fixture("presence_registrations.json");
+        let data = serde_json::json!([
+            {
+                "institutionProfile": {
+                    "profileId": 99004,
+                    "id": 14201,
+                    "institutionCode": "G12345",
+                    "institutionName": "Test School",
+                    "role": "child",
+                    "name": "Test Child",
+                    "profilePicture": null,
+                    "mainGroup": null,
+                    "shortName": "TC",
+                    "institutionRole": "daycare",
+                    "metadata": null
+                },
+                "mainGroup": null,
+                "status": 3,
+                "sleepIntervals": [],
+                "checkInTime": "08:00:00",
+                "checkOutTime": null,
+                "location": null,
+                "isDefaultEntryTime": false,
+                "isDefaultExitTime": false,
+                "isPlannedTimesOutsideOpeningHours": false
+            }
+        ]);
 
         Mock::given(method("GET"))
             .and(path("/api/v23/"))
-            .and(query_param("method", "presence.getPresenceRegistrations"))
-            .respond_with(
-                ResponseTemplate::new(200)
-                    .set_body_string(body)
-                    .insert_header("content-type", "application/json"),
-            )
+            .and(query_param("method", "presence.getDailyOverview"))
+            .respond_with(json_response(data))
             .expect(1)
             .mount(&server)
             .await;
 
         let mut session = mock_session(&server.uri());
-        let regs = presence::get_presence_registrations(&mut session, &[14201], Some("2026-03-18"))
+        let regs = presence::get_daily_overview(&mut session, &[14201])
             .await
-            .expect("should deserialize presence registrations");
-        assert_eq!(regs.len(), 2);
-        assert_eq!(regs[0].id, 55001);
+            .expect("should deserialize daily overview");
+        assert_eq!(regs.len(), 1);
     }
 
     #[tokio::test]
     async fn get_presence_schedules() {
         let server = MockServer::start().await;
 
-        let data = serde_json::json!([
-            {
-                "institutionProfileId": 14201,
-                "scheduleEntries": []
-            }
-        ]);
+        let data = serde_json::json!({
+            "currentDate": "2026-03-18",
+            "presenceWeekTemplates": [
+                {
+                    "dayTemplates": []
+                }
+            ]
+        });
 
         Mock::given(method("GET"))
             .and(path("/api/v23/"))
@@ -903,10 +925,11 @@ mod presence_extended {
             from_date: Some("2026-03-18".into()),
             to_date: Some("2026-03-24".into()),
         };
-        let schedules = presence::get_presence_schedules(&mut session, &args)
+        let schedule = presence::get_presence_schedules(&mut session, &args)
             .await
             .expect("should deserialize presence schedules");
-        assert_eq!(schedules.len(), 1);
+        assert!(schedule.is_object());
+        assert_eq!(schedule["currentDate"], "2026-03-18");
     }
 
     #[tokio::test]
@@ -1246,7 +1269,7 @@ mod documents_service {
 
         let body = fixture("documents_response.json");
 
-        Mock::given(method("GET"))
+        Mock::given(method("POST"))
             .and(path("/api/v23/"))
             .and(query_param("method", "documents.getSecureDocuments"))
             .respond_with(

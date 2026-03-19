@@ -187,7 +187,7 @@ mod calendar {
             }
         ]);
 
-        Mock::given(method("GET"))
+        Mock::given(method("POST"))
             .and(path("/api/v23/"))
             .and(query_param(
                 "method",
@@ -229,10 +229,10 @@ mod presence {
 
         let data = serde_json::json!([
             {
-                "institutionProfileId": 14201,
-                "state": "Present",
+                "uniStudentId": 14201,
+                "state": 3,
                 "uniStudent": {
-                    "id": 8801,
+                    "id": 14201,
                     "name": "Emma Jensen",
                     "shortName": "EJ",
                     "profilePicture": null
@@ -257,7 +257,7 @@ mod presence {
         let statuses = result.expect("should deserialize children state");
 
         assert_eq!(statuses.len(), 1);
-        assert_eq!(statuses[0].institution_profile_id, 14201);
+        assert_eq!(statuses[0].uni_student_id, 14201);
     }
 }
 

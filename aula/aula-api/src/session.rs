@@ -18,6 +18,8 @@ use serde::Serialize;
 use crate::auth::{self, LoginData, OidcEndpoints};
 use crate::client::AulaClient;
 use crate::error::AulaError;
+use crate::models::onboarding::OnboardingResponseDto;
+use crate::models::profiles::InstitutionProfileId;
 use crate::token_store::TokenStore;
 
 // ---------------------------------------------------------------------------
@@ -79,6 +81,10 @@ pub struct Session {
     /// server-side session context. The Aula backend requires this call
     /// before most API endpoints will work.
     context_initialized: bool,
+    /// Profile data from `getProfilesByLogin`, captured during context
+    /// initialization. Contains institution profile IDs and children
+    /// needed by most API endpoints.
+    profile_data: Option<OnboardingResponseDto>,
 }
 
 impl Session {
@@ -108,6 +114,7 @@ impl Session {
             endpoints,
             login_data,
             context_initialized: false,
+            profile_data: None,
         })
     }
 
@@ -141,6 +148,60 @@ impl Session {
         }
         self.login_data = Some(data);
         Ok(())
+    }
+
+    // -- Profile data accessors ----------------------------------------------
+
+    /// The profile data captured during context initialization.
+    ///
+    /// Returns `None` if `ensure_context_initialized()` has not been called yet.
+    pub fn profile_data(&self) -> Option<&OnboardingResponseDto> {
+        self.profile_data.as_ref()
+    }
+
+    /// Get the guardian's institution profile IDs.
+    ///
+    /// These are the IDs needed for most API calls that require
+    /// `instProfileIds[]` parameters. Returns an empty vec if context
+    /// has not been initialized.
+    pub fn institution_profile_ids(&self) -> Vec<InstitutionProfileId> {
+        self.profile_data
+            .as_ref()
+            .map(|pd| {
+                pd.profiles
+                    .iter()
+                    .flat_map(|p| p.institution_profile_ids())
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Get the children's institution profile IDs.
+    ///
+    /// These are needed for presence and other child-scoped API calls
+    /// that require `instProfileIds[]` or `childrenInstProfileIds[]`.
+    /// Returns an empty vec if context has not been initialized.
+    pub fn children_inst_profile_ids(&self) -> Vec<InstitutionProfileId> {
+        self.profile_data
+            .as_ref()
+            .map(|pd| {
+                pd.profiles
+                    .iter()
+                    .flat_map(|p| {
+                        p.children
+                            .as_ref()
+                            .map(|kids| {
+                                kids.iter()
+                                    .filter_map(|c| {
+                                        c.institution_profile.as_ref().and_then(|ip| ip.id)
+                                    })
+                                    .collect::<Vec<_>>()
+                            })
+                            .unwrap_or_default()
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     // -- Token refresh ------------------------------------------------------
@@ -226,13 +287,15 @@ impl Session {
 
         // Step 1: Call getProfilesByLogin to establish the PHP session.
         // This sets the PHPSESSID cookie in the cookie jar, which is required
-        // for all subsequent API calls.
+        // for all subsequent API calls. We also capture the response to extract
+        // institution profile IDs and children IDs needed by other endpoints.
         // We use the client directly (not self.get) to avoid infinite
         // recursion since self.get calls pre_request which calls this.
-        let _: serde_json::Value = self
+        let profile_response: OnboardingResponseDto = self
             .client
             .get("?method=profiles.getprofilesbylogin")
             .await?;
+        self.profile_data = Some(profile_response);
 
         // Step 2: Call getProfileContext with portalrole to activate the
         // profile in the server session. The mobile app passes the current

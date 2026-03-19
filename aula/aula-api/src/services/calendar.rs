@@ -120,50 +120,21 @@ pub type UpdateSyncConsentResponse = serde_json::Value;
 ///
 /// # Endpoint
 ///
-/// `GET ?method=calendar.getEventsByProfileIdsAndResourceIds`
+/// `POST ?method=calendar.getEventsByProfileIdsAndResourceIds`
+///
+/// Despite the `GET_EVENTS` name in `Urls.cs`, the decompiled C# code shows
+/// `calendarService.Post<List<EventSimpleDto>>(GET_EVENTS, parameters)` --
+/// this endpoint uses POST with the parameters as a JSON body.
 pub async fn get_events(
     session: &mut Session,
     params: &GetEventsParameters,
 ) -> crate::Result<Vec<EventSimpleDto>> {
-    let mut query = Vec::new();
-    if let Some(ref ids) = params.inst_profile_ids {
-        for id in ids {
-            query.push(param_num("instProfileIds", id));
-        }
-    }
-    if let Some(ref ids) = params.resource_ids {
-        for id in ids {
-            query.push(param_num("resourceIds", id));
-        }
-    }
-    if let Some(ref start) = params.start {
-        query.push(format!("start={}", encode_value(start)));
-    }
-    if let Some(ref end) = params.end {
-        query.push(format!("end={}", encode_value(end)));
-    }
-    if let Some(ref types) = params.specific_types {
-        for t in types {
-            query.push(format!("specificTypes={}", encode_value(t)));
-        }
-    }
-    if let Some(ref codes) = params.school_calendar_institution_codes {
-        for c in codes {
-            query.push(format!(
-                "schoolCalendarInstitutionCodes={}",
-                encode_value(c)
-            ));
-        }
-    }
-    let path = if query.is_empty() {
-        "?method=calendar.getEventsByProfileIdsAndResourceIds".to_string()
-    } else {
-        format!(
-            "?method=calendar.getEventsByProfileIdsAndResourceIds&{}",
-            query.join("&")
+    session
+        .post(
+            "?method=calendar.getEventsByProfileIdsAndResourceIds",
+            params,
         )
-    };
-    session.get(&path).await
+        .await
 }
 
 /// Get event detail by ID.

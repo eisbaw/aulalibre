@@ -1,5 +1,6 @@
 //! Presence/attendance subcommands: status, schedule, report-absence, history.
 
+use chrono::Datelike;
 use clap::Subcommand;
 
 use aula_api::models::presence::PresenceSchedulesRequest;
@@ -77,6 +78,24 @@ pub async fn handle(cmd: &PresenceCommand, json: bool, env_override: Option<&str
 async fn handle_status(children: &[i64], json: bool, env_override: Option<&str>) {
     let mut session = build_session(env_override);
 
+    // Auto-populate children IDs from session profile data if not provided.
+    let ids: Vec<i64>;
+    let children = if children.is_empty() {
+        // Ensure context is initialized so profile data is available.
+        if let Err(e) = session.ensure_context_initialized().await {
+            eprintln!("error: failed to initialize session: {e}");
+            std::process::exit(1);
+        }
+        ids = session.children_inst_profile_ids();
+        if ids.is_empty() {
+            eprintln!("error: no children found in profile; specify --children explicitly");
+            std::process::exit(1);
+        }
+        &ids
+    } else {
+        children
+    };
+
     match presence::get_childrens_state(&mut session, children).await {
         Ok(states) => {
             if json {
@@ -102,7 +121,7 @@ async fn handle_status(children: &[i64], json: bool, env_override: Option<&str>)
                         .as_ref()
                         .and_then(|u| u.name.as_deref())
                         .unwrap_or("(unknown)");
-                    let profile_id = s.institution_profile_id.to_string();
+                    let profile_id = s.uni_student_id.to_string();
                     table.print_colored_row(
                         &[&profile_id, &status_raw, name],
                         &[&profile_id, &status_display, name],
@@ -129,7 +148,29 @@ async fn handle_registrations(
 ) {
     let mut session = build_session(env_override);
 
-    match presence::get_presence_registrations(&mut session, children, date).await {
+    // Auto-populate children IDs from session profile data if not provided.
+    let ids: Vec<i64>;
+    let children = if children.is_empty() {
+        if let Err(e) = session.ensure_context_initialized().await {
+            eprintln!("error: failed to initialize session: {e}");
+            std::process::exit(1);
+        }
+        ids = session.children_inst_profile_ids();
+        if ids.is_empty() {
+            eprintln!("error: no children found in profile; specify --children explicitly");
+            std::process::exit(1);
+        }
+        &ids
+    } else {
+        children
+    };
+
+    // Note: the --date parameter is accepted but the getDailyOverview endpoint
+    // always returns today's overview. A future improvement could use a
+    // different endpoint for historical dates.
+    let _ = date;
+
+    match presence::get_daily_overview(&mut session, children).await {
         Ok(regs) => {
             if json {
                 print_json(&regs);
@@ -137,11 +178,11 @@ async fn handle_registrations(
                 println!("No presence registrations found.");
             } else {
                 let table = Table::new(vec![
-                    Column::new("ID", 8),
+                    Column::new("CHILD", 20),
                     Column::new("STATUS", 15),
                     Column::new("CHECK-IN", 12),
                     Column::new("CHECK-OUT", 12),
-                    Column::new("COMMENT", 10),
+                    Column::new("LOCATION", 15),
                 ]);
                 table.print_header();
                 for r in &regs {
@@ -161,17 +202,31 @@ async fn handle_registrations(
                         .as_deref()
                         .map(extract_time)
                         .unwrap_or_default();
-                    let comment = r.comment.as_deref().unwrap_or("");
-                    let id_str = r.id.to_string();
-                    let comment_trunc = truncate(comment, 10);
+                    let child_name = r
+                        .institution_profile
+                        .as_ref()
+                        .and_then(|p| p.name.as_deref())
+                        .unwrap_or("(unknown)");
+                    let location = r
+                        .location
+                        .as_ref()
+                        .and_then(|l| l.name.as_deref())
+                        .unwrap_or("");
+                    let location_trunc = truncate(location, 15);
                     table.print_colored_row(
-                        &[&id_str, &status_raw, &checkin, &checkout, &comment_trunc],
                         &[
-                            &id_str,
+                            child_name,
+                            &status_raw,
+                            &checkin,
+                            &checkout,
+                            &location_trunc,
+                        ],
+                        &[
+                            child_name,
                             &status_display,
                             &checkin,
                             &checkout,
-                            &comment_trunc,
+                            &location_trunc,
                         ],
                     );
                 }
@@ -197,31 +252,55 @@ async fn handle_schedule(
 ) {
     let mut session = build_session(env_override);
 
+    // Auto-populate children IDs from session profile data if not provided.
+    let ids: Vec<i64>;
+    let children = if children.is_empty() {
+        if let Err(e) = session.ensure_context_initialized().await {
+            eprintln!("error: failed to initialize session: {e}");
+            std::process::exit(1);
+        }
+        ids = session.children_inst_profile_ids();
+        if ids.is_empty() {
+            eprintln!("error: no children found in profile; specify --children explicitly");
+            std::process::exit(1);
+        }
+        &ids
+    } else {
+        children
+    };
+
+    // Default date range to current week (Mon-Sun) like the C# app does.
+    let today = chrono::Local::now().date_naive();
+    let from_date = from.map(|s| s.to_string()).unwrap_or_else(|| {
+        let weekday = today.weekday().num_days_from_monday();
+        let monday = today - chrono::Duration::days(weekday as i64);
+        monday.format("%Y-%m-%d").to_string()
+    });
+    let to_date = to.map(|s| s.to_string()).unwrap_or_else(|| {
+        let weekday = today.weekday().num_days_from_monday();
+        let sunday = today + chrono::Duration::days(6 - weekday as i64);
+        sunday.format("%Y-%m-%d").to_string()
+    });
+
     let args = PresenceSchedulesRequest {
         filter_institution_profile_ids: if children.is_empty() {
             None
         } else {
             Some(children.to_vec())
         },
-        from_date: from.map(|s| s.to_string()),
-        to_date: to.map(|s| s.to_string()),
+        from_date: Some(from_date),
+        to_date: Some(to_date),
     };
 
     match presence::get_presence_schedules(&mut session, &args).await {
-        Ok(schedules) => {
+        Ok(schedule) => {
             if json {
-                print_json(&schedules);
-            } else if schedules.is_empty() {
-                println!("No schedules found.");
+                print_json(&schedule);
             } else {
-                for (i, sched) in schedules.iter().enumerate() {
-                    println!("Schedule #{}", i + 1);
-                    println!(
-                        "{}",
-                        serde_json::to_string_pretty(sched).unwrap_or_else(|_| "(error)".into())
-                    );
-                    println!();
-                }
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&schedule).unwrap_or_else(|_| "(error)".into())
+                );
             }
         }
         Err(e) => {

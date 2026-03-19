@@ -70,12 +70,24 @@ async fn handle_list(
 ) {
     let mut session = build_session(env_override);
 
-    let args = GetSecureDocumentsArguments {
-        filter_institution_profile_ids: if profiles.is_empty() {
+    // Auto-populate institution profile IDs from session when not specified.
+    let profile_ids = if profiles.is_empty() {
+        if let Err(e) = session.ensure_context_initialized().await {
+            eprintln!("error: failed to initialize session: {e}");
+            std::process::exit(1);
+        }
+        let ids = session.children_inst_profile_ids();
+        if ids.is_empty() {
             None
         } else {
-            Some(profiles.to_vec())
-        },
+            Some(ids)
+        }
+    } else {
+        Some(profiles.to_vec())
+    };
+
+    let args = GetSecureDocumentsArguments {
+        filter_institution_profile_ids: profile_ids,
         filter_regarding_group_ids: None,
         filter_unread: if unread { Some(true) } else { None },
         filter_locked: None,

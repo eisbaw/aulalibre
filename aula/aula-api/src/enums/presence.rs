@@ -116,19 +116,77 @@ pub enum PresenceModuleSettingsPermission {
 }
 
 /// Presence status of a child.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+///
+/// The API returns this as an integer (0-10), not a string. We use
+/// `#[serde(try_from)]` to handle both integer and string representations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 pub enum PresenceStatusEnum {
-    NotPresent,
-    Sick,
-    ReportedAbsence,
-    Present,
-    FieldTrip,
-    Sleeping,
-    SpareTimeActivity,
-    PhysicalPlacement,
-    CheckedOut,
-    NotArrived,
-    All,
+    NotPresent = 0,
+    Sick = 1,
+    ReportedAbsence = 2,
+    Present = 3,
+    FieldTrip = 4,
+    Sleeping = 5,
+    SpareTimeActivity = 6,
+    PhysicalPlacement = 7,
+    CheckedOut = 8,
+    NotArrived = 9,
+    All = 10,
+}
+
+impl<'de> serde::Deserialize<'de> for PresenceStatusEnum {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use serde::de;
+
+        struct Visitor;
+        impl<'de> de::Visitor<'de> for Visitor {
+            type Value = PresenceStatusEnum;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                f.write_str("a presence status integer (0-10) or string")
+            }
+
+            fn visit_u64<E: de::Error>(self, v: u64) -> Result<Self::Value, E> {
+                match v {
+                    0 => Ok(PresenceStatusEnum::NotPresent),
+                    1 => Ok(PresenceStatusEnum::Sick),
+                    2 => Ok(PresenceStatusEnum::ReportedAbsence),
+                    3 => Ok(PresenceStatusEnum::Present),
+                    4 => Ok(PresenceStatusEnum::FieldTrip),
+                    5 => Ok(PresenceStatusEnum::Sleeping),
+                    6 => Ok(PresenceStatusEnum::SpareTimeActivity),
+                    7 => Ok(PresenceStatusEnum::PhysicalPlacement),
+                    8 => Ok(PresenceStatusEnum::CheckedOut),
+                    9 => Ok(PresenceStatusEnum::NotArrived),
+                    10 => Ok(PresenceStatusEnum::All),
+                    _ => Err(de::Error::custom(format!("unknown presence status: {v}"))),
+                }
+            }
+
+            fn visit_i64<E: de::Error>(self, v: i64) -> Result<Self::Value, E> {
+                self.visit_u64(v as u64)
+            }
+
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                match v {
+                    "NotPresent" => Ok(PresenceStatusEnum::NotPresent),
+                    "Sick" => Ok(PresenceStatusEnum::Sick),
+                    "ReportedAbsence" => Ok(PresenceStatusEnum::ReportedAbsence),
+                    "Present" => Ok(PresenceStatusEnum::Present),
+                    "FieldTrip" => Ok(PresenceStatusEnum::FieldTrip),
+                    "Sleeping" => Ok(PresenceStatusEnum::Sleeping),
+                    "SpareTimeActivity" => Ok(PresenceStatusEnum::SpareTimeActivity),
+                    "PhysicalPlacement" => Ok(PresenceStatusEnum::PhysicalPlacement),
+                    "CheckedOut" => Ok(PresenceStatusEnum::CheckedOut),
+                    "NotArrived" => Ok(PresenceStatusEnum::NotArrived),
+                    "All" => Ok(PresenceStatusEnum::All),
+                    _ => Err(de::Error::custom(format!("unknown presence status: {v}"))),
+                }
+            }
+        }
+
+        deserializer.deserialize_any(Visitor)
+    }
 }
 
 /// Editing option for presence templates.

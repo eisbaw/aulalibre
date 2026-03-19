@@ -54,11 +54,12 @@
 
 use crate::models::presence::{
     ActivityFilterResult, ActivityListRequest, ActivityListResult, AddSleepIntervalsRequest,
-    BulkUpdatePresenceStatusRequest, ChildStatus, ChildrenVacationRequest, ChildrenVacationResult,
-    ComeGoExitWithSuggestionRequest, ComeGoGetVacationRegistrationOverviewRequest,
-    ComeGoGetWeekOverviewRequest, DeletePickupResponsibleRequest, DeletePresenceTemplateRequest,
-    GetAvailableStatusesResult, GetChildGoHomeWithResult, GetClosedDaysResult,
-    GetDayTemplateResult, GetExitWithSuggestionsResult, GetGeneralOpeningHoursResult,
+    BulkUpdatePresenceStatusRequest, ChildStatusDto, ChildrenVacationRequest,
+    ChildrenVacationResult, ComeGoExitWithSuggestionRequest,
+    ComeGoGetVacationRegistrationOverviewRequest, ComeGoGetWeekOverviewRequest,
+    DeletePickupResponsibleRequest, DeletePresenceTemplateRequest, GetAvailableStatusesResult,
+    GetChildGoHomeWithResult, GetClosedDaysResult, GetDayTemplateResult,
+    GetExitWithSuggestionsResult, GetGeneralOpeningHoursResult,
     GetOpeningHoursByInstitutionCodesRequest, GetOpeningHoursByInstitutionCodesResult,
     GetOverlappingPresenceTemplatesRequest, GetPickupResponsibleRequest,
     GetPickupResponsibleResult, GetPresenceOverview, GetSpecificOpeningHourOverviewResult,
@@ -110,51 +111,25 @@ pub type PickupResponsibleDeleteResponse = serde_json::Value;
 ///
 /// Maps to `PresenceWebService.GetChildrensState()`.
 ///
+/// The decompiled C# calls `Get(GET_PRESENCE_STATES, new { institutionProfileIds })`,
+/// which serializes via `ConvertObjectToQueryUrl` using `{name}[]={value}` bracket
+/// format (default `listWithoutBracket: false`).
+///
 /// # Endpoint
 ///
-/// `GET ?method=presence.getPresenceStates`
+/// `GET ?method=presence.getPresenceStates&institutionProfileIds[]={id}&...`
 pub async fn get_childrens_state(
     session: &mut Session,
     inst_profile_ids: &[i64],
-) -> crate::Result<Vec<ChildStatus>> {
+) -> crate::Result<Vec<ChildStatusDto>> {
     let mut query = Vec::new();
     for id in inst_profile_ids {
-        query.push(format!("instProfileIds={id}"));
+        query.push(format!("institutionProfileIds[]={id}"));
     }
     let path = if query.is_empty() {
         "?method=presence.getPresenceStates".to_string()
     } else {
         format!("?method=presence.getPresenceStates&{}", query.join("&"))
-    };
-    session.get(&path).await
-}
-
-/// Get presence registrations (list).
-///
-/// Maps to `PresenceWebService.GetPresenceRegistrations()`.
-///
-/// # Endpoint
-///
-/// `GET ?method=presence.getPresenceRegistrations`
-pub async fn get_presence_registrations(
-    session: &mut Session,
-    inst_profile_ids: &[i64],
-    date: Option<&str>,
-) -> crate::Result<Vec<PresenceRegistrationResult>> {
-    let mut query = Vec::new();
-    for id in inst_profile_ids {
-        query.push(format!("instProfileIds={id}"));
-    }
-    if let Some(d) = date {
-        query.push(format!("date={}", encode_value(d)));
-    }
-    let path = if query.is_empty() {
-        "?method=presence.getPresenceRegistrations".to_string()
-    } else {
-        format!(
-            "?method=presence.getPresenceRegistrations&{}",
-            query.join("&")
-        )
     };
     session.get(&path).await
 }
@@ -240,11 +215,11 @@ pub async fn update_status_by_institution_profile_ids(
 pub async fn get_presence_schedules(
     session: &mut Session,
     args: &PresenceSchedulesRequest,
-) -> crate::Result<Vec<serde_json::Value>> {
+) -> crate::Result<serde_json::Value> {
     let mut query = Vec::new();
     if let Some(ref ids) = args.filter_institution_profile_ids {
         for id in ids {
-            query.push(format!("filterInstitutionProfileIds={id}"));
+            query.push(format!("filterInstitutionProfileIds[]={id}"));
         }
     }
     if let Some(ref from) = args.from_date {
@@ -621,18 +596,21 @@ pub async fn get_activity_filter(
 
 /// Get daily presence overview (parent view).
 ///
-/// Maps to `PresenceWebService.GetDailyOverview()`.
+/// Maps to `ComeGoService.GetDailyOverview(List<long> childIds)`.
+///
+/// The decompiled C# passes `new { childIds }` which serializes as
+/// `childIds[]={id}` for each child via `ConvertObjectToQueryUrl`.
 ///
 /// # Endpoint
 ///
-/// `GET ?method=presence.getDailyOverview`
+/// `GET ?method=presence.getDailyOverview&childIds[]={id}&...`
 pub async fn get_daily_overview(
     session: &mut Session,
     inst_profile_ids: &[i64],
 ) -> crate::Result<Vec<ParentsDailyOverviewResult>> {
     let mut query = Vec::new();
     for id in inst_profile_ids {
-        query.push(format!("instProfileIds={id}"));
+        query.push(format!("childIds[]={id}"));
     }
     let path = if query.is_empty() {
         "?method=presence.getDailyOverview".to_string()

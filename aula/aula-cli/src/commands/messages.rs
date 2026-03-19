@@ -250,7 +250,7 @@ async fn handle_read(thread_id: i64, page: Option<i32>, json: bool, env_override
 
     let args = GetMessagesForThreadArguments {
         thread_id: Some(thread_id),
-        page,
+        page: Some(page.unwrap_or(0)),
         common_inbox_id: None,
     };
 

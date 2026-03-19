@@ -318,7 +318,17 @@ impl AulaClient {
 
     /// Send a GET request and deserialize the envelope payload.
     pub async fn get<T: DeserializeOwned>(&self, path: &str) -> crate::Result<T> {
-        let resp = self.decorate(self.http.get(self.url(path))).send().await?;
+        let url = self.url(path);
+        let req = self.decorate(self.http.get(url));
+        if std::env::var("AULA_DEBUG").is_ok() {
+            let built = req.try_clone().and_then(|r| r.build().ok());
+            if let Some(ref r) = built {
+                eprintln!("[DEBUG] GET {}", r.url());
+            } else {
+                eprintln!("[DEBUG] GET (could not build for logging)");
+            }
+        }
+        let resp = req.send().await?;
         self.handle_response(resp).await
     }
 
@@ -328,10 +338,11 @@ impl AulaClient {
         path: &str,
         body: &B,
     ) -> crate::Result<T> {
-        let resp = self
-            .decorate(self.http.post(self.url(path)).json(body))
-            .send()
-            .await?;
+        let url = self.url(path);
+        if std::env::var("AULA_DEBUG").is_ok() {
+            eprintln!("[DEBUG] POST {url}");
+        }
+        let resp = self.decorate(self.http.post(url).json(body)).send().await?;
         self.handle_response(resp).await
     }
 

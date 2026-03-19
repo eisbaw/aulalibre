@@ -514,17 +514,22 @@ pub async fn delete_auto_reply(session: &mut Session) -> crate::Result<DeleteAut
 ///
 /// Maps to `FolderService.GetFolders()`.
 ///
+/// The decompiled C# passes a `GetFoldersArguments` object via
+/// `ConvertObjectToQueryUrl`, which serializes ALL properties including
+/// `includeDeletedFolders=false`. The API appears to require all parameters
+/// to be explicitly present.
+///
 /// # Endpoint
 ///
-/// `GET ?method=messaging.getFolders`
+/// `GET ?method=messaging.getFolders&includeDeletedFolders={bool}`
 pub async fn get_folders(
     session: &mut Session,
     args: &GetFoldersArguments,
 ) -> crate::Result<Vec<Folder>> {
-    let mut params = vec!["method=messaging.getFolders".to_string()];
-    if args.include_deleted_folders {
-        params.push("includeDeletedFolders=true".to_string());
-    }
+    let mut params = vec![
+        "method=messaging.getFolders".to_string(),
+        format!("includeDeletedFolders={}", args.include_deleted_folders),
+    ];
     if let Some(cid) = args.common_inbox_id {
         params.push(format!("commonInboxId={cid}"));
     }

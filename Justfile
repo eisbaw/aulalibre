@@ -140,11 +140,11 @@ showcase:
     A="cargo run --manifest-path aula/Cargo.toml --bin aula-cli --"
     run "Auth Status"       $A auth status
     run "Profile"           $A profile me
-    run "Messages (5)"      $A messages list --limit 5
+    run "Messages"          $A messages list
     run "Calendar Today"    $A calendar today
     run "Presence"          $A presence status
-    run "Posts (5)"         $A posts list --limit 5
-    run "Notifications (5)" $A notifications list --limit 5
-    run "Albums (5)"        $A gallery list --limit 5
-    run "Documents (5)"     $A documents list --limit 5
+    run "Posts"             $A posts list
+    run "Notifications"     $A notifications list
+    run "Albums"            $A gallery list
+    run "Documents"         $A documents list
     run "Folders"           $A messages folders

@@ -20,11 +20,11 @@ The app declares 14 permissions in AndroidManifest.xml. Each is mapped to its ac
 | 9 | `POST_NOTIFICATIONS` | Yes | `AndroidNotificationPermissionService` requests this for push notification delivery (required on Android 13+). |
 | 10 | `WAKE_LOCK` | Yes | Standard Firebase Cloud Messaging requirement for reliable push notification delivery. |
 | 11 | `com.google.android.c2dm.permission.RECEIVE` | Yes | Firebase Cloud Messaging (FCM) push notifications. `AulaFirebaseMessagingService` handles incoming messages. |
-| 12 | `SYSTEM_ALERT_WINDOW` | Unclear | Declared in manifest but **no usage found** in decompiled C# code. No overlay windows, no `canDrawOverlays` checks. Possibly a Xamarin framework artifact or leftover from development. **Potentially over-privileged.** |
+| 12 | `SYSTEM_ALERT_WINDOW` | No | Declared in manifest but **no usage found** anywhere: not in decompiled C#, not in smali/DEX code, not in Java libraries. No calls to `canDrawOverlays`, no `TYPE_APPLICATION_OVERLAY` or `TYPE_SYSTEM_ALERT` usage. The permission sits in the app-declared block (lines 3-12) of AndroidManifest.xml, not in the library-merged section (lines 43-46), confirming it was explicitly added by the developer -- not injected by Xamarin, Firebase, or any dependency. Xamarin only auto-adds `INTERNET` and `READ_EXTERNAL_STORAGE` in debug builds. This is an unnecessary, over-privileged permission that should be removed. |
 | 13 | `com.samsung.android.providers.context.permission.WRITE_USE_APP_FEATURE_SURVEY` | Unclear | Samsung-specific analytics permission. **No usage found** in decompiled C# code. Likely injected by a Samsung-specific SDK or build toolchain dependency. |
 | 14 | `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Yes | Custom app-level permission. Standard AndroidX pattern for securing dynamically registered broadcast receivers (added automatically by AndroidX Core 1.7+). |
 
-**Assessment**: 12 of 14 permissions have clear, justified usage. `SYSTEM_ALERT_WINDOW` is the most concerning unused permission -- it allows drawing over other apps and should be removed if not needed. The Samsung permission is likely a third-party SDK artifact.
+**Assessment**: 12 of 14 permissions have clear, justified usage. `SYSTEM_ALERT_WINDOW` is confirmed unused and explicitly app-declared (not a framework or library artifact) -- it allows drawing over other apps and should be removed. The Samsung permission is likely a third-party SDK artifact.
 
 ## 2. TLS and Certificate Handling
 
@@ -247,7 +247,7 @@ This is standard for mobile OIDC (public clients), and PKCE mitigates the risk. 
 |---|---------|----------|-------------|
 | 1 | PIN brute-force | Medium | No lockout or rate limiting on PIN attempts. Local attacker with device access can try all 4-6 digit PINs quickly. |
 | 2 | PBKDF2 with 300 iterations | Low-Medium | SQLite encryption key derivation uses only 300 PBKDF2 iterations with a hardcoded salt. Far below OWASP minimum of 600,000. |
-| 3 | SYSTEM_ALERT_WINDOW permission | Low | Declared but unused. Grants overlay capability that could be exploited if the app is compromised. Should be removed. |
+| 3 | SYSTEM_ALERT_WINDOW permission | Low | Explicitly declared by app developer but completely unused -- no code references in C#, smali, or Java. Not a Xamarin artifact (Xamarin only auto-adds INTERNET and READ_EXTERNAL_STORAGE). Not contributed by any library via manifest merger. Grants overlay capability that could be exploited if the app is compromised. Should be removed. |
 | 4 | No root detection | Medium | No checks for rooted devices. Android Keystore is weaker on rooted devices, potentially exposing SecureStorage contents. |
 | 5 | Test credentials in production APK | Low | `aula-user:Aula-1337` for test environments compiled into app. Information disclosure. |
 | 6 | Hardcoded PBKDF2 salt | Low | Same salt across all installations reduces key derivation entropy. |

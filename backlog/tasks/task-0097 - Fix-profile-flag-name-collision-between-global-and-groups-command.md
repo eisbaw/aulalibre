@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-19 17:10'
-updated_date: '2026-03-19 18:18'
+updated_date: '2026-03-20 21:49'
 labels:
   - rust-cli
   - bug
@@ -21,9 +21,9 @@ The global --profile flag (Option String, institution profile selector) name-col
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [x] #1 groups list --profile 99002 works without panic
-- [x] #2 Global --profile flag still works for profile selection
-- [x] #3 No clap name collision between flags
+- [x] #1 Global --profile flag still works for profile selection
+- [x] #2 No clap name collision between flags
+- [ ] #3 groups list --inst-profile <ID> works without panic
 <!-- AC:END -->
 
 ## Final Summary

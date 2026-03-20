@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-19 07:50'
-updated_date: '2026-03-19 12:12'
+updated_date: '2026-03-20 21:49'
 labels: []
 dependencies: []
 references:
@@ -40,76 +40,35 @@ Perform a real login to Aula using Chrome DevTools MCP server to automate browse
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-Chrome DevTools MCP setup copied from ~/topics/nemlig_cli:\n- .mcp.json - MCP server config\n- chrome-devtools-mcp-wrapper.sh - nix-shell wrapper with pinned Chromium + Node.js\n- .claude/settings.local.json - MCP tool permissions\n- .chrome-profile/ added to .gitignore\n\nIMPORTANT: Must restart Claude Code to pick up the new MCP server.
-
-Session paused for restart to load Chrome DevTools MCP server.
-
-After restart, continue from step 3 of the plan:
-3. Use MCP to open new browser page: mcp__chromeDevTools__new_page with url https://www.aula.dk
-4. Take snapshot to verify login page loaded
-5. Tell user to complete MitID/UniLogin in the Chromium window that appeared
-6. After user confirms login is done, take snapshot to verify dashboard
-7. Use mcp__chromeDevTools__list_network_requests to capture all HTTP traffic
-8. Use mcp__chromeDevTools__get_network_request on auth-related requests (look for login.aula.dk, api/v19, tokens)
-9. Extract from network responses: session cookies (PHPSESSID, Csrfp-Token), any OAuth tokens
-10. Store tokens in secrets/ directory
-11. Make authenticated API call via curl using captured cookies: curl -b 'cookies...' 'https://www.aula.dk/api/v19/?method=profiles.getProfilesByLogin'
-12. Document actual flow vs static analysis expectations from auth_flow.md
-
-Key static analysis expectations to validate:
-- API base: https://www.aula.dk/api/v19/
-- RPC-style routing: ?method=module.action
-- OIDC provider: login.aula.dk
-- CSRF token needed for POST requests
-- Cookie-based session (not Bearer token headers)
-- Step-level-2 client ID: _742adb5e2759028d86dbadf4af44ef70e8b1f407a6
-
-OIDC discovery validated:
-- Live endpoint: https://login.aula.dk/simplesaml/module.php/oidc/openid-configuration.php
-- Issuer: https://login.aula.dk (no trailing slash vs Conf.cs trailing slash)
-- Authorize/Token endpoints match decompiled values exactly
-- Logout endpoint differs: live=/simplesaml/module.php/oidc/logout.php vs app=/auth/logout.php
-- Scopes confirmed: aula + aula-sensitive
-- PKCE S256 confirmed
-- RS256 signing only
+Chrome DevTools MCP setup copied from ~/topics/nemlig_cli.
 
 Login completed successfully via MitID path:
 - UniLogin broker -> MitID -> SAML assertion -> login.aula.dk -> www.aula.dk
 - Dashboard loaded at /portal/#/overblik
-- Full network traffic (73 requests) captured to secrets/network_dump_20260319.md
+- Full network traffic (73 requests) captured
 - OIDC discovery validated (AC#1)
 - Browser login completed with MitID (AC#2)
 
 Tokens extracted and API tested:
-- PHPSESSID and Csrfp-Token saved to secrets/auth_tokens.env
+- PHPSESSID and Csrfp-Token saved to secrets/
 - Authenticated curl call to profiles.getProfilesByLogin succeeded (status 0 OK)
-- Profile returned: guardian role, institution Borneinstitutionen REDACTED-INST (X99999), municipality Kobenhavn (101)
+- Profile returned: guardian role, institution [REDACTED], municipality [REDACTED]
 - API version confirmed: v23
 - Auth model confirmed: cookie-based (PHPSESSID HttpOnly on .aula.dk) + CSRF header (csrfp-token)
-- No Bearer/Authorization header needed for web API calls (differs from mobile app which uses OIDC tokens)
+- No Bearer/Authorization header needed for web API calls
 - Media served from media-prod.aula.dk with CloudFront signed URLs
 
 Actual vs Expected differences from static analysis:
-
-1. AUTH MODEL DIFFERS: Web uses pure cookie-based auth (PHPSESSID), NOT Bearer tokens. The mobile app uses OIDC tokens via IdentityModel.OidcClient. Web login goes through SAML (UniLogin broker) -> SimpleSAMLphp, not direct OIDC.
-
+1. AUTH MODEL DIFFERS: Web uses pure cookie-based auth (PHPSESSID), NOT Bearer tokens.
 2. ISSUER MISMATCH: Live discovery returns https://login.aula.dk (no trailing slash), decompiled Conf.cs has trailing slash.
-
 3. LOGOUT ENDPOINT DIFFERS: Live OIDC discovery advertises /simplesaml/module.php/oidc/logout.php, app uses /auth/logout.php.
-
-4. LOGIN FLOW IS SAML-BASED: Web login uses SAML2 via broker.unilogin.dk Keycloak, not direct OIDC authorize. The OIDC flow is mobile-app specific.
-
-5. SESSION ROTATION: PHPSESSID is rotated on first API call after login (security measure against session fixation).
-
+4. LOGIN FLOW IS SAML-BASED: Web login uses SAML2 via broker.unilogin.dk Keycloak, not direct OIDC.
+5. SESSION ROTATION: PHPSESSID is rotated on first API call after login.
 6. API VERSION CONFIRMED: v23 matches decompiled Conf.API_VERSION.
-
 7. RPC-STYLE API CONFIRMED: ?method=module.action pattern confirmed.
-
 8. CSRF CONFIRMED: Csrfp-Token cookie + csrfp-token header pattern matches decompiled code exactly.
-
 9. CSP PERMISSIVE: connect-src * data: blob: is extremely permissive.
-
-10. MEDIA CDN: media-prod.aula.dk with CloudFront signed URLs (Key-Pair-Id APKAILBPECUQMHIBROXQ).
+10. MEDIA CDN: media-prod.aula.dk with CloudFront signed URLs.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

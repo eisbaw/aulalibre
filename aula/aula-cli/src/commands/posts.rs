@@ -130,7 +130,7 @@ async fn handle_list(
         std::process::exit(1);
     }
     let inst_profile_ids = {
-        let ids = session.institution_profile_ids();
+        let ids = session.all_institution_profile_ids();
         if ids.is_empty() {
             None
         } else {
@@ -139,6 +139,7 @@ async fn handle_list(
     };
 
     let params = GetPostApiParameters {
+        parent: Some("profile".to_string()),
         group_id: group,
         is_important: if important { Some(true) } else { None },
         creator_portal_role: None,

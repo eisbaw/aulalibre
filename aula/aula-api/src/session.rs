@@ -176,6 +176,44 @@ impl Session {
             .unwrap_or_default()
     }
 
+    /// Get all institution profile IDs (guardian + children combined, deduped).
+    ///
+    /// This matches what the web frontend sends for posts, calendar, and
+    /// notifications — both the guardian's own institution profile IDs and
+    /// the children's institution profile IDs.
+    pub fn all_institution_profile_ids(&self) -> Vec<InstitutionProfileId> {
+        let mut ids = self.institution_profile_ids();
+        let child_ids = self.children_inst_profile_ids();
+        for id in child_ids {
+            if !ids.contains(&id) {
+                ids.push(id);
+            }
+        }
+        ids
+    }
+
+    /// Get institution codes from the children's profiles.
+    ///
+    /// Needed for notifications (`activeInstitutionCodes[]`).
+    /// Returns deduplicated codes.
+    pub fn children_institution_codes(&self) -> Vec<String> {
+        let mut codes = Vec::new();
+        if let Some(pd) = self.profile_data.as_ref() {
+            for p in &pd.profiles {
+                if let Some(kids) = p.children.as_ref() {
+                    for c in kids {
+                        if let Some(ref code) = c.institution_code {
+                            if !codes.contains(code) {
+                                codes.push(code.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        codes
+    }
+
     /// Get the children's institution profile IDs.
     ///
     /// These are needed for presence and other child-scoped API calls

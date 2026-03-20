@@ -104,6 +104,7 @@ pub struct CreatePostApiParameter {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetPostApiParameters {
+    pub parent: Option<String>,
     pub group_id: Option<i64>,
     pub is_important: Option<bool>,
     pub creator_portal_role: Option<String>,
@@ -404,6 +405,7 @@ mod tests {
     #[test]
     fn serialize_get_post_api_parameters() {
         let params = GetPostApiParameters {
+            parent: None,
             group_id: Some(5),
             is_important: Some(true),
             creator_portal_role: None,

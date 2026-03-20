@@ -26,10 +26,32 @@ use crate::session::Session;
 /// # Endpoint
 ///
 /// `GET ?method=notifications.getNotificationsForActiveProfile`
-pub async fn get_notifications(session: &mut Session) -> crate::Result<Vec<NotificationItemDto>> {
-    session
-        .get("?method=notifications.getNotificationsForActiveProfile")
-        .await
+///
+/// The web frontend sends `activeChildrenIds[]` and `activeInstitutionCodes[]`
+/// query parameters to scope notifications to the active children.
+pub async fn get_notifications(
+    session: &mut Session,
+    children_ids: &[i64],
+    institution_codes: &[String],
+) -> crate::Result<Vec<NotificationItemDto>> {
+    let mut query = Vec::new();
+    for id in children_ids {
+        query.push(format!("activeChildrenIds[]={id}"));
+    }
+    for code in institution_codes {
+        query.push(format!("activeInstitutionCodes[]={code}"));
+    }
+
+    let path = if query.is_empty() {
+        "?method=notifications.getNotificationsForActiveProfile".to_string()
+    } else {
+        format!(
+            "?method=notifications.getNotificationsForActiveProfile&{}",
+            query.join("&")
+        )
+    };
+
+    session.get(&path).await
 }
 
 /// Delete all notifications for the active profile.

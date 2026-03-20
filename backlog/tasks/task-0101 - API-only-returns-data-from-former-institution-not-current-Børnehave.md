@@ -1,9 +1,11 @@
 ---
 id: TASK-0101
 title: 'API only returns data from former institution, not current Børnehave'
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@claude'
 created_date: '2026-03-19 21:51'
+updated_date: '2026-03-19 21:52'
 labels:
   - rust-cli
   - investigation

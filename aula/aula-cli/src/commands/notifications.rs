@@ -53,7 +53,15 @@ pub async fn handle(cmd: &NotificationsCommand, json: bool, env_override: Option
 async fn handle_list(limit: u32, json: bool, env_override: Option<&str>) {
     let mut session = build_session(env_override);
 
-    match notifications::get_notifications(&mut session).await {
+    // Initialize context to get children IDs and institution codes.
+    if let Err(e) = session.ensure_context_initialized().await {
+        eprintln!("error: failed to initialize session: {e}");
+        std::process::exit(1);
+    }
+    let children_ids = session.children_inst_profile_ids();
+    let institution_codes = session.children_institution_codes();
+
+    match notifications::get_notifications(&mut session, &children_ids, &institution_codes).await {
         Ok(items) => {
             if json {
                 print_json(&items);

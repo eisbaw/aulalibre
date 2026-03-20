@@ -37,6 +37,9 @@ pub async fn get_posts(
     params: &GetPostApiParameters,
 ) -> crate::Result<GetPostApiResult> {
     let mut query = Vec::new();
+    if let Some(ref parent) = params.parent {
+        query.push(format!("parent={parent}"));
+    }
     if let Some(gid) = params.group_id {
         query.push(format!("groupId={gid}"));
     }
@@ -206,6 +209,7 @@ mod tests {
         // serialization. We cannot call the async function without a session,
         // so we test the parameter types round-trip instead.
         let params = GetPostApiParameters {
+            parent: None,
             group_id: Some(5),
             is_important: Some(true),
             creator_portal_role: None,

@@ -181,7 +181,7 @@ async fn handle_list(
             eprintln!("error: failed to initialize session: {e}");
             std::process::exit(1);
         }
-        let ids = session.children_inst_profile_ids();
+        let ids = session.all_institution_profile_ids();
         if ids.is_empty() {
             None
         } else {

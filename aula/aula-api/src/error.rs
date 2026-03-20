@@ -125,7 +125,10 @@ mod tests {
     #[test]
     fn result_alias_works() {
         let ok: Result<u32> = Ok(42);
-        assert_eq!(ok.unwrap(), 42);
+        match ok {
+            Ok(v) => assert_eq!(v, 42),
+            Err(_) => panic!("expected Ok"),
+        }
 
         let err: Result<u32> = Err(AulaError::NoNetwork);
         assert!(err.is_err());

@@ -191,7 +191,7 @@ async fn e2e_get_profiles_by_login() {
         first
             .institution_profiles
             .as_ref()
-            .map_or(false, |ips| !ips.is_empty()),
+            .is_some_and(|ips| !ips.is_empty()),
         "profile should contain at least one institution_profile"
     );
 
@@ -368,6 +368,7 @@ async fn e2e_list_posts() {
         .collect();
 
     let params = aula_api::models::posts::GetPostApiParameters {
+        parent: Some("profile".to_string()),
         group_id: None,
         is_important: None,
         creator_portal_role: None,
@@ -405,9 +406,15 @@ async fn e2e_get_notifications() {
         return;
     };
 
-    let notifications = aula_api::services::notifications::get_notifications(&mut session)
-        .await
-        .expect("get_notifications should succeed");
+    let children_ids = session.children_inst_profile_ids();
+    let institution_codes = session.children_institution_codes();
+    let notifications = aula_api::services::notifications::get_notifications(
+        &mut session,
+        &children_ids,
+        &institution_codes,
+    )
+    .await
+    .expect("get_notifications should succeed");
 
     eprintln!("E2E: got {} notification(s)", notifications.len());
 

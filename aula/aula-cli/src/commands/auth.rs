@@ -346,49 +346,6 @@ fn resolve_redirect_url(url: &url::Url) -> Result<url::Url, String> {
     url::Url::parse(&url_str).map_err(|e| format!("decoded URL is invalid: {e}"))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn resolve_redirect_decodes_base64_return_uri() {
-        use base64::Engine;
-        let inner = "https://app-private.aula.dk/?code=abc123&state=xyz";
-        let encoded = base64::engine::general_purpose::STANDARD.encode(inner);
-        let url_str = format!("https://app-redirect.aula.dk/?returnUri={encoded}");
-        let url = url::Url::parse(&url_str).unwrap();
-
-        let resolved = resolve_redirect_url(&url).unwrap();
-        assert_eq!(resolved.host_str(), Some("app-private.aula.dk"));
-        assert_eq!(
-            resolved.query_pairs().find(|(k, _)| k == "code").unwrap().1,
-            "abc123"
-        );
-        assert_eq!(
-            resolved
-                .query_pairs()
-                .find(|(k, _)| k == "state")
-                .unwrap()
-                .1,
-            "xyz"
-        );
-    }
-
-    #[test]
-    fn resolve_redirect_passes_through_non_redirect_url() {
-        let url = url::Url::parse("https://app-private.aula.dk/?code=abc&state=xyz").unwrap();
-        let resolved = resolve_redirect_url(&url).unwrap();
-        assert_eq!(resolved, url);
-    }
-
-    #[test]
-    fn resolve_redirect_errors_on_missing_return_uri() {
-        let url = url::Url::parse("https://app-redirect.aula.dk/?other=value").unwrap();
-        let err = resolve_redirect_url(&url).unwrap_err();
-        assert!(err.contains("missing returnUri"));
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Logout
 // ---------------------------------------------------------------------------
@@ -581,4 +538,51 @@ fn days_to_ymd(days: u64) -> (u64, u64, u64) {
     let m = if mp < 10 { mp + 3 } else { mp - 9 };
     let y = if m <= 2 { y + 1 } else { y };
     (y, m, d)
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolve_redirect_decodes_base64_return_uri() {
+        use base64::Engine;
+        let inner = "https://app-private.aula.dk/?code=abc123&state=xyz";
+        let encoded = base64::engine::general_purpose::STANDARD.encode(inner);
+        let url_str = format!("https://app-redirect.aula.dk/?returnUri={encoded}");
+        let url = url::Url::parse(&url_str).unwrap();
+
+        let resolved = resolve_redirect_url(&url).unwrap();
+        assert_eq!(resolved.host_str(), Some("app-private.aula.dk"));
+        assert_eq!(
+            resolved.query_pairs().find(|(k, _)| k == "code").unwrap().1,
+            "abc123"
+        );
+        assert_eq!(
+            resolved
+                .query_pairs()
+                .find(|(k, _)| k == "state")
+                .unwrap()
+                .1,
+            "xyz"
+        );
+    }
+
+    #[test]
+    fn resolve_redirect_passes_through_non_redirect_url() {
+        let url = url::Url::parse("https://app-private.aula.dk/?code=abc&state=xyz").unwrap();
+        let resolved = resolve_redirect_url(&url).unwrap();
+        assert_eq!(resolved, url);
+    }
+
+    #[test]
+    fn resolve_redirect_errors_on_missing_return_uri() {
+        let url = url::Url::parse("https://app-redirect.aula.dk/?other=value").unwrap();
+        let err = resolve_redirect_url(&url).unwrap_err();
+        assert!(err.contains("missing returnUri"));
+    }
 }

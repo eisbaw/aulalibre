@@ -1022,6 +1022,7 @@ mod posts_service {
 
         let mut session = mock_session(&server.uri());
         let params = GetPostApiParameters {
+            parent: None,
             group_id: None,
             is_important: None,
             creator_portal_role: None,
@@ -1420,7 +1421,7 @@ mod notifications_service {
             .await;
 
         let mut session = mock_session(&server.uri());
-        let notifs = notifications::get_notifications(&mut session)
+        let notifs = notifications::get_notifications(&mut session, &[], &[])
             .await
             .expect("should deserialize notifications");
         assert_eq!(notifs.len(), 2);
@@ -2140,7 +2141,7 @@ mod error_handling_extended {
             .await;
 
         let mut session = mock_session(&server.uri());
-        let err = notifications::get_notifications(&mut session)
+        let err = notifications::get_notifications(&mut session, &[], &[])
             .await
             .unwrap_err();
         assert!(

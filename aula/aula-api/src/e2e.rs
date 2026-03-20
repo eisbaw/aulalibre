@@ -275,11 +275,6 @@ fn crate_root_dir() -> PathBuf {
 ///     // ... use session ...
 /// }
 /// ```
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -414,6 +409,6 @@ mod tests {
     fn crate_root_dir_is_valid() {
         let root = crate_root_dir();
         // During cargo test, this should be the aula-api directory.
-        assert!(root.exists() || root == PathBuf::from("."));
+        assert!(root.exists() || root == std::path::Path::new("."));
     }
 }

@@ -4,13 +4,11 @@
 Reverse engineering the Aula Android app (`com.netcompany.aulanativeprivate`) — Denmark's school communication platform by Netcompany A/S. APK version 2.15.4.
 
 ## Key Files
-- `prd.apk_decompile.md` — Project requirements document with 4 milestones
+- `re/prd.apk_decompile.md` — Project requirements document with 4 milestones
 - `shell.nix` — Nix environment with all decompilation/analysis tools
-- `apk_extract.sh` — Recursive APK/XAPK extraction script
-- `milestone2_analysis.md` — (produced by milestone 2) file analysis findings
-- `milestone3_decompile.md` — (produced by milestone 3) decompilation results
-- `milestone3_classes.md` — (produced by milestone 3) class structure analysis
-- `architecture.md` — (produced by milestone 4) architecture documentation
+- `re/apk_extract.sh` — Recursive APK/XAPK extraction script
+- `re/milestone2_analysis.md` — (produced by milestone 2) file analysis findings
+- `re/architecture.md` — (produced by milestone 4) architecture documentation
 
 ## Task Management
 - Use `backlog` CLI tool (in `$PATH`) for task tracking

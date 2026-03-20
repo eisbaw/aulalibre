@@ -1,16 +1,25 @@
-*.apk
-*.xapk
-*.extracted/
-extracted/
-decompiled/
-*.decompiled.jadx/
-apktool_out/
-apktool_config_*/
-reports/
-analysis/
-*.log
-extraction_manifest.txt
-extraction_summary.txt
+# Reverse engineering artifacts (under re/)
+re/*.apk
+re/*.xapk
+re/*.extracted/
+re/extracted/
+re/decompiled/
+re/*.decompiled.jadx/
+re/apktool_out/
+re/apktool_config_*/
+re/analysis/
+re/*.log
+re/extraction_manifest.txt
+re/extraction_summary.txt
+re/extracted_assemblies/
+re/extracted_assemblies_all/
+re/AulaNative.*.html
+re/AulaNative.*.js
+re/AulaNative.*.css
+re/AulaNative.*.json
+re/decompiled_csharp/
+re/jadx_classes2_output/
+re/.chrome-profile/
 
 # Secrets, tokens, PII
 secrets/
@@ -22,21 +31,6 @@ credentials.json
 *.pem
 *.key
 
-# Extracted/decompiled assemblies
-extracted_assemblies/
-extracted_assemblies_all/
-
-# monodis managed resource extraction artifacts
-AulaNative.*.html
-AulaNative.*.js
-AulaNative.*.css
-AulaNative.*.json
-
 # Rust build artifacts
 target/
 Cargo.lock
-decompiled_csharp/
-jadx_classes2_output/
-
-# Chrome DevTools MCP
-.chrome-profile/

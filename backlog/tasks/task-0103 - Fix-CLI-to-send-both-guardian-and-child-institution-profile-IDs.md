@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@claude'
 created_date: '2026-03-19 22:00'
-updated_date: '2026-03-19 22:08'
+updated_date: '2026-03-20 12:23'
 labels:
   - rust-cli
   - bug
@@ -45,27 +45,14 @@ The web frontend sends both guardian and child institution profile IDs for posts
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Fix CLI to send both guardian and child institution profile IDs, matching the web frontend behavior verified via HAR captures.
+Send both guardian and child institution profile IDs matching web frontend HAR capture.
 
 Changes:
-- Added `all_institution_profile_ids()` to Session: combines guardian + child IDs (deduped)
-- Added `children_institution_codes()` to Session: extracts institution codes from children profiles
-- Added `parent` field to `GetPostApiParameters` and posts query builder
-- Posts command now sends `parent=profile` and both guardian+child IDs
-- Calendar command now sends both guardian+child IDs (was child-only)
-- Notifications service now accepts and sends `activeChildrenIds[]` and `activeInstitutionCodes[]` parameters
-- Updated all callers and tests (unit, integration, e2e) for new signatures
+- Added all_institution_profile_ids() and children_institution_codes() to Session
+- Posts command uses combined IDs + parent=profile parameter
+- Calendar command uses combined IDs instead of child-only
+- Notifications service sends activeChildrenIds[] and activeInstitutionCodes[]
+- Fixed 5 pre-existing clippy warnings
 
-Files changed:
-- aula/aula-api/src/session.rs
-- aula/aula-api/src/models/posts.rs
-- aula/aula-api/src/services/posts.rs
-- aula/aula-api/src/services/notifications.rs
-- aula/aula-cli/src/commands/posts.rs
-- aula/aula-cli/src/commands/calendar.rs
-- aula/aula-cli/src/commands/notifications.rs
-- aula/aula-api/tests/e2e_live_tests.rs
-- aula/aula-api/tests/service_integration_tests.rs
-
-Tests: `just e2e` passes (build + test + clippy + fmt-check)
+Verified: posts now show current REDACTED-INST data. All 680 tests pass, clippy clean, e2e green.
 <!-- SECTION:FINAL_SUMMARY:END -->

@@ -4,6 +4,16 @@
 //! directory tree. Uses `Arc<Mutex<Session>>` for thread safety and
 //! `tokio::runtime::Handle::block_on` for async API calls from sync
 //! FUSE callbacks.
+//!
+//! # Safety invariant: Mutex held across `block_on`
+//!
+//! Throughout this file, `session.lock_or_recover()` is held while calling
+//! `Handle::block_on()`. This is safe because `fuser` dispatches filesystem
+//! callbacks on its own dedicated (non-async) threads — `block_on` will never
+//! be called from within a tokio async context, so it cannot deadlock the
+//! runtime. The `Mutex` serializes API calls, which is acceptable for a
+//! single-user mount. **Do not call these methods from an async task** — that
+//! would panic (`block_on` inside a runtime) or deadlock.
 
 use std::ffi::OsStr;
 use std::sync::{Arc, Mutex, MutexGuard};

@@ -31,6 +31,15 @@ run *ARGS:
 # End-to-end tests (build + test + lint + fmt check)
 e2e: build test lint fmt-check
 
+# Mount Aula data as a FUSE filesystem
+mount mountpoint="/tmp/aula":
+    mkdir -p {{mountpoint}}
+    cargo run --manifest-path aula/Cargo.toml --bin aula-fuse -- {{mountpoint}}
+
+# Unmount the Aula FUSE filesystem
+umount mountpoint="/tmp/aula":
+    fusermount3 -u {{mountpoint}}
+
 # Run live E2E tests against the real Aula API (requires auth token)
 # See aula/aula-api/src/e2e.rs for setup instructions.
 e2e-live:

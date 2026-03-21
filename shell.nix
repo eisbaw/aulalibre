@@ -58,6 +58,7 @@ pkgs.mkShell {
     rust-analyzer # Rust language server
     pkg-config    # Build dependency for native crates
     openssl.dev   # OpenSSL headers for reqwest/native-tls
+    fuse3         # FUSE3 library for aula-fuse filesystem
 
     # Development tools
     just          # Command runner for project recipes

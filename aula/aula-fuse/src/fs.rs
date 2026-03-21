@@ -12,7 +12,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use fuser::{
     FileAttr, FileType, Filesystem, ReplyAttr, ReplyData, ReplyDirectory, ReplyEntry, Request,
 };
-use log::{debug, error};
+use log::{debug, error, warn};
 use tokio::runtime::Handle;
 
 use aula_api::models::calendar::EventSimpleDto;
@@ -219,7 +219,10 @@ impl AulaFs {
                 let mut cache = self.cache.lock_or_recover();
                 cache.put(
                     cache_key,
-                    serde_json::to_value(&post_result).unwrap_or_default(),
+                    serde_json::to_value(&post_result).unwrap_or_else(|e| {
+                        warn!("Failed to serialize posts to cache value: {e}");
+                        serde_json::Value::Null
+                    }),
                     LIST_TTL,
                 );
             }
@@ -269,7 +272,10 @@ impl AulaFs {
         );
 
         // Add metadata.json.
-        let json = serde_json::to_string_pretty(post).unwrap_or_default();
+        let json = serde_json::to_string_pretty(post).unwrap_or_else(|e| {
+            warn!("Failed to serialize post metadata: {e}");
+            String::new()
+        });
         let json_bytes = json.len() as u64;
         inodes.insert(
             item_ino,
@@ -344,7 +350,10 @@ impl AulaFs {
                 let mut cache = self.cache.lock_or_recover();
                 cache.put(
                     cache_key,
-                    serde_json::to_value(&thread_list).unwrap_or_default(),
+                    serde_json::to_value(&thread_list).unwrap_or_else(|e| {
+                        warn!("Failed to serialize threads to cache value: {e}");
+                        serde_json::Value::Null
+                    }),
                     LIST_TTL,
                 );
             }
@@ -384,7 +393,10 @@ impl AulaFs {
         );
 
         // Add metadata.json for the thread subscription.
-        let json = serde_json::to_string_pretty(thread).unwrap_or_default();
+        let json = serde_json::to_string_pretty(thread).unwrap_or_else(|e| {
+            warn!("Failed to serialize thread metadata: {e}");
+            String::new()
+        });
         let json_bytes = json.len() as u64;
         inodes.insert(
             item_ino,
@@ -482,7 +494,10 @@ impl AulaFs {
                 let mut cache = self.cache.lock_or_recover();
                 cache.put(
                     cache_key,
-                    serde_json::to_value(&events).unwrap_or_default(),
+                    serde_json::to_value(&events).unwrap_or_else(|e| {
+                        warn!("Failed to serialize events to cache value: {e}");
+                        serde_json::Value::Null
+                    }),
                     LIST_TTL,
                 );
             }
@@ -539,7 +554,10 @@ impl AulaFs {
         );
 
         // metadata.json.
-        let json = serde_json::to_string_pretty(event).unwrap_or_default();
+        let json = serde_json::to_string_pretty(event).unwrap_or_else(|e| {
+            warn!("Failed to serialize event metadata: {e}");
+            String::new()
+        });
         let json_bytes = json.len() as u64;
         inodes.insert(
             item_ino,
@@ -596,7 +614,10 @@ impl AulaFs {
                 let mut cache = self.cache.lock_or_recover();
                 cache.put(
                     cache_key,
-                    serde_json::to_value(&notifications).unwrap_or_default(),
+                    serde_json::to_value(&notifications).unwrap_or_else(|e| {
+                        warn!("Failed to serialize notifications to cache value: {e}");
+                        serde_json::Value::Null
+                    }),
                     LIST_TTL,
                 );
             }
@@ -616,7 +637,10 @@ impl AulaFs {
         let filename = format!("{}.json", crate::sanitize::sanitize_name(id));
 
         let mtime = parse_aula_datetime(notif.triggered.as_deref().unwrap_or(""));
-        let json = serde_json::to_string_pretty(notif).unwrap_or_default();
+        let json = serde_json::to_string_pretty(notif).unwrap_or_else(|e| {
+            warn!("Failed to serialize notification metadata: {e}");
+            String::new()
+        });
         let json_bytes = json.len() as u64;
 
         inodes.insert(
@@ -689,7 +713,10 @@ impl AulaFs {
                 let mut cache = self.cache.lock_or_recover();
                 cache.put(
                     cache_key,
-                    serde_json::to_value(&albums).unwrap_or_default(),
+                    serde_json::to_value(&albums).unwrap_or_else(|e| {
+                        warn!("Failed to serialize albums to cache value: {e}");
+                        serde_json::Value::Null
+                    }),
                     LIST_TTL,
                 );
             }
@@ -722,7 +749,10 @@ impl AulaFs {
         );
 
         // metadata.json.
-        let json = serde_json::to_string_pretty(album).unwrap_or_default();
+        let json = serde_json::to_string_pretty(album).unwrap_or_else(|e| {
+            warn!("Failed to serialize album metadata: {e}");
+            String::new()
+        });
         let json_bytes = json.len() as u64;
         inodes.insert(
             item_ino,
@@ -824,7 +854,10 @@ impl AulaFs {
                 let mut cache = self.cache.lock_or_recover();
                 cache.put(
                     cache_key,
-                    serde_json::to_value(&doc_result).unwrap_or_default(),
+                    serde_json::to_value(&doc_result).unwrap_or_else(|e| {
+                        warn!("Failed to serialize documents to cache value: {e}");
+                        serde_json::Value::Null
+                    }),
                     LIST_TTL,
                 );
             }
@@ -854,7 +887,10 @@ impl AulaFs {
         );
 
         // metadata.json.
-        let json = serde_json::to_string_pretty(doc).unwrap_or_default();
+        let json = serde_json::to_string_pretty(doc).unwrap_or_else(|e| {
+            warn!("Failed to serialize document metadata: {e}");
+            String::new()
+        });
         let json_bytes = json.len() as u64;
         inodes.insert(
             item_ino,
@@ -929,7 +965,10 @@ impl AulaFs {
                 let mut cache = self.cache.lock_or_recover();
                 cache.put(
                     cache_key,
-                    serde_json::to_value(&statuses).unwrap_or_default(),
+                    serde_json::to_value(&statuses).unwrap_or_else(|e| {
+                        warn!("Failed to serialize presence statuses to cache value: {e}");
+                        serde_json::Value::Null
+                    }),
                     PRESENCE_TTL,
                 );
             }
@@ -981,7 +1020,10 @@ impl AulaFs {
         );
 
         // metadata.json.
-        let json = serde_json::to_string_pretty(status).unwrap_or_default();
+        let json = serde_json::to_string_pretty(status).unwrap_or_else(|e| {
+            warn!("Failed to serialize presence status metadata: {e}");
+            String::new()
+        });
         let json_bytes = json.len() as u64;
         inodes.insert(
             item_ino,

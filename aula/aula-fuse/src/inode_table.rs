@@ -54,9 +54,10 @@ impl ResourceType {
 pub enum ContentSource {
     /// Plain text content (includes pre-rendered JSON).
     Text(String),
+    /// Raw binary content (e.g., downloaded media).
+    Bytes(Vec<u8>),
     /// Content to be lazily fetched (e.g., gallery media).
     /// Stores a URL to download from.
-    #[allow(dead_code)] // Infrastructure for gallery media; not yet constructed.
     LazyDownload { url: String },
 }
 
@@ -72,6 +73,9 @@ pub enum InodeEntry {
     ResourceItem {
         resource_type: ResourceType,
         name: String,
+        /// API-level identifier (e.g., album ID, post ID). Used for lazy
+        /// sub-resource fetching (e.g., fetching media items inside an album).
+        resource_id: Option<i64>,
         created: SystemTime,
         modified: SystemTime,
     },
@@ -135,6 +139,10 @@ impl InodeTable {
     /// Look up an inode entry.
     pub fn get(&self, ino: u64) -> Option<&InodeEntry> {
         self.entries.get(&ino)
+    }
+
+    pub fn get_mut(&mut self, ino: u64) -> Option<&mut InodeEntry> {
+        self.entries.get_mut(&ino)
     }
 
     /// Look up a child inode by parent inode and name.
@@ -259,6 +267,7 @@ mod tests {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Posts,
                 name: "42-Test Post".to_string(),
+                resource_id: None,
                 created: UNIX_EPOCH,
                 modified: UNIX_EPOCH,
             },
@@ -279,6 +288,7 @@ mod tests {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Posts,
                 name: "42-Test".to_string(),
+                resource_id: None,
                 created: UNIX_EPOCH,
                 modified: UNIX_EPOCH,
             },
@@ -290,6 +300,7 @@ mod tests {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Posts,
                 name: "42-Test".to_string(),
+                resource_id: None,
                 created: UNIX_EPOCH,
                 modified: UNIX_EPOCH,
             },
@@ -310,6 +321,7 @@ mod tests {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Posts,
                 name: "1-A".to_string(),
+                resource_id: None,
                 created: UNIX_EPOCH,
                 modified: UNIX_EPOCH,
             },
@@ -320,6 +332,7 @@ mod tests {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Posts,
                 name: "2-B".to_string(),
+                resource_id: None,
                 created: UNIX_EPOCH,
                 modified: UNIX_EPOCH,
             },
@@ -341,6 +354,7 @@ mod tests {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Posts,
                 name: "1-A".to_string(),
+                resource_id: None,
                 created: UNIX_EPOCH,
                 modified: UNIX_EPOCH,
             },
@@ -402,6 +416,7 @@ mod tests {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Posts,
                 name: "42-Test".to_string(),
+                resource_id: None,
                 created: UNIX_EPOCH,
                 modified: UNIX_EPOCH,
             },
@@ -427,6 +442,7 @@ mod tests {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Posts,
                 name: "99-Nested".to_string(),
+                resource_id: None,
                 created: UNIX_EPOCH,
                 modified: UNIX_EPOCH,
             },

@@ -28,7 +28,8 @@ use tokio::runtime::Handle;
 use aula_api::models::calendar::EventSimpleDto;
 use aula_api::models::calendar::GetEventsParameters;
 use aula_api::models::documents::{GetSecureDocumentsArguments, SecureDocumentDto};
-use aula_api::models::gallery::{AlbumDto, GalleryViewFilter};
+use aula_api::models::files::AulaGalleryMediaFileResultDto;
+use aula_api::models::gallery::{AlbumDto, GalleryViewFilter, GetMediaInAlbumFilter};
 use aula_api::models::messaging::{GetThreadListArguments, MessageThreadSubscription};
 use aula_api::models::notifications::NotificationItemDto;
 use aula_api::models::posts::{GetPostApiParameters, PostApiDto};
@@ -414,6 +415,53 @@ impl AulaFs {
         );
     }
 
+    /// Populate an album directory with its media files.
+    ///
+    /// Called lazily when `readdir` or `lookup` hits a Gallery `ResourceItem`.
+    /// Each media item becomes a file with `ContentSource::LazyDownload` so
+    /// the actual bytes are fetched only on `read()`.
+    fn populate_album_media(&self, album_ino: u64, album_id: i64) {
+        self.populate(
+            album_ino,
+            CacheKey::ResourceDetail {
+                resource: "gallery_media".into(),
+                id: album_id.to_string(),
+            },
+            LIST_TTL,
+            "album media",
+            |fs| {
+                let filter = GetMediaInAlbumFilter {
+                    album_id: Some(album_id),
+                    user_specific_album: None,
+                    limit: Some(200),
+                    index: Some(0),
+                    sort_on: Some("createdAt".to_string()),
+                    order_direction: Some("desc".to_string()),
+                    filter_by: None,
+                    is_selection_mode: false,
+                    selected_institution_code: None,
+                };
+                let mut session = fs.session.lock_or_recover();
+                fs.rt
+                    .block_on(aula_api::services::gallery::get_medias_in_album(
+                        &mut session,
+                        &filter,
+                    ))
+            },
+            |medias_result, inodes, album_ino| {
+                // Re-insert album metadata (cleared by populate's clear_children).
+                if let Some(album) = &medias_result.album {
+                    Self::insert_album_metadata(inodes, album_ino, album);
+                }
+                if let Some(media_items) = &medias_result.results {
+                    for media in media_items {
+                        Self::insert_media_file(inodes, album_ino, media);
+                    }
+                }
+            },
+        );
+    }
+
     fn populate_documents(&self, parent_ino: u64, page: i32) {
         self.populate(
             parent_ino,
@@ -538,6 +586,7 @@ impl AulaFs {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Posts,
                 name: dir_name(id, title),
+                resource_id: None,
                 created: ctime,
                 modified: mtime,
             },
@@ -582,11 +631,7 @@ impl AulaFs {
         );
     }
 
-    fn insert_thread(
-        inodes: &mut InodeTable,
-        parent_ino: u64,
-        thread: &MessageThreadSubscription,
-    ) {
+    fn insert_thread(inodes: &mut InodeTable, parent_ino: u64, thread: &MessageThreadSubscription) {
         let id = thread.id.unwrap_or(0);
         let subject = thread.subject.as_deref().unwrap_or("(no subject)");
         let name = dir_name(id, subject);
@@ -605,6 +650,7 @@ impl AulaFs {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Messages,
                 name,
+                resource_id: None,
                 created: ctime,
                 modified: mtime,
             },
@@ -659,11 +705,7 @@ impl AulaFs {
         }
     }
 
-    fn insert_calendar_event(
-        inodes: &mut InodeTable,
-        parent_ino: u64,
-        event: &EventSimpleDto,
-    ) {
+    fn insert_calendar_event(inodes: &mut InodeTable, parent_ino: u64, event: &EventSimpleDto) {
         let id = event.id.unwrap_or(0) as i64;
         let title = event.title.as_deref().unwrap_or("untitled");
         let name = dir_name(id, title);
@@ -677,6 +719,7 @@ impl AulaFs {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Calendar,
                 name,
+                resource_id: None,
                 created: ctime,
                 modified: mtime,
             },
@@ -723,11 +766,7 @@ impl AulaFs {
         );
     }
 
-    fn insert_notification(
-        inodes: &mut InodeTable,
-        parent_ino: u64,
-        notif: &NotificationItemDto,
-    ) {
+    fn insert_notification(inodes: &mut InodeTable, parent_ino: u64, notif: &NotificationItemDto) {
         let id = notif.notification_id.as_deref().unwrap_or("unknown");
         let filename = format!("{}.json", crate::sanitize::sanitize_name(id));
 
@@ -768,22 +807,32 @@ impl AulaFs {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Gallery,
                 name,
+                resource_id: Some(id),
                 created: mtime,
                 modified: mtime,
             },
         );
 
-        // metadata.json.
+        Self::insert_album_metadata(inodes, item_ino, album);
+    }
+
+    /// Insert metadata.json and description.txt for an album directory.
+    ///
+    /// Called both from `insert_album` (initial population) and from
+    /// `populate_album_media` (to re-create metadata after `clear_children`).
+    fn insert_album_metadata(inodes: &mut InodeTable, album_ino: u64, album: &AlbumDto) {
+        let mtime = parse_aula_datetime(album.creation_date.as_deref().unwrap_or(""));
+
         let json = serde_json::to_string_pretty(album).unwrap_or_else(|e| {
             warn!("Failed to serialize album metadata: {e}");
             String::new()
         });
         let json_bytes = json.len() as u64;
         inodes.insert(
-            item_ino,
+            album_ino,
             "metadata.json".to_string(),
             InodeEntry::File {
-                parent_inode: item_ino,
+                parent_inode: album_ino,
                 name: "metadata.json".to_string(),
                 content: ContentSource::Text(json),
                 size: json_bytes,
@@ -791,15 +840,14 @@ impl AulaFs {
             },
         );
 
-        // Description as content.txt if present.
         if let Some(desc) = &album.description {
             if !desc.is_empty() {
                 let text_bytes = desc.len() as u64;
                 inodes.insert(
-                    item_ino,
+                    album_ino,
                     "description.txt".to_string(),
                     InodeEntry::File {
-                        parent_inode: item_ino,
+                        parent_inode: album_ino,
                         name: "description.txt".to_string(),
                         content: ContentSource::Text(desc.clone()),
                         size: text_bytes,
@@ -808,6 +856,62 @@ impl AulaFs {
                 );
             }
         }
+    }
+
+    fn insert_media_file(
+        inodes: &mut InodeTable,
+        album_ino: u64,
+        media: &AulaGalleryMediaFileResultDto,
+    ) {
+        let media_id = media.id.unwrap_or(0);
+
+        // Derive filename: prefer file.name, fall back to title, then ID-based name.
+        let raw_name = media
+            .file
+            .as_ref()
+            .and_then(|f| f.name.as_deref())
+            .or(media.title.as_deref())
+            .unwrap_or("unknown");
+
+        // Deduplicate by prefixing with media ID to avoid collisions
+        // (multiple media items could share the same filename).
+        let filename = format!("{}-{}", media_id, crate::sanitize::sanitize_name(raw_name));
+
+        // Use the file's download URL for lazy fetching.
+        let url = media
+            .file
+            .as_ref()
+            .and_then(|f| f.url.as_deref())
+            .unwrap_or("");
+
+        if url.is_empty() {
+            debug!(
+                "Skipping media {} ({}) - no download URL",
+                media_id, filename
+            );
+            return;
+        }
+
+        let mtime = media
+            .file
+            .as_ref()
+            .and_then(|f| f.created.as_deref())
+            .map(parse_aula_datetime)
+            .unwrap_or(UNIX_EPOCH);
+
+        inodes.insert(
+            album_ino,
+            filename.clone(),
+            InodeEntry::File {
+                parent_inode: album_ino,
+                name: filename,
+                content: ContentSource::LazyDownload {
+                    url: url.to_string(),
+                },
+                size: 10 * 1024 * 1024, // Report 10 MiB so kernel issues read(); actual size may differ.
+                mtime,
+            },
+        );
     }
 
     fn insert_document(inodes: &mut InodeTable, parent_ino: u64, doc: &SecureDocumentDto) {
@@ -824,6 +928,7 @@ impl AulaFs {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Documents,
                 name,
+                resource_id: None,
                 created: ctime,
                 modified: mtime,
             },
@@ -882,6 +987,7 @@ impl AulaFs {
             InodeEntry::ResourceItem {
                 resource_type: ResourceType::Presence,
                 name,
+                resource_id: None,
                 created: mtime,
                 modified: mtime,
             },
@@ -1005,6 +1111,15 @@ impl Filesystem for AulaFs {
                         drop(inodes);
                         self.populate_resource_dir(parent, rt, pg);
                     }
+                    InodeEntry::ResourceItem {
+                        resource_type: ResourceType::Gallery,
+                        resource_id: Some(album_id),
+                        ..
+                    } => {
+                        let aid = *album_id;
+                        drop(inodes);
+                        self.populate_album_media(parent, aid);
+                    }
                     _ => {}
                 }
             }
@@ -1064,6 +1179,15 @@ impl Filesystem for AulaFs {
                         drop(inodes);
                         self.populate_resource_dir(ino, rt, pg);
                     }
+                    InodeEntry::ResourceItem {
+                        resource_type: ResourceType::Gallery,
+                        resource_id: Some(album_id),
+                        ..
+                    } => {
+                        let aid = *album_id;
+                        drop(inodes);
+                        self.populate_album_media(ino, aid);
+                    }
                     _ => {}
                 }
             }
@@ -1116,12 +1240,26 @@ impl Filesystem for AulaFs {
         if let Some(InodeEntry::File { content, .. }) = inodes.get(ino) {
             let bytes: Vec<u8> = match content {
                 ContentSource::Text(t) => t.as_bytes().to_vec(),
+                ContentSource::Bytes(b) => b.clone(),
                 ContentSource::LazyDownload { url } => {
                     // Lazy download: fetch the content from the URL.
                     let url = url.clone();
                     drop(inodes);
                     match self.lazy_download(&url) {
-                        Ok(data) => data,
+                        Ok(data) => {
+                            // Cache downloaded content in the inode so subsequent
+                            // reads don't re-download, and update size for getattr.
+                            let len = data.len() as u64;
+                            let mut inodes = self.inodes.lock_or_recover();
+                            if let Some(InodeEntry::File {
+                                content, size, ..
+                            }) = inodes.get_mut(ino)
+                            {
+                                *content = ContentSource::Bytes(data.clone());
+                                *size = len;
+                            }
+                            data
+                        }
                         Err(e) => {
                             error!("Lazy download failed for {}: {}", url, e);
                             reply.error(libc::EIO);
@@ -1267,7 +1405,10 @@ mod tests {
         assert_eq!(strip_html("ali"), "ali");
         // Inside tags, same.
         assert_eq!(strip_html("<span>trip</span>"), "trip");
-        assert_eq!(strip_html("<span>We went on a trip</span>"), "We went on a trip");
+        assert_eq!(
+            strip_html("<span>We went on a trip</span>"),
+            "We went on a trip"
+        );
     }
 
     #[test]

@@ -121,8 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mount_options = vec![
         MountOption::RO,
         MountOption::FSName("aula".to_string()),
-        MountOption::AutoUnmount,
-        MountOption::AllowOther,
+        MountOption::NoAtime,
     ];
 
     log::info!("Mounting Aula filesystem at {}", args.mountpoint);

@@ -22,7 +22,6 @@ pub enum CacheKey {
     /// List of resources of a given type and page.
     ResourceList { resource: String, page: i32 },
     /// Single resource detail.
-    #[allow(dead_code)]
     ResourceDetail { resource: String, id: String },
 }
 

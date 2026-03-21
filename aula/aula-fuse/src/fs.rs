@@ -1129,7 +1129,6 @@ impl Filesystem for AulaFs {
                         }
                     }
                 }
-                ContentSource::Empty => Vec::new(),
             };
 
             let offset = offset as usize;

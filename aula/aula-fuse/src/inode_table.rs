@@ -51,15 +51,13 @@ impl ResourceType {
 
 /// What content to produce for a file.
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum ContentSource {
     /// Plain text content (includes pre-rendered JSON).
     Text(String),
     /// Content to be lazily fetched (e.g., gallery media).
     /// Stores a URL to download from.
+    #[allow(dead_code)] // Infrastructure for gallery media; not yet constructed.
     LazyDownload { url: String },
-    /// Placeholder content (directory listing).
-    Empty,
 }
 
 /// An entry in the inode table.

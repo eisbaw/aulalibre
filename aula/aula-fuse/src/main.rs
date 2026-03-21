@@ -17,10 +17,42 @@ mod timestamp;
 
 use std::sync::{Arc, Mutex};
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use fuser::MountOption;
 
 use aula_api::{AulaClient, AulaClientConfig, Environment, Session, SessionConfig, TokenStore};
+
+/// CLI-level environment selector.
+///
+/// Mirrors [`aula_api::Environment`] but derives [`clap::ValueEnum`] so that
+/// unknown values are rejected at argument-parsing time instead of silently
+/// falling back to production.
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum EnvironmentArg {
+    Production,
+    Preprod,
+    Hotfix,
+    Test1,
+    Test3,
+    Dev1,
+    Dev3,
+    Dev11,
+}
+
+impl From<EnvironmentArg> for Environment {
+    fn from(arg: EnvironmentArg) -> Self {
+        match arg {
+            EnvironmentArg::Production => Self::Production,
+            EnvironmentArg::Preprod => Self::Preprod,
+            EnvironmentArg::Hotfix => Self::Hotfix,
+            EnvironmentArg::Test1 => Self::Test1,
+            EnvironmentArg::Test3 => Self::Test3,
+            EnvironmentArg::Dev1 => Self::Dev1,
+            EnvironmentArg::Dev3 => Self::Dev3,
+            EnvironmentArg::Dev11 => Self::Dev11,
+        }
+    }
+}
 
 /// Aula FUSE filesystem -- mount Aula data as a directory tree.
 #[derive(Parser, Debug)]
@@ -29,30 +61,13 @@ struct Args {
     /// Mount point directory (must exist).
     mountpoint: String,
 
-    /// Aula environment (production, preprod, hotfix).
-    #[arg(long, default_value = "production")]
-    env: String,
+    /// Aula environment.
+    #[arg(long, value_enum, default_value_t = EnvironmentArg::Production)]
+    env: EnvironmentArg,
 
     /// Enable verbose/debug logging.
     #[arg(long, short)]
     verbose: bool,
-}
-
-fn parse_environment(s: &str) -> Environment {
-    match s.to_lowercase().as_str() {
-        "production" | "prod" => Environment::Production,
-        "preprod" | "pre" => Environment::Preprod,
-        "hotfix" => Environment::Hotfix,
-        "test1" => Environment::Test1,
-        "test3" => Environment::Test3,
-        "dev1" => Environment::Dev1,
-        "dev3" => Environment::Dev3,
-        "dev11" => Environment::Dev11,
-        _ => {
-            eprintln!("Unknown environment '{}', defaulting to production", s);
-            Environment::Production
-        }
-    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -66,8 +81,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     env_logger::Builder::new().filter_level(log_level).init();
 
-    // Parse environment.
-    let environment = parse_environment(&args.env);
+    let environment: Environment = args.env.into();
 
     // Create the tokio runtime.
     let rt = tokio::runtime::Runtime::new()?;

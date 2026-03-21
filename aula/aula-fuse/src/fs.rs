@@ -162,87 +162,369 @@ impl AulaFs {
         }
     }
 
-    fn populate_posts(&self, parent_ino: u64, page: i32) {
-        let cache_key = CacheKey::ResourceList {
-            resource: "posts".into(),
-            page,
-        };
-
+    /// Generic populate: handles cache check, API fetch, inode insert, and
+    /// cache update. Each resource type only provides:
+    ///
+    /// - `cache_key` / `ttl` — cache identity and lifetime
+    /// - `resource_name` — for error messages
+    /// - `fetch` — closure that builds params, locks session, calls API via
+    ///   `block_on`, and returns the raw API result
+    /// - `process` — closure that receives the API result and an `InodeTable`
+    ///   guard, inserts items and optional pagination dirs
+    fn populate<T, E, F, G>(
+        &self,
+        parent_ino: u64,
+        cache_key: CacheKey,
+        ttl: Duration,
+        resource_name: &str,
+        fetch: F,
+        process: G,
+    ) where
+        T: serde::Serialize,
+        E: std::fmt::Display,
+        F: FnOnce(&Self) -> Result<T, E>,
+        G: FnOnce(&T, &mut InodeTable, u64),
+    {
         // Check cache first.
         {
             let cache = self.cache.lock_or_recover();
             if cache.get(&cache_key).is_some() {
-                return; // Already populated and cache is fresh.
+                return;
             }
         }
 
-        let inst_profile_ids = {
-            let session = self.session.lock_or_recover();
-            session.all_institution_profile_ids()
-        };
-
-        let params = GetPostApiParameters {
-            parent: None,
-            group_id: None,
-            is_important: None,
-            creator_portal_role: None,
-            institution_profile_ids: Some(inst_profile_ids),
-            related_institutions: None,
-            own_post: false,
-            is_unread: false,
-            is_bookmarked: false,
-            limit: Some(PAGE_SIZE),
-            index: Some(page * PAGE_SIZE),
-        };
-
-        let result = {
-            let mut session = self.session.lock_or_recover();
-            self.rt
-                .block_on(aula_api::services::posts::get_posts(&mut session, &params))
-        };
+        let result = fetch(self);
 
         match result {
-            Ok(post_result) => {
+            Ok(data) => {
                 let mut inodes = self.inodes.lock_or_recover();
                 inodes.clear_children(parent_ino);
-                if let Some(posts) = &post_result.posts {
-                    for post in posts {
-                        self.insert_post(&mut inodes, parent_ino, post);
-                    }
-                }
-                // Add pagination directory if there are more posts.
-                if post_result.has_more_posts {
-                    let next_page = page + 1;
-                    let page_name = format!("page-{}", next_page + 1);
-                    inodes.insert(
-                        parent_ino,
-                        page_name,
-                        InodeEntry::PageDir {
-                            resource_type: ResourceType::Posts,
-                            page: next_page,
-                            parent_inode: parent_ino,
-                        },
-                    );
-                }
+                process(&data, &mut inodes, parent_ino);
 
-                // Cache the result.
                 let mut cache = self.cache.lock_or_recover();
                 cache.put(
                     cache_key,
-                    serde_json::to_value(&post_result).unwrap_or_else(|e| {
-                        warn!("Failed to serialize posts to cache value: {e}");
+                    serde_json::to_value(&data).unwrap_or_else(|e| {
+                        warn!("Failed to serialize {resource_name} to cache value: {e}");
                         serde_json::Value::Null
                     }),
-                    LIST_TTL,
+                    ttl,
                 );
             }
             Err(e) => {
-                error!("Failed to fetch posts: {}", e);
+                error!("Failed to fetch {resource_name}: {e}");
             }
         }
     }
 
-    fn insert_post(&self, inodes: &mut InodeTable, parent_ino: u64, post: &PostApiDto) {
+    fn populate_posts(&self, parent_ino: u64, page: i32) {
+        self.populate(
+            parent_ino,
+            CacheKey::ResourceList {
+                resource: "posts".into(),
+                page,
+            },
+            LIST_TTL,
+            "posts",
+            |fs| {
+                let inst_profile_ids = {
+                    let session = fs.session.lock_or_recover();
+                    session.all_institution_profile_ids()
+                };
+                let params = GetPostApiParameters {
+                    parent: None,
+                    group_id: None,
+                    is_important: None,
+                    creator_portal_role: None,
+                    institution_profile_ids: Some(inst_profile_ids),
+                    related_institutions: None,
+                    own_post: false,
+                    is_unread: false,
+                    is_bookmarked: false,
+                    limit: Some(PAGE_SIZE),
+                    index: Some(page * PAGE_SIZE),
+                };
+                let mut session = fs.session.lock_or_recover();
+                fs.rt
+                    .block_on(aula_api::services::posts::get_posts(&mut session, &params))
+            },
+            |post_result, inodes, parent_ino| {
+                if let Some(posts) = &post_result.posts {
+                    for post in posts {
+                        Self::insert_post(inodes, parent_ino, post);
+                    }
+                }
+                if post_result.has_more_posts {
+                    Self::insert_page_dir(inodes, parent_ino, ResourceType::Posts, page);
+                }
+            },
+        );
+    }
+
+    fn populate_messages(&self, parent_ino: u64, page: i32) {
+        self.populate(
+            parent_ino,
+            CacheKey::ResourceList {
+                resource: "messages".into(),
+                page,
+            },
+            LIST_TTL,
+            "messages",
+            |fs| {
+                let args = GetThreadListArguments {
+                    folder_id: None,
+                    filter_type: None,
+                    sort_type: None,
+                    sort_order: None,
+                    page: Some(page),
+                    thread_ids: None,
+                    mail_box_owner_type: None,
+                    mail_box_owners: None,
+                    active_children: None,
+                };
+                let mut session = fs.session.lock_or_recover();
+                fs.rt
+                    .block_on(aula_api::services::messaging::get_thread_list(
+                        &mut session,
+                        &args,
+                    ))
+            },
+            |thread_list, inodes, parent_ino| {
+                if let Some(threads) = &thread_list.threads {
+                    for thread in threads {
+                        Self::insert_thread(inodes, parent_ino, thread);
+                    }
+                }
+                if thread_list.more_messages_exist {
+                    Self::insert_page_dir(inodes, parent_ino, ResourceType::Messages, page);
+                }
+            },
+        );
+    }
+
+    fn populate_calendar(&self, parent_ino: u64, _page: i32) {
+        self.populate(
+            parent_ino,
+            CacheKey::ResourceList {
+                resource: "calendar".into(),
+                page: 0,
+            },
+            LIST_TTL,
+            "calendar events",
+            |fs| {
+                let inst_profile_ids = {
+                    let session = fs.session.lock_or_recover();
+                    session.all_institution_profile_ids()
+                };
+                let now = chrono::Local::now();
+                let start = now.format("%Y-%m-%d").to_string();
+                let end = (now + chrono::Duration::days(30))
+                    .format("%Y-%m-%d")
+                    .to_string();
+                let params = GetEventsParameters {
+                    inst_profile_ids: Some(inst_profile_ids),
+                    resource_ids: None,
+                    start: Some(start),
+                    end: Some(end),
+                    specific_types: None,
+                    school_calendar_institution_codes: None,
+                };
+                let mut session = fs.session.lock_or_recover();
+                fs.rt.block_on(aula_api::services::calendar::get_events(
+                    &mut session,
+                    &params,
+                ))
+            },
+            |events, inodes, parent_ino| {
+                for event in events {
+                    Self::insert_calendar_event(inodes, parent_ino, event);
+                }
+            },
+        );
+    }
+
+    fn populate_notifications(&self, parent_ino: u64) {
+        self.populate(
+            parent_ino,
+            CacheKey::ResourceList {
+                resource: "notifications".into(),
+                page: 0,
+            },
+            LIST_TTL,
+            "notifications",
+            |fs| {
+                let (children_ids, inst_codes) = {
+                    let session = fs.session.lock_or_recover();
+                    (
+                        session.children_inst_profile_ids(),
+                        session.children_institution_codes(),
+                    )
+                };
+                let mut session = fs.session.lock_or_recover();
+                fs.rt
+                    .block_on(aula_api::services::notifications::get_notifications(
+                        &mut session,
+                        &children_ids,
+                        &inst_codes,
+                    ))
+            },
+            |notifications, inodes, parent_ino| {
+                for notif in notifications {
+                    Self::insert_notification(inodes, parent_ino, notif);
+                }
+            },
+        );
+    }
+
+    fn populate_gallery(&self, parent_ino: u64, page: i32) {
+        self.populate(
+            parent_ino,
+            CacheKey::ResourceList {
+                resource: "gallery".into(),
+                page,
+            },
+            LIST_TTL,
+            "gallery albums",
+            |fs| {
+                let filter = GalleryViewFilter {
+                    selected_institution_code_for_filter: None,
+                    album_id: None,
+                    user_specific_album: None,
+                    limit: Some(PAGE_SIZE),
+                    index: Some(page * PAGE_SIZE),
+                    sort_on: Some("createdAt".to_string()),
+                    order_direction: Some("desc".to_string()),
+                    filter_by: None,
+                };
+                let mut session = fs.session.lock_or_recover();
+                fs.rt.block_on(aula_api::services::gallery::get_albums(
+                    &mut session,
+                    &filter,
+                ))
+            },
+            |albums, inodes, parent_ino| {
+                let has_more = albums.len() == PAGE_SIZE as usize;
+                for album in albums {
+                    Self::insert_album(inodes, parent_ino, album);
+                }
+                if has_more {
+                    Self::insert_page_dir(inodes, parent_ino, ResourceType::Gallery, page);
+                }
+            },
+        );
+    }
+
+    fn populate_documents(&self, parent_ino: u64, page: i32) {
+        self.populate(
+            parent_ino,
+            CacheKey::ResourceList {
+                resource: "documents".into(),
+                page,
+            },
+            LIST_TTL,
+            "documents",
+            |fs| {
+                let inst_profile_ids = {
+                    let session = fs.session.lock_or_recover();
+                    session.all_institution_profile_ids()
+                };
+                let args = GetSecureDocumentsArguments {
+                    filter_institution_profile_ids: Some(inst_profile_ids),
+                    filter_regarding_group_ids: None,
+                    filter_unread: None,
+                    filter_locked: None,
+                    filter_journaling_status: None,
+                    filter_editable: false,
+                    document_type: None,
+                    sortings: None,
+                    index: Some(page * PAGE_SIZE),
+                    limit: Some(PAGE_SIZE),
+                    filter_regarding_student_ids: None,
+                    filter_document_categories: None,
+                };
+                let mut session = fs.session.lock_or_recover();
+                fs.rt
+                    .block_on(aula_api::services::documents::get_secure_documents(
+                        &mut session,
+                        &args,
+                    ))
+            },
+            |doc_result, inodes, parent_ino| {
+                let docs = doc_result.documents.as_deref().unwrap_or(&[]);
+                for doc in docs {
+                    Self::insert_document(inodes, parent_ino, doc);
+                }
+                let total = doc_result.total_count.unwrap_or(0);
+                let fetched_so_far = (page + 1) * PAGE_SIZE;
+                if fetched_so_far < total {
+                    Self::insert_page_dir(inodes, parent_ino, ResourceType::Documents, page);
+                }
+            },
+        );
+    }
+
+    fn populate_presence(&self, parent_ino: u64) {
+        let children_ids = {
+            let session = self.session.lock_or_recover();
+            session.children_inst_profile_ids()
+        };
+        if children_ids.is_empty() {
+            return;
+        }
+
+        self.populate(
+            parent_ino,
+            CacheKey::ResourceList {
+                resource: "presence".into(),
+                page: 0,
+            },
+            PRESENCE_TTL,
+            "presence",
+            |fs| {
+                let mut session = fs.session.lock_or_recover();
+                fs.rt
+                    .block_on(aula_api::services::presence::get_childrens_state(
+                        &mut session,
+                        &children_ids,
+                    ))
+            },
+            |statuses, inodes, parent_ino| {
+                for status in statuses {
+                    Self::insert_presence(inodes, parent_ino, status);
+                }
+            },
+        );
+    }
+
+    // =========================================================================
+    // Pagination helper
+    // =========================================================================
+
+    /// Insert a "page-N" directory entry for the next page of results.
+    fn insert_page_dir(
+        inodes: &mut InodeTable,
+        parent_ino: u64,
+        resource_type: ResourceType,
+        current_page: i32,
+    ) {
+        let next_page = current_page + 1;
+        let page_name = format!("page-{}", next_page + 1);
+        inodes.insert(
+            parent_ino,
+            page_name,
+            InodeEntry::PageDir {
+                resource_type,
+                page: next_page,
+                parent_inode: parent_ino,
+            },
+        );
+    }
+
+    // =========================================================================
+    // Per-resource item insertion
+    // =========================================================================
+
+    fn insert_post(inodes: &mut InodeTable, parent_ino: u64, post: &PostApiDto) {
         let id = post.id.unwrap_or(0);
         let title = post.title.as_deref().unwrap_or("untitled");
         let name = dir_name(id, title);
@@ -300,81 +582,7 @@ impl AulaFs {
         );
     }
 
-    fn populate_messages(&self, parent_ino: u64, page: i32) {
-        let cache_key = CacheKey::ResourceList {
-            resource: "messages".into(),
-            page,
-        };
-
-        {
-            let cache = self.cache.lock_or_recover();
-            if cache.get(&cache_key).is_some() {
-                return;
-            }
-        }
-
-        let args = GetThreadListArguments {
-            folder_id: None,
-            filter_type: None,
-            sort_type: None,
-            sort_order: None,
-            page: Some(page),
-            thread_ids: None,
-            mail_box_owner_type: None,
-            mail_box_owners: None,
-            active_children: None,
-        };
-
-        let result = {
-            let mut session = self.session.lock_or_recover();
-            self.rt
-                .block_on(aula_api::services::messaging::get_thread_list(
-                    &mut session,
-                    &args,
-                ))
-        };
-
-        match result {
-            Ok(thread_list) => {
-                let mut inodes = self.inodes.lock_or_recover();
-                inodes.clear_children(parent_ino);
-                if let Some(threads) = &thread_list.threads {
-                    for thread in threads {
-                        self.insert_thread(&mut inodes, parent_ino, thread);
-                    }
-                }
-                if thread_list.more_messages_exist {
-                    let next_page = page + 1;
-                    let page_name = format!("page-{}", next_page + 1);
-                    inodes.insert(
-                        parent_ino,
-                        page_name,
-                        InodeEntry::PageDir {
-                            resource_type: ResourceType::Messages,
-                            page: next_page,
-                            parent_inode: parent_ino,
-                        },
-                    );
-                }
-
-                let mut cache = self.cache.lock_or_recover();
-                cache.put(
-                    cache_key,
-                    serde_json::to_value(&thread_list).unwrap_or_else(|e| {
-                        warn!("Failed to serialize threads to cache value: {e}");
-                        serde_json::Value::Null
-                    }),
-                    LIST_TTL,
-                );
-            }
-            Err(e) => {
-                error!("Failed to fetch messages: {}", e);
-            }
-        }
-    }
-
     fn insert_thread(
-        &self,
         inodes: &mut InodeTable,
         parent_ino: u64,
         thread: &MessageThreadSubscription,
@@ -451,74 +659,7 @@ impl AulaFs {
         }
     }
 
-    fn populate_calendar(&self, parent_ino: u64, _page: i32) {
-        let cache_key = CacheKey::ResourceList {
-            resource: "calendar".into(),
-            page: 0,
-        };
-
-        {
-            let cache = self.cache.lock_or_recover();
-            if cache.get(&cache_key).is_some() {
-                return;
-            }
-        }
-
-        let inst_profile_ids = {
-            let session = self.session.lock_or_recover();
-            session.all_institution_profile_ids()
-        };
-
-        // Fetch events for the next 30 days.
-        let now = chrono::Local::now();
-        let start = now.format("%Y-%m-%d").to_string();
-        let end = (now + chrono::Duration::days(30))
-            .format("%Y-%m-%d")
-            .to_string();
-
-        let params = GetEventsParameters {
-            inst_profile_ids: Some(inst_profile_ids),
-            resource_ids: None,
-            start: Some(start),
-            end: Some(end),
-            specific_types: None,
-            school_calendar_institution_codes: None,
-        };
-
-        let result = {
-            let mut session = self.session.lock_or_recover();
-            self.rt.block_on(aula_api::services::calendar::get_events(
-                &mut session,
-                &params,
-            ))
-        };
-
-        match result {
-            Ok(events) => {
-                let mut inodes = self.inodes.lock_or_recover();
-                inodes.clear_children(parent_ino);
-                for event in &events {
-                    self.insert_calendar_event(&mut inodes, parent_ino, event);
-                }
-
-                let mut cache = self.cache.lock_or_recover();
-                cache.put(
-                    cache_key,
-                    serde_json::to_value(&events).unwrap_or_else(|e| {
-                        warn!("Failed to serialize events to cache value: {e}");
-                        serde_json::Value::Null
-                    }),
-                    LIST_TTL,
-                );
-            }
-            Err(e) => {
-                error!("Failed to fetch calendar events: {}", e);
-            }
-        }
-    }
-
     fn insert_calendar_event(
-        &self,
         inodes: &mut InodeTable,
         parent_ino: u64,
         event: &EventSimpleDto,
@@ -582,63 +723,7 @@ impl AulaFs {
         );
     }
 
-    fn populate_notifications(&self, parent_ino: u64) {
-        let cache_key = CacheKey::ResourceList {
-            resource: "notifications".into(),
-            page: 0,
-        };
-
-        {
-            let cache = self.cache.lock_or_recover();
-            if cache.get(&cache_key).is_some() {
-                return;
-            }
-        }
-
-        let (children_ids, inst_codes) = {
-            let session = self.session.lock_or_recover();
-            (
-                session.children_inst_profile_ids(),
-                session.children_institution_codes(),
-            )
-        };
-
-        let result = {
-            let mut session = self.session.lock_or_recover();
-            self.rt
-                .block_on(aula_api::services::notifications::get_notifications(
-                    &mut session,
-                    &children_ids,
-                    &inst_codes,
-                ))
-        };
-
-        match result {
-            Ok(notifications) => {
-                let mut inodes = self.inodes.lock_or_recover();
-                inodes.clear_children(parent_ino);
-                for notif in &notifications {
-                    self.insert_notification(&mut inodes, parent_ino, notif);
-                }
-
-                let mut cache = self.cache.lock_or_recover();
-                cache.put(
-                    cache_key,
-                    serde_json::to_value(&notifications).unwrap_or_else(|e| {
-                        warn!("Failed to serialize notifications to cache value: {e}");
-                        serde_json::Value::Null
-                    }),
-                    LIST_TTL,
-                );
-            }
-            Err(e) => {
-                error!("Failed to fetch notifications: {}", e);
-            }
-        }
-    }
-
     fn insert_notification(
-        &self,
         inodes: &mut InodeTable,
         parent_ino: u64,
         notif: &NotificationItemDto,
@@ -666,77 +751,7 @@ impl AulaFs {
         );
     }
 
-    fn populate_gallery(&self, parent_ino: u64, page: i32) {
-        let cache_key = CacheKey::ResourceList {
-            resource: "gallery".into(),
-            page,
-        };
-
-        {
-            let cache = self.cache.lock_or_recover();
-            if cache.get(&cache_key).is_some() {
-                return;
-            }
-        }
-
-        let filter = GalleryViewFilter {
-            selected_institution_code_for_filter: None,
-            album_id: None,
-            user_specific_album: None,
-            limit: Some(PAGE_SIZE),
-            index: Some(page * PAGE_SIZE),
-            sort_on: Some("createdAt".to_string()),
-            order_direction: Some("desc".to_string()),
-            filter_by: None,
-        };
-
-        let result = {
-            let mut session = self.session.lock_or_recover();
-            self.rt.block_on(aula_api::services::gallery::get_albums(
-                &mut session,
-                &filter,
-            ))
-        };
-
-        match result {
-            Ok(albums) => {
-                let has_more = albums.len() == PAGE_SIZE as usize;
-                let mut inodes = self.inodes.lock_or_recover();
-                inodes.clear_children(parent_ino);
-                for album in &albums {
-                    self.insert_album(&mut inodes, parent_ino, album);
-                }
-                if has_more {
-                    let next_page = page + 1;
-                    let page_name = format!("page-{}", next_page + 1);
-                    inodes.insert(
-                        parent_ino,
-                        page_name,
-                        InodeEntry::PageDir {
-                            resource_type: ResourceType::Gallery,
-                            page: next_page,
-                            parent_inode: parent_ino,
-                        },
-                    );
-                }
-
-                let mut cache = self.cache.lock_or_recover();
-                cache.put(
-                    cache_key,
-                    serde_json::to_value(&albums).unwrap_or_else(|e| {
-                        warn!("Failed to serialize albums to cache value: {e}");
-                        serde_json::Value::Null
-                    }),
-                    LIST_TTL,
-                );
-            }
-            Err(e) => {
-                error!("Failed to fetch gallery albums: {}", e);
-            }
-        }
-    }
-
-    fn insert_album(&self, inodes: &mut InodeTable, parent_ino: u64, album: &AlbumDto) {
+    fn insert_album(inodes: &mut InodeTable, parent_ino: u64, album: &AlbumDto) {
         let id = album.id.unwrap_or(0);
         let title = album
             .title
@@ -795,89 +810,7 @@ impl AulaFs {
         }
     }
 
-    fn populate_documents(&self, parent_ino: u64, page: i32) {
-        let cache_key = CacheKey::ResourceList {
-            resource: "documents".into(),
-            page,
-        };
-
-        {
-            let cache = self.cache.lock_or_recover();
-            if cache.get(&cache_key).is_some() {
-                return;
-            }
-        }
-
-        let inst_profile_ids = {
-            let session = self.session.lock_or_recover();
-            session.all_institution_profile_ids()
-        };
-
-        let args = GetSecureDocumentsArguments {
-            filter_institution_profile_ids: Some(inst_profile_ids),
-            filter_regarding_group_ids: None,
-            filter_unread: None,
-            filter_locked: None,
-            filter_journaling_status: None,
-            filter_editable: false,
-            document_type: None,
-            sortings: None,
-            index: Some(page * PAGE_SIZE),
-            limit: Some(PAGE_SIZE),
-            filter_regarding_student_ids: None,
-            filter_document_categories: None,
-        };
-
-        let result = {
-            let mut session = self.session.lock_or_recover();
-            self.rt
-                .block_on(aula_api::services::documents::get_secure_documents(
-                    &mut session,
-                    &args,
-                ))
-        };
-
-        match result {
-            Ok(doc_result) => {
-                let mut inodes = self.inodes.lock_or_recover();
-                inodes.clear_children(parent_ino);
-                let docs = doc_result.documents.as_deref().unwrap_or(&[]);
-                for doc in docs {
-                    self.insert_document(&mut inodes, parent_ino, doc);
-                }
-                let total = doc_result.total_count.unwrap_or(0);
-                let fetched_so_far = (page + 1) * PAGE_SIZE;
-                if fetched_so_far < total {
-                    let next_page = page + 1;
-                    let page_name = format!("page-{}", next_page + 1);
-                    inodes.insert(
-                        parent_ino,
-                        page_name,
-                        InodeEntry::PageDir {
-                            resource_type: ResourceType::Documents,
-                            page: next_page,
-                            parent_inode: parent_ino,
-                        },
-                    );
-                }
-
-                let mut cache = self.cache.lock_or_recover();
-                cache.put(
-                    cache_key,
-                    serde_json::to_value(&doc_result).unwrap_or_else(|e| {
-                        warn!("Failed to serialize documents to cache value: {e}");
-                        serde_json::Value::Null
-                    }),
-                    LIST_TTL,
-                );
-            }
-            Err(e) => {
-                error!("Failed to fetch documents: {}", e);
-            }
-        }
-    }
-
-    fn insert_document(&self, inodes: &mut InodeTable, parent_ino: u64, doc: &SecureDocumentDto) {
+    fn insert_document(inodes: &mut InodeTable, parent_ino: u64, doc: &SecureDocumentDto) {
         let id = doc.id.unwrap_or(0);
         let title = doc.title.as_deref().unwrap_or("untitled");
         let name = dir_name(id, title);
@@ -933,62 +866,7 @@ impl AulaFs {
         }
     }
 
-    fn populate_presence(&self, parent_ino: u64) {
-        let cache_key = CacheKey::ResourceList {
-            resource: "presence".into(),
-            page: 0,
-        };
-
-        {
-            let cache = self.cache.lock_or_recover();
-            if cache.get(&cache_key).is_some() {
-                return;
-            }
-        }
-
-        let children_ids = {
-            let session = self.session.lock_or_recover();
-            session.children_inst_profile_ids()
-        };
-
-        if children_ids.is_empty() {
-            return;
-        }
-
-        let result = {
-            let mut session = self.session.lock_or_recover();
-            self.rt
-                .block_on(aula_api::services::presence::get_childrens_state(
-                    &mut session,
-                    &children_ids,
-                ))
-        };
-
-        match result {
-            Ok(statuses) => {
-                let mut inodes = self.inodes.lock_or_recover();
-                inodes.clear_children(parent_ino);
-                for status in &statuses {
-                    self.insert_presence(&mut inodes, parent_ino, status);
-                }
-
-                let mut cache = self.cache.lock_or_recover();
-                cache.put(
-                    cache_key,
-                    serde_json::to_value(&statuses).unwrap_or_else(|e| {
-                        warn!("Failed to serialize presence statuses to cache value: {e}");
-                        serde_json::Value::Null
-                    }),
-                    PRESENCE_TTL,
-                );
-            }
-            Err(e) => {
-                error!("Failed to fetch presence: {}", e);
-            }
-        }
-    }
-
-    fn insert_presence(&self, inodes: &mut InodeTable, parent_ino: u64, status: &ChildStatusDto) {
+    fn insert_presence(inodes: &mut InodeTable, parent_ino: u64, status: &ChildStatusDto) {
         let child_name = status
             .uni_student
             .as_ref()

@@ -59,12 +59,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     // Initialize logging.
-    if args.verbose {
-        std::env::set_var("RUST_LOG", "debug");
+    let log_level = if args.verbose {
+        log::LevelFilter::Debug
     } else {
-        std::env::set_var("RUST_LOG", "info");
-    }
-    env_logger::init();
+        log::LevelFilter::Info
+    };
+    env_logger::Builder::new().filter_level(log_level).init();
 
     // Parse environment.
     let environment = parse_environment(&args.env);

@@ -195,7 +195,6 @@ impl InodeTable {
     }
 
     /// Clear all children of a directory (used before re-populating from API).
-    #[allow(dead_code)]
     pub fn clear_children(&mut self, parent_ino: u64) {
         if let Some(kids) = self.children.remove(&parent_ino) {
             for child_ino in kids.values() {
@@ -212,6 +211,7 @@ impl InodeTable {
             }
         }
         self.entries.remove(&ino);
+        self.parents.remove(&ino);
     }
 
     /// Get the inode for a top-level resource directory.
@@ -330,6 +330,53 @@ mod tests {
         assert_eq!(table.readdir(posts_ino).len(), 2);
         table.clear_children(posts_ino);
         assert_eq!(table.readdir(posts_ino).len(), 0);
+    }
+
+    #[test]
+    fn clear_children_removes_parents_and_entries() {
+        let mut table = InodeTable::new();
+        let posts_ino = table.resource_dir_ino(ResourceType::Posts).unwrap();
+
+        let item_ino = table.insert(
+            posts_ino,
+            "1-A".to_string(),
+            InodeEntry::ResourceItem {
+                resource_type: ResourceType::Posts,
+                name: "1-A".to_string(),
+                created: UNIX_EPOCH,
+                modified: UNIX_EPOCH,
+            },
+        );
+
+        // Add a file as a grandchild.
+        let file_ino = table.insert(
+            item_ino,
+            "content.txt".to_string(),
+            InodeEntry::File {
+                parent_inode: item_ino,
+                name: "content.txt".to_string(),
+                content: ContentSource::Text("hello".to_string()),
+                size: 5,
+                mtime: UNIX_EPOCH,
+            },
+        );
+
+        // Verify entries and parents exist before clearing.
+        assert!(table.get(item_ino).is_some());
+        assert!(table.get(file_ino).is_some());
+        assert_eq!(table.parent_of(item_ino), posts_ino);
+        assert_eq!(table.parent_of(file_ino), item_ino);
+
+        table.clear_children(posts_ino);
+
+        // Children and grandchildren should be fully removed.
+        assert!(table.get(item_ino).is_none());
+        assert!(table.get(file_ino).is_none());
+        // parent_of returns ROOT_INO for unknown inodes, confirming cleanup.
+        assert_eq!(table.parent_of(item_ino), ROOT_INO);
+        assert_eq!(table.parent_of(file_ino), ROOT_INO);
+        // The parent directory itself should still exist.
+        assert!(table.get(posts_ino).is_some());
     }
 
     #[test]

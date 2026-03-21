@@ -194,6 +194,7 @@ impl AulaFs {
         match result {
             Ok(post_result) => {
                 let mut inodes = self.inodes.lock_or_recover();
+                inodes.clear_children(parent_ino);
                 if let Some(posts) = &post_result.posts {
                     for post in posts {
                         self.insert_post(&mut inodes, parent_ino, post);
@@ -320,6 +321,7 @@ impl AulaFs {
         match result {
             Ok(thread_list) => {
                 let mut inodes = self.inodes.lock_or_recover();
+                inodes.clear_children(parent_ino);
                 if let Some(threads) = &thread_list.threads {
                     for thread in threads {
                         self.insert_thread(&mut inodes, parent_ino, thread);
@@ -472,6 +474,7 @@ impl AulaFs {
         match result {
             Ok(events) => {
                 let mut inodes = self.inodes.lock_or_recover();
+                inodes.clear_children(parent_ino);
                 for event in &events {
                     self.insert_calendar_event(&mut inodes, parent_ino, event);
                 }
@@ -585,6 +588,7 @@ impl AulaFs {
         match result {
             Ok(notifications) => {
                 let mut inodes = self.inodes.lock_or_recover();
+                inodes.clear_children(parent_ino);
                 for notif in &notifications {
                     self.insert_notification(&mut inodes, parent_ino, notif);
                 }
@@ -664,6 +668,7 @@ impl AulaFs {
             Ok(albums) => {
                 let has_more = albums.len() == PAGE_SIZE as usize;
                 let mut inodes = self.inodes.lock_or_recover();
+                inodes.clear_children(parent_ino);
                 for album in &albums {
                     self.insert_album(&mut inodes, parent_ino, album);
                 }
@@ -795,6 +800,7 @@ impl AulaFs {
         match result {
             Ok(doc_result) => {
                 let mut inodes = self.inodes.lock_or_recover();
+                inodes.clear_children(parent_ino);
                 let docs = doc_result.documents.as_deref().unwrap_or(&[]);
                 for doc in docs {
                     self.insert_document(&mut inodes, parent_ino, doc);
@@ -915,6 +921,7 @@ impl AulaFs {
         match result {
             Ok(statuses) => {
                 let mut inodes = self.inodes.lock_or_recover();
+                inodes.clear_children(parent_ino);
                 for status in &statuses {
                     self.insert_presence(&mut inodes, parent_ino, status);
                 }

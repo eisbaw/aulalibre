@@ -213,7 +213,7 @@ impl AulaFs {
                 // Add pagination directory if there are more posts.
                 if post_result.has_more_posts {
                     let next_page = page + 1;
-                    let page_name = format!("{}", next_page + 1); // 1-indexed display
+                    let page_name = format!("page-{}", next_page + 1);
                     inodes.insert(
                         parent_ino,
                         page_name,
@@ -345,7 +345,7 @@ impl AulaFs {
                 }
                 if thread_list.more_messages_exist {
                     let next_page = page + 1;
-                    let page_name = format!("{}", next_page + 1);
+                    let page_name = format!("page-{}", next_page + 1);
                     inodes.insert(
                         parent_ino,
                         page_name,
@@ -708,7 +708,7 @@ impl AulaFs {
                 }
                 if has_more {
                     let next_page = page + 1;
-                    let page_name = format!("{}", next_page + 1);
+                    let page_name = format!("page-{}", next_page + 1);
                     inodes.insert(
                         parent_ino,
                         page_name,
@@ -849,7 +849,7 @@ impl AulaFs {
                 let fetched_so_far = (page + 1) * PAGE_SIZE;
                 if fetched_so_far < total {
                     let next_page = page + 1;
-                    let page_name = format!("{}", next_page + 1);
+                    let page_name = format!("page-{}", next_page + 1);
                     inodes.insert(
                         parent_ino,
                         page_name,

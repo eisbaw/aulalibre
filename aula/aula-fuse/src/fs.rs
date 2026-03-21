@@ -1184,8 +1184,8 @@ impl Filesystem for AulaFs {
 
         let inodes = self.inodes.lock_or_recover();
         if let Some(InodeEntry::File { content, .. }) = inodes.get(ino) {
-            let data = match content {
-                ContentSource::Text(t) => t.clone(),
+            let bytes: Vec<u8> = match content {
+                ContentSource::Text(t) => t.as_bytes().to_vec(),
                 ContentSource::LazyDownload { url } => {
                     // Lazy download: fetch the content from the URL.
                     let url = url.clone();
@@ -1199,10 +1199,9 @@ impl Filesystem for AulaFs {
                         }
                     }
                 }
-                ContentSource::Empty => String::new(),
+                ContentSource::Empty => Vec::new(),
             };
 
-            let bytes = data.as_bytes();
             let offset = offset as usize;
             if offset >= bytes.len() {
                 reply.data(&[]);
@@ -1295,9 +1294,8 @@ impl Filesystem for AulaFs {
 }
 
 impl AulaFs {
-    fn lazy_download(&self, url: &str) -> Result<String, String> {
-        // Use the session's HTTP client to download.
-        // This is a simple blocking download.
+    fn lazy_download(&self, url: &str) -> Result<Vec<u8>, String> {
+        // Use the session's HTTP client to download binary content.
         let client = {
             let session = self.session.lock_or_recover();
             session.client().http().clone()
@@ -1309,7 +1307,10 @@ impl AulaFs {
                 .send()
                 .await
                 .map_err(|e| format!("HTTP error: {}", e))?;
-            resp.text().await.map_err(|e| format!("Body error: {}", e))
+            resp.bytes()
+                .await
+                .map(|b| b.to_vec())
+                .map_err(|e| format!("Body error: {}", e))
         })
     }
 }

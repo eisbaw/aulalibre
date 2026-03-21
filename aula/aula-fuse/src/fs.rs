@@ -1001,22 +1001,39 @@ impl AulaFs {
 fn strip_html(html: &str) -> String {
     let mut result = String::with_capacity(html.len());
     let mut in_tag = false;
+    let mut tag_name = String::new();
     for ch in html.chars() {
         match ch {
-            '<' => in_tag = true,
+            '<' => {
+                in_tag = true;
+                tag_name.clear();
+            }
             '>' => {
                 in_tag = false;
-                // Add space after block elements.
-                if result.ends_with("p")
-                    || result.ends_with("br")
-                    || result.ends_with("div")
-                    || result.ends_with("li")
-                {
+                let is_closing = tag_name.starts_with('/');
+                let name = tag_name.trim_start_matches('/').to_ascii_lowercase();
+                // Void elements: insert newline on the (only) tag.
+                // Paired block elements: insert newline only on closing tag.
+                let newline = match name.as_str() {
+                    "br" => true,
+                    "p" | "div" | "li" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "tr" => {
+                        is_closing
+                    }
+                    _ => false,
+                };
+                if newline {
                     result.push('\n');
                 }
             }
-            _ if !in_tag => result.push(ch),
-            _ => {}
+            _ if in_tag => {
+                // Accumulate tag name (stop at space/attrs).
+                if ch == ' ' || ch == '\t' || ch == '\n' || ch == '/' && !tag_name.is_empty() {
+                    // Attributes follow; stop accumulating tag name.
+                } else if tag_name.len() < 10 {
+                    tag_name.push(ch);
+                }
+            }
+            _ => result.push(ch),
         }
     }
     result.trim().to_string()
@@ -1294,5 +1311,49 @@ impl AulaFs {
                 .map_err(|e| format!("HTTP error: {}", e))?;
             resp.text().await.map_err(|e| format!("Body error: {}", e))
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn strip_html_basic() {
+        assert_eq!(strip_html("<b>hello</b>"), "hello");
+        assert_eq!(strip_html("<p>one</p><p>two</p>"), "one\ntwo");
+        assert_eq!(strip_html("no tags here"), "no tags here");
+        assert_eq!(strip_html(""), "");
+    }
+
+    #[test]
+    fn strip_html_no_spurious_newlines_from_text() {
+        // Text ending in 'p', 'br', 'div', 'li' must NOT trigger newlines.
+        assert_eq!(strip_html("trip"), "trip");
+        assert_eq!(strip_html("grip"), "grip");
+        assert_eq!(strip_html("stop"), "stop");
+        assert_eq!(strip_html("abr"), "abr");
+        assert_eq!(strip_html("adiv"), "adiv");
+        assert_eq!(strip_html("ali"), "ali");
+        // Inside tags, same.
+        assert_eq!(strip_html("<span>trip</span>"), "trip");
+        assert_eq!(strip_html("<span>We went on a trip</span>"), "We went on a trip");
+    }
+
+    #[test]
+    fn strip_html_block_tags_produce_newlines() {
+        assert_eq!(strip_html("<p>para</p>"), "para");
+        assert_eq!(strip_html("line1<br>line2"), "line1\nline2");
+        assert_eq!(strip_html("line1<br/>line2"), "line1\nline2");
+        assert_eq!(strip_html("<div>block</div>"), "block");
+        assert_eq!(strip_html("<li>item</li>"), "item");
+        assert_eq!(strip_html("<h1>heading</h1>"), "heading");
+        assert_eq!(strip_html("<tr>row</tr>"), "row");
+    }
+
+    #[test]
+    fn strip_html_mixed_content() {
+        let input = "<p>We went on a <b>trip</b> today.</p><p>It was great!</p>";
+        assert_eq!(strip_html(input), "We went on a trip today.\nIt was great!");
     }
 }

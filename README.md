@@ -1,20 +1,21 @@
 # Aula Reversed
 
-Reverse engineering project for the Aula Android app (`com.netcompany.aulanativeprivate` v2.15.4) -- Denmark's school communication platform by Netcompany A/S. The project produces two things:
+Unofficial tools for accessing Denmark's Aula school communication platform. The project delivers three things:
 
-1. **Reverse engineering analysis** of the APK (decompilation, architecture docs, API endpoint mapping)
-2. **A Rust CLI tool** (`aula-cli`) for interacting with the Aula platform from the command line
+1. **`aula-api`** -- Rust library for the Aula REST API (authentication, models, service calls)
+2. **`aula-cli`** -- Command-line interface for reading messages, calendar, posts, gallery, documents, presence, and more
+3. **`aula-fuse`** -- FUSE filesystem that mounts Aula data as a browsable directory tree (photos viewable with any image viewer)
 
-## What the CLI can do
+## CLI commands
 
-The CLI provides read access to most Aula domains. All commands support `--json` for machine-readable output.
+Read access to most Aula domains. All commands support `--json` for machine-readable output.
 
 | Command | Description |
 |---------|-------------|
-| `aula auth login` | Browser-based OIDC login (UniLogin level 2 or MitID level 3) |
-| `aula auth logout` | Clear session and tokens |
+| `aula auth login` | Browser-based OIDC login (UniLogin or MitID) |
 | `aula auth status` | Show current login state and token expiry |
 | `aula auth refresh` | Refresh an expired access token |
+| `aula auth logout` | Clear session and tokens |
 | `aula messages list` | List message threads |
 | `aula messages read <id>` | Read a specific thread |
 | `aula messages folders` | List message folders |
@@ -40,44 +41,44 @@ The CLI provides read access to most Aula domains. All commands support `--json`
 
 Global flags: `--json`, `--env <environment>`, `--verbose`, `--profile <name>`.
 
-Supported environments: `production`, `preprod`, `hotfix`, `test1`, `test3`, `dev1`, `dev3`, `dev11`.
+## FUSE filesystem
 
-## Prerequisites
+Mount Aula data as a read-only directory tree. Gallery photos are lazily downloaded on access -- open them directly with `feh`, `eog`, or any image viewer.
 
-- [Nix package manager](https://nixos.org/download.html) (provides all build tools via `shell.nix`)
-- A browser for the OIDC login flow
-
-## Running the CLI
-
-Enter the Nix shell, then use `just` or `cargo` directly:
-
-```bash
-# Enter the development environment
-nix-shell
-
-# Build
-just build
-
-# Run the CLI
-just run --help
-just run auth login
-just run messages list --limit 10
-
-# Or use cargo directly
-cargo run --manifest-path aula/Cargo.toml --bin aula-cli -- auth login
-
-# Run tests, linting, formatting check
-just e2e
-
-# Run live E2E tests against the real API (requires auth token)
-just e2e-live
+```
+/tmp/aula/
+  posts/           institution feed posts
+  messages/        message threads and individual messages
+  calendar/        events with details
+  gallery/         photo albums with lazy-downloaded media
+  documents/       secure documents
+  notifications/   notification items
+  presence/        children's presence status
 ```
 
-The Justfile also has convenience recipes for common queries. Run `just` to list them.
+Pagination appears as nested `page-N/` subdirectories.
+
+```bash
+just mount              # mount to /tmp/aula
+just umount             # unmount
+feh /tmp/aula/gallery/*/  # browse album photos
+```
+
+## Getting started
+
+Prerequisites: [Nix package manager](https://nixos.org/download.html) and a browser for login.
+
+```bash
+nix-shell               # enter dev environment
+just build              # build everything
+just run auth login --manual  # authenticate via browser
+just run messages list        # list message threads
+just mount                    # mount as filesystem
+```
 
 ## Configuration
 
-The CLI reads settings from `~/.config/aula/config.toml`:
+`~/.config/aula/config.toml`:
 
 ```toml
 default_environment = "production"
@@ -88,65 +89,29 @@ verbose = false
 
 All settings can be overridden with CLI flags.
 
-## Authentication and token storage
+## Authentication
 
-The CLI authenticates via the same OIDC Authorization Code + PKCE flow the mobile app uses, through `login.aula.dk`.
+OIDC Authorization Code + PKCE flow through `login.aula.dk`.
 
-**Login modes:**
+- **Manual** (`--manual`, recommended): opens browser, you paste the redirect URL back into the terminal.
+- **Automatic** (default): opens browser and captures the auth code via a local callback server. May not work in all environments.
 
-- **Automatic** (default): starts a local HTTP callback server, opens your browser, and captures the auth code automatically.
-- **Manual** (`--manual`): for environments where localhost redirect is rejected. You paste the redirect URL from your browser.
-
-**Token storage:**
-
-After login, tokens are persisted to `~/.local/share/aula/tokens.json` (or the platform-appropriate XDG data directory). The file is created with `0600` permissions (owner read/write only).
-
-The `secrets/` directory in this repo is gitignored and used for development artifacts like HAR captures and test fixtures -- it is not part of the CLI's token storage.
-
-**Token lifecycle:**
-
-```
-aula auth login          # obtain tokens
-aula auth status         # check expiry
-aula auth refresh        # refresh without re-login
-aula auth logout         # clear tokens
-```
+Tokens stored at `~/.local/share/aula/tokens.json` with `0600` permissions.
 
 ## Project structure
 
 ```
 aula/                    Rust workspace
   aula-api/              API client library (auth, models, services)
-  aula-cli/              CLI binary (clap-based, one module per domain)
-re/                      Reverse engineering artifacts and analysis
-  architecture.md        APK architecture documentation
-  prd.apk_decompile.md   Project requirements (4 milestones)
-  milestone2_analysis.md File analysis findings
-  auth_flow.md           OIDC authentication flow analysis
-  api_endpoints.md       Discovered API endpoints
-  data_models.md         Data model documentation
-  ...                    (many more analysis documents)
-secrets/                 Gitignored: tokens, HAR dumps, test fixtures
-scripts/                 Utility scripts
-shell.nix                Nix environment (Rust toolchain, RE tools)
-Justfile                 Common recipes (build, test, lint, run, showcase)
+  aula-cli/              CLI binary (clap, one module per domain)
+  aula-fuse/             FUSE filesystem binary
+re/                      Reverse engineering analysis documents
+secrets/                 Gitignored: dev artifacts, HAR dumps, test fixtures
+scripts/                 Helper scripts (login, chrome devtools)
+shell.nix                Nix environment
+Justfile                 Common recipes (build, test, lint, run, mount)
 ```
-
-## Reverse engineering docs
-
-Key analysis documents under `re/`:
-
-| Document | Contents |
-|----------|----------|
-| `architecture.md` | Full app architecture: Xamarin.Android stack, DI, assembly structure |
-| `prd.apk_decompile.md` | Original project requirements with 4 milestones |
-| `auth_flow.md` | OIDC login flow, token storage, certificate pinning |
-| `api_endpoints.md` | Discovered REST API endpoints and their parameters |
-| `data_models.md` | Domain models: messages, calendar, presence, posts, etc. |
-| `milestone2_analysis.md` | File-level analysis of extracted APK contents |
-| `firebase_analysis.md` | Firebase Cloud Messaging integration |
-| `security_analysis.md` | Security mechanisms: pinning, encryption, secure storage |
 
 ## License
 
-This is a personal reverse engineering project for educational and interoperability purposes. The Aula platform is owned by Netcompany A/S.
+Personal project for educational and interoperability purposes.

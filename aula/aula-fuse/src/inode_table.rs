@@ -99,6 +99,8 @@ pub struct InodeTable {
     entries: HashMap<u64, InodeEntry>,
     /// Reverse lookup: parent_inode -> (child_name -> child_inode).
     children: HashMap<u64, HashMap<String, u64>>,
+    /// Child inode -> parent inode.
+    parents: HashMap<u64, u64>,
 }
 
 impl InodeTable {
@@ -108,6 +110,7 @@ impl InodeTable {
             next_ino: 2, // 1 is reserved for root
             entries: HashMap::new(),
             children: HashMap::new(),
+            parents: HashMap::new(),
         };
 
         // Insert root.
@@ -120,6 +123,7 @@ impl InodeTable {
             table.next_ino += 1;
             table.entries.insert(ino, InodeEntry::ResourceDir(*rt));
             table.children.insert(ino, HashMap::new());
+            table.parents.insert(ino, ROOT_INO);
             table
                 .children
                 .get_mut(&ROOT_INO)
@@ -164,12 +168,22 @@ impl InodeTable {
 
         self.entries.insert(ino, entry);
         self.children.entry(ino).or_default();
+        self.parents.insert(ino, parent_ino);
         self.children
             .entry(parent_ino)
             .or_default()
             .insert(name, ino);
 
         ino
+    }
+
+    /// Get the parent inode of a given inode. Returns `ROOT_INO` for root
+    /// and for any inode whose parent is unknown.
+    pub fn parent_of(&self, ino: u64) -> u64 {
+        if ino == ROOT_INO {
+            return ROOT_INO;
+        }
+        self.parents.get(&ino).copied().unwrap_or(ROOT_INO)
     }
 
     /// Check if a directory has been populated (has any children).
@@ -316,5 +330,62 @@ mod tests {
         assert_eq!(table.readdir(posts_ino).len(), 2);
         table.clear_children(posts_ino);
         assert_eq!(table.readdir(posts_ino).len(), 0);
+    }
+
+    #[test]
+    fn parent_of_root_is_root() {
+        let table = InodeTable::new();
+        assert_eq!(table.parent_of(ROOT_INO), ROOT_INO);
+    }
+
+    #[test]
+    fn parent_of_resource_dir_is_root() {
+        let table = InodeTable::new();
+        let posts_ino = table.resource_dir_ino(ResourceType::Posts).unwrap();
+        assert_eq!(table.parent_of(posts_ino), ROOT_INO);
+    }
+
+    #[test]
+    fn parent_of_nested_entries() {
+        let mut table = InodeTable::new();
+        let posts_ino = table.resource_dir_ino(ResourceType::Posts).unwrap();
+
+        // Insert a resource item under posts.
+        let item_ino = table.insert(
+            posts_ino,
+            "42-Test".to_string(),
+            InodeEntry::ResourceItem {
+                resource_type: ResourceType::Posts,
+                name: "42-Test".to_string(),
+                created: UNIX_EPOCH,
+                modified: UNIX_EPOCH,
+            },
+        );
+        assert_eq!(table.parent_of(item_ino), posts_ino);
+
+        // Insert a page dir under posts.
+        let page_ino = table.insert(
+            posts_ino,
+            "2".to_string(),
+            InodeEntry::PageDir {
+                resource_type: ResourceType::Posts,
+                page: 2,
+                parent_inode: posts_ino,
+            },
+        );
+        assert_eq!(table.parent_of(page_ino), posts_ino);
+
+        // Insert an item under the page dir.
+        let nested_item_ino = table.insert(
+            page_ino,
+            "99-Nested".to_string(),
+            InodeEntry::ResourceItem {
+                resource_type: ResourceType::Posts,
+                name: "99-Nested".to_string(),
+                created: UNIX_EPOCH,
+                modified: UNIX_EPOCH,
+            },
+        );
+        assert_eq!(table.parent_of(nested_item_ino), page_ino);
     }
 }

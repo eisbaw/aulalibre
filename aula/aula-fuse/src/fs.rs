@@ -26,7 +26,7 @@ use aula_api::models::presence::ChildStatusDto;
 use aula_api::Session;
 
 use crate::cache::{Cache, CacheKey, LIST_TTL, PRESENCE_TTL};
-use crate::inode_table::{ContentSource, InodeEntry, InodeTable, ResourceType, ROOT_INO};
+use crate::inode_table::{ContentSource, InodeEntry, InodeTable, ResourceType};
 use crate::sanitize::dir_name;
 use crate::timestamp::{mtime_from, parse_aula_datetime};
 
@@ -1121,10 +1121,7 @@ impl Filesystem for AulaFs {
 
         // Add . and ..
         entries.push((".".to_string(), ino, FileType::Directory));
-        let parent_ino = match inodes.get(ino) {
-            Some(InodeEntry::Root) => ROOT_INO,
-            _ => ROOT_INO, // Simplified: always point .. to root
-        };
+        let parent_ino = inodes.parent_of(ino);
         entries.push(("..".to_string(), parent_ino, FileType::Directory));
 
         // Add actual children.

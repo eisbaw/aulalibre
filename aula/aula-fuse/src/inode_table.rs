@@ -53,9 +53,7 @@ impl ResourceType {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ContentSource {
-    /// JSON-serialized API object.
-    Json(serde_json::Value),
-    /// Plain text content.
+    /// Plain text content (includes pre-rendered JSON).
     Text(String),
     /// Content to be lazily fetched (e.g., gallery media).
     /// Stores a URL to download from.

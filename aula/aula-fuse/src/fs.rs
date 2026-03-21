@@ -276,7 +276,7 @@ impl AulaFs {
             InodeEntry::File {
                 parent_inode: item_ino,
                 name: "metadata.json".to_string(),
-                content: ContentSource::Json(serde_json::to_value(post).unwrap_or_default()),
+                content: ContentSource::Text(json),
                 size: json_bytes,
                 mtime,
             },
@@ -390,7 +390,7 @@ impl AulaFs {
             InodeEntry::File {
                 parent_inode: item_ino,
                 name: "metadata.json".to_string(),
-                content: ContentSource::Json(serde_json::to_value(thread).unwrap_or_default()),
+                content: ContentSource::Text(json),
                 size: json_bytes,
                 mtime,
             },
@@ -544,7 +544,7 @@ impl AulaFs {
             InodeEntry::File {
                 parent_inode: item_ino,
                 name: "metadata.json".to_string(),
-                content: ContentSource::Json(serde_json::to_value(event).unwrap_or_default()),
+                content: ContentSource::Text(json),
                 size: json_bytes,
                 mtime,
             },
@@ -621,7 +621,7 @@ impl AulaFs {
             InodeEntry::File {
                 parent_inode: parent_ino,
                 name: filename,
-                content: ContentSource::Json(serde_json::to_value(notif).unwrap_or_default()),
+                content: ContentSource::Text(json),
                 size: json_bytes,
                 mtime,
             },
@@ -725,7 +725,7 @@ impl AulaFs {
             InodeEntry::File {
                 parent_inode: item_ino,
                 name: "metadata.json".to_string(),
-                content: ContentSource::Json(serde_json::to_value(album).unwrap_or_default()),
+                content: ContentSource::Text(json),
                 size: json_bytes,
                 mtime,
             },
@@ -856,7 +856,7 @@ impl AulaFs {
             InodeEntry::File {
                 parent_inode: item_ino,
                 name: "metadata.json".to_string(),
-                content: ContentSource::Json(serde_json::to_value(doc).unwrap_or_default()),
+                content: ContentSource::Text(json),
                 size: json_bytes,
                 mtime,
             },
@@ -982,7 +982,7 @@ impl AulaFs {
             InodeEntry::File {
                 parent_inode: item_ino,
                 name: "metadata.json".to_string(),
-                content: ContentSource::Json(serde_json::to_value(status).unwrap_or_default()),
+                content: ContentSource::Text(json),
                 size: json_bytes,
                 mtime,
             },
@@ -1164,7 +1164,6 @@ impl Filesystem for AulaFs {
         let inodes = self.inodes.lock_or_recover();
         if let Some(InodeEntry::File { content, .. }) = inodes.get(ino) {
             let data = match content {
-                ContentSource::Json(v) => serde_json::to_string_pretty(v).unwrap_or_default(),
                 ContentSource::Text(t) => t.clone(),
                 ContentSource::LazyDownload { url } => {
                     // Lazy download: fetch the content from the URL.

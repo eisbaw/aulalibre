@@ -1,4 +1,9 @@
-{ pkgs ? import <nixpkgs> {} }:
+{
+  pkgs ? (import (builtins.fetchTarball {
+           url = "https://github.com/nixos/nixpkgs/tarball/nixos-25.11";
+           sha256 = "0z61p5n7c8268l7v8y6w6074rvhwzjzhqm4qi3wl6iy4skxcjprm";
+         }) {})
+}:
 
 pkgs.mkShell {
   buildInputs = with pkgs; [

@@ -16,7 +16,6 @@ pkgs.mkShell {
 
     # Android-specific tools
     android-tools # adb, aapt, and other Android SDK tools
-    jadx          # DEX to Java decompiler (GUI and CLI)
     apktool       # APK reverse engineering tool
 
     # Java decompilation ecosystem
@@ -29,14 +28,6 @@ pkgs.mkShell {
 
     # Disassemblers and reverse engineering
     radare2       # Advanced reverse engineering framework
-    ghidra        # NSA's reverse engineering suite
-
-    # .NET decompilation (if needed)
-    mono          # .NET runtime for Linux
-    ilspycmd      # ILSpy command-line .NET decompiler
-
-    # Network and protocol analysis
-    wireshark     # Network protocol analyzer (for runtime analysis)
 
     # Text processing and analysis
     ripgrep       # Fast text search tool
@@ -63,7 +54,6 @@ pkgs.mkShell {
     rust-analyzer # Rust language server
     pkg-config    # Build dependency for native crates
     openssl.dev   # OpenSSL headers for reqwest/native-tls
-    fuse3         # FUSE3 library for aula-fuse filesystem
 
     # Development tools
     just          # Command runner for project recipes
@@ -80,6 +70,17 @@ pkgs.mkShell {
 
     # Forensics and security tools
     sleuthkit     # Digital forensics toolkit
+  ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+    # macOS: stubs provide FUSE headers for compilation; macFUSE or fuse-t needed at runtime
+    macfuse-stubs # FUSE pkg-config headers for compiling fuser crate
+  ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
+    # Linux-only packages (fail to build or unavailable on Darwin)
+    fuse3         # FUSE3 library for aula-fuse
+    jadx          # DEX to Java decompiler — build broken on Darwin
+    ghidra        # NSA's reverse engineering suite — Linux-only deps
+    wireshark     # Network protocol analyzer — build issues on Darwin
+    mono          # .NET runtime for Linux
+    ilspycmd      # ILSpy command-line .NET decompiler
   ];
 
   shellHook = ''

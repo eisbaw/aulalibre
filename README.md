@@ -114,4 +114,4 @@ Justfile                 Common recipes (build, test, lint, run, mount)
 
 ## License
 
-Personal project for educational and interoperability purposes.
+MIT License. See [LICENSE](LICENSE).

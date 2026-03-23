@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::enums::common::PermissionEnum;
 use crate::enums::profiles::{InstitutionRole, InstitutionTypeEnum, PortalRole};
+use crate::serde_helpers::deserialize_optional_string_from_any;
 
 use super::groups::Group;
 use super::institutions::{Institution, InstitutionIdentity};
@@ -251,6 +252,7 @@ pub struct ChildProfile {
     pub inst_profile_id: Option<InstitutionProfileId>,
     pub profile_id: Option<ProfileId>,
     pub profile_picture: Option<ProfilePictureDto>,
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub user_id: Option<String>,
     #[serde(default)]
     pub has_custody_or_extended_access: bool,
@@ -351,6 +353,7 @@ pub struct WidgetDto {
     #[serde(default)]
     pub usable_for_groups: bool,
     pub ordering: Option<i32>,
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub widget_id: Option<String>,
     pub widget_version: Option<String>,
     #[serde(default)]
@@ -426,6 +429,7 @@ pub struct Profile {
     pub administrator: Option<serde_json::Value>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub user_id: Option<String>,
     pub portal_role: Option<String>,
     #[serde(default)]

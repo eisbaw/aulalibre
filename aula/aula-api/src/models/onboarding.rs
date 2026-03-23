@@ -9,6 +9,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::serde_helpers::deserialize_optional_string_from_any;
+
 use super::profiles::{Address, InstitutionProfileId, ProfileId};
 
 // ---------------------------------------------------------------------------
@@ -96,6 +98,7 @@ pub struct LoginInstitutionProfile {
 pub struct LoginChild {
     pub id: Option<i64>,
     pub profile_id: Option<ProfileId>,
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub user_id: Option<String>,
     pub name: Option<String>,
     pub short_name: Option<String>,

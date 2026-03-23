@@ -159,11 +159,16 @@ pub enum MessageMoreOption {
 }
 
 /// Thread type.
+///
+/// The Aula API inconsistently returns these in camelCase *or* snake_case,
+/// so we use explicit aliases to accept both forms.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ThreadType {
     Thread,
+    #[serde(alias = "event_reminder")]
     EventReminder,
+    #[serde(alias = "vacation_request_reminder")]
     VacationRequestReminder,
 }
 

@@ -11,6 +11,7 @@ pub mod enums;
 pub mod error;
 pub mod models;
 pub mod response;
+pub mod serde_helpers;
 pub mod services;
 pub mod session;
 pub mod token_store;

@@ -17,6 +17,7 @@ use crate::enums::common::{
 use crate::enums::documents::FileScanningStatus;
 use crate::enums::gallery::ConversionStatusEnum;
 use crate::enums::messaging::{SensitivityLevel, ThreadType};
+use crate::serde_helpers::deserialize_optional_string_from_any;
 use crate::enums::profiles::{GroupTypeEnum, InstitutionRole, PortalRole};
 
 use super::files::{AulaFileContent, AulaFileResultProfileDto, MembershipCountResultModel};
@@ -83,6 +84,7 @@ pub struct SearchResultHighlight {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultItem {
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -104,6 +106,7 @@ pub struct SearchResultItem {
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultCommonFile {
     // Base fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -129,6 +132,7 @@ pub struct SearchResultCommonFile {
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultCommonInboxItem {
     // Base fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -150,6 +154,7 @@ pub struct SearchResultCommonInboxItem {
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultEventItem {
     // Base fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -176,6 +181,7 @@ pub struct SearchResultEventItem {
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultGroupItem {
     // Base fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -221,6 +227,7 @@ pub struct SearchResultGroupAdmin {
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultMediaItem {
     // Base fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -259,6 +266,7 @@ pub struct SearchResultMediaItem {
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultPostItem {
     // Base fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -300,6 +308,7 @@ pub struct Creator {
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultProfileItemBase {
     // Base fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -374,6 +383,7 @@ pub struct SearchRoleDefinition {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MainGroup {
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub id: Option<String>,
     pub name: Option<String>,
 }
@@ -426,6 +436,7 @@ pub struct SearchGroupHome {
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultSecureFile {
     // Base fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -481,6 +492,7 @@ pub struct SearchResultSecureFileChildAssociation {
 #[serde(rename_all = "camelCase")]
 pub struct BaseSearchResultMessageItem {
     // Base SearchResultItem fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -515,6 +527,7 @@ pub struct BaseSearchResultMessageItem {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultMessage {
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub id: Option<String>,
     pub text: Option<serde_json::Value>, // RichTextWrapperDto
     pub send_date_time: Option<String>,
@@ -543,6 +556,7 @@ pub struct SearchResultMessageGlobalSearchItem {
 #[serde(rename_all = "camelCase")]
 pub struct SearchResultMessageItemSimple {
     // Base fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub doc_id: Option<String>,
     pub doc_type: Option<String>,
     pub institution_code: Option<String>,
@@ -552,6 +566,7 @@ pub struct SearchResultMessageItemSimple {
     pub name: Option<String>,
     pub description: Option<String>,
     // Simple message fields
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub message_id: Option<String>,
     pub message: Option<String>,
     pub subscription_id: Option<i64>,

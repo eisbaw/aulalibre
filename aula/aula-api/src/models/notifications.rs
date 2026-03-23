@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::enums::common::Platform;
 use crate::enums::notifications::{NotificationArea, NotificationEventType, NotificationType};
+use crate::serde_helpers::deserialize_optional_string_from_any;
 
 use super::calendar::HtmlDto;
 use super::profiles::InstitutionCode;
@@ -26,6 +27,7 @@ use super::profiles::InstitutionCode;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NotificationItemDto {
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub notification_id: Option<String>,
     pub general_information_id: Option<i64>,
     pub institution_profile_id: Option<i64>,
@@ -214,7 +216,9 @@ pub struct SimpleDevice {
 #[serde(rename_all = "camelCase")]
 pub struct RemoteNotification {
     pub profile_id: Option<i64>,
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub element_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub id: Option<String>,
     #[serde(rename = "type")]
     pub notification_type: Option<String>,

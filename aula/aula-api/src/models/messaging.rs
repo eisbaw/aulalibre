@@ -16,24 +16,7 @@ use crate::enums::messaging::{
 use crate::enums::profiles::PortalRole;
 
 use super::profiles::ProfilePictureDto;
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/// Deserialize an `Option<String>` that may arrive as a JSON string or number.
-fn deserialize_optional_string_from_any<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let v: Option<serde_json::Value> = Option::deserialize(deserializer)?;
-    match v {
-        None | Some(serde_json::Value::Null) => Ok(None),
-        Some(serde_json::Value::String(s)) => Ok(Some(s)),
-        Some(serde_json::Value::Number(n)) => Ok(Some(n.to_string())),
-        Some(other) => Ok(Some(other.to_string())),
-    }
-}
+use crate::serde_helpers::deserialize_optional_string_from_any;
 
 // ---------------------------------------------------------------------------
 // Shared value types
@@ -118,6 +101,7 @@ pub struct MessageThread {
     pub sensitivity_level: Option<SensitivityLevel>,
     pub creator: Option<serde_json::Value>,
     pub other_recipients: Option<Vec<SimpleMessageThreadSubscription>>,
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub thread_id: Option<String>,
     #[serde(default)]
     pub is_forwarded: bool,
@@ -129,6 +113,7 @@ pub struct MessageThread {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ThreadEntityLinkDto {
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub entity_id: Option<String>,
     pub thread_type: Option<ThreadType>,
 }
@@ -181,6 +166,7 @@ pub struct MessageParticipantDto {
     pub mail_box_owner: Option<RecipientApiModel>,
     pub full_name: Option<String>,
     pub metadata: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub last_read_message_id: Option<String>,
     pub last_read_message_timestamp: Option<String>,
     pub short_name: Option<String>,
@@ -231,6 +217,7 @@ pub struct MessageThreadSubscription {
     pub read: bool,
     #[serde(default)]
     pub sensitive: bool,
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub last_read_message_id: Option<String>,
     pub institution_code: Option<String>,
     pub creator: Option<MessageParticipantDto>,
@@ -275,6 +262,7 @@ pub struct MessageThreadSubscriptionList {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageDto {
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub id: Option<String>,
     pub message_type: Option<String>,
     pub send_date_time: Option<String>,
@@ -358,6 +346,7 @@ pub struct MessagesInThreadDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MessagesInThreadRecipientDto {
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub last_read_message_id: Option<String>,
     pub last_read_time_stamp: Option<String>,
     pub leave_time: Option<String>,

@@ -16,6 +16,7 @@ use crate::enums::calendar::{
 };
 use crate::enums::common::ResourceType;
 use crate::enums::profiles::{InstitutionRole, PortalRole};
+use crate::serde_helpers::deserialize_optional_string_from_any;
 
 use super::groups::SimpleGroupDto;
 use super::messaging::RichTextWrapperDto;
@@ -518,6 +519,7 @@ pub struct TimeSlotSimpleDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LessonBase {
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub lesson_id: Option<String>,
     pub lesson_status: Option<String>,
 }
@@ -541,6 +543,7 @@ pub struct LessonParticipant {
 #[serde(rename_all = "camelCase")]
 pub struct Lesson {
     // -- base --
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub lesson_id: Option<String>,
     pub lesson_status: Option<String>,
 
@@ -569,6 +572,7 @@ pub struct ParticipantSimple {
 #[serde(rename_all = "camelCase")]
 pub struct LessonSimple {
     // -- base --
+    #[serde(default, deserialize_with = "deserialize_optional_string_from_any")]
     pub lesson_id: Option<String>,
     pub lesson_status: Option<String>,
 

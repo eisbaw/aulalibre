@@ -1251,9 +1251,8 @@ impl Filesystem for AulaFs {
                             // reads don't re-download, and update size for getattr.
                             let len = data.len() as u64;
                             let mut inodes = self.inodes.lock_or_recover();
-                            if let Some(InodeEntry::File {
-                                content, size, ..
-                            }) = inodes.get_mut(ino)
+                            if let Some(InodeEntry::File { content, size, .. }) =
+                                inodes.get_mut(ino)
                             {
                                 *content = ContentSource::Bytes(data.clone());
                                 *size = len;

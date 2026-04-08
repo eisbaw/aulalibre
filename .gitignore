@@ -34,3 +34,6 @@ credentials.json
 # Rust build artifacts
 target/
 Cargo.lock
+
+# Nix build output
+result

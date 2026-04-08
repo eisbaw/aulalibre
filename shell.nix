@@ -1,3 +1,16 @@
+# shell.nix — Interactive development environment for the Aula project.
+#
+# Provides compilers, RE tools, analysis utilities, and dev tooling.
+# This is NOT a build derivation — use default.nix for that:
+#
+#   shell.nix  = interactive dev environment (nix-shell)
+#   default.nix = reproducible build artifact (nix-build)
+#
+# These two files are intentionally independent. shell.nix does not import
+# default.nix because the dev shell needs tools (jadx, ghidra, wireshark, …)
+# that have nothing to do with building the Rust binaries, and the build
+# derivation must stay pure and minimal.
+
 {
   pkgs ? (import (builtins.fetchTarball {
            url = "https://github.com/nixos/nixpkgs/tarball/25.11";

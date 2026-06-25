@@ -361,7 +361,7 @@ async fn handle_logout(env_override: Option<&str>) {
 
     let client = match AulaClient::with_config(AulaClientConfig {
         environment,
-        api_version: 23,
+        api_version: 24,
     }) {
         Ok(c) => c,
         Err(e) => {
@@ -467,7 +467,7 @@ async fn handle_refresh(env_override: Option<&str>) {
 
     let client = match AulaClient::with_config(AulaClientConfig {
         environment,
-        api_version: 23,
+        api_version: 24,
     }) {
         Ok(c) => c,
         Err(e) => {

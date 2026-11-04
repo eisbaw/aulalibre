@@ -1,7 +1,9 @@
 # Remote MCP Server — Plan
 
 Status: **proposal, not started**
-Scope: move `aula-mcp` off the Mac so one server serves both Claude Desktop and Claude mobile.
+Target: **Vercel** (Functions, official Rust runtime) + **Supabase** (Postgres via PostgREST) for token storage.
+Scope: move `aula-mcp` off the Mac so one server serves Claude Desktop and Claude mobile.
+Fly.io is kept as a documented alternative at the end.
 
 ## Problem
 
@@ -23,130 +25,181 @@ Goal: one HTTPS endpoint holding one token store, used by every Claude surface.
 | Only `aula-mcp/src/main.rs` is transport-bound (~40 of 167 lines). `tools::{Server, list, call}` takes/returns `serde_json::Value` and is transport-agnostic. | `aula/aula-mcp/src/tools.rs:37,149,258` |
 | `aula-api` has exactly one platform-specific call — `dirs::data_dir()` — already overridable via `AULA_DATA_DIR`. | `aula/aula-api/src/token_store.rs:66` |
 | Aula's OIDC `redirect_uri` is hardcoded to Aula's own domain, so a hosted "log in on my domain" redirect flow is unavailable unless Aula accepts a custom URI. | `aula/aula-api/src/auth.rs:36` (`https://app-private.aula.dk`) |
-| The pieces needed for a paste-based hosted login already exist: authorize-URL builder, state generator, code extractor, code exchange. | `auth.rs:186,205,262,451` |
+| The pieces needed for a paste-based login already exist: authorize-URL builder, state generator, code extractor, code exchange. | `auth.rs:186,205,262,451` |
 | Claude connectors accept **OAuth or unauthenticated** remote servers; there is **no custom Authorization-header field**. | Anthropic connector docs |
 | Dynamic Client Registration is deprecated (MCP spec 2026-07-28), so a self-hosted OAuth server may not be registrable by Claude. Unverified without a deploy. | MCP authorization spec |
 | Installing connectors from mobile is still beta; add the connector from Desktop/web, it then works on mobile. | Anthropic docs |
+| **Rust is an official Vercel runtime** (`vercel_runtime` v2); each `api/*.rs` file becomes a function, declared as a `[[bin]]`. | Vercel Rust runtime docs |
+| Vercel functions have a read-only filesystem plus ephemeral `/tmp` (500 MB). No persistent disk. Hobby: 300 s max duration, 2 GB RAM, 250 MB bundle. | Vercel functions docs |
+| Vercel has no built-in KV any more; storage is Blob, Global Config, or **Marketplace** (Supabase, Neon, Upstash) provisioned by integration. | Vercel storage docs |
+| Supabase keys: **secret key goes on the `apikey` header, not `Authorization: Bearer`** (it is not a JWT). Secret keys map to `service_role` and `BYPASSRLS` — they skip every RLS policy. | Supabase API-keys docs |
+| Supabase free plan: unlimited API requests, 500 MB DB, 5 GB egress, **projects pause after 1 week of inactivity**, max 2 active projects. | Supabase pricing |
 
 ## Target architecture
 
 ```
 Claude Desktop ─┐
-                ├─ HTTPS ─→ aula-mcp --http  (container)
-Claude mobile ──┘            ├─ POST /mcp/<secret>   JSON-RPC (stateless)
-                             ├─ GET  /healthz
-                             └─ /data/tokens.json    (volume, 0600)
-                                     │
-                                     └─→ www.aula.dk/api/v25 (aula-api)
+                ├─ HTTPS ─→ Vercel Function (Rust, fra1)
+Claude mobile ──┘              ├─ POST /mcp/<secret>   → rpc::handle  (stateless JSON-RPC)
+                               ├─ GET  /healthz        → 200 ok
+                               └─ apikey: <supabase secret key>
+                                        │
+                                        ├─→ Supabase PostgREST  (tokens row)
+                                        └─→ www.aula.dk/api/v25 (aula-api)
 ```
 
-- One `tools::Server`, one `Session`, one token store. All clients share it; calls serialize
-  behind the existing mutex, which is fine for interactive use.
-- Transport is stateless: each POST carries a complete JSON-RPC message and gets a JSON
-  response. No SSE, no session ids — sufficient for a tools-only server.
-- Refresh stays server-side and headless (`Session::ensure_valid_token`), so the Mac no
-  longer needs to be awake or authenticated.
+- One JSON-RPC dispatcher, two transports: stdio locally, HTTP on Vercel.
+- No SSE and no session ids — each POST carries a complete JSON-RPC message and gets a JSON
+  response, which is all a tools-only server needs.
+- Refresh stays server-side and headless, so the Mac no longer needs to be awake.
+
+## Storage design
+
+One row, one JSON blob — the same payload the CLI already writes to `tokens.json`:
+
+```sql
+create table public.aula_tokens (
+  id          text primary key,           -- 'default'
+  data        jsonb not null,             -- LoginData
+  updated_at  timestamptz not null default now()
+);
+alter table public.aula_tokens enable row level security;  -- no policies: publishable keys see nothing
+```
+
+Access from the function (plain `reqwest`, no new dependency):
+
+- read: `GET /rest/v1/aula_tokens?id=eq.default&select=data`, header `apikey: <secret key>`
+- write: `POST /rest/v1/aula_tokens` with `Prefer: resolution=merge-duplicates` (upsert)
+
+A Storage bucket would work too, but a single row is simpler, transactional and free-tier
+ample. RLS is enabled with no policies so a leaked *publishable* key reads nothing; only the
+secret key (server-side env var) can touch the row.
 
 ## Work breakdown
 
-### R1 — Extract the JSON-RPC layer from `main.rs`
-Move `handle()` and `error()` into `aula-mcp/src/rpc.rs`; `main.rs` keeps only the stdio
-loop. Both transports then share one dispatcher.
-**AC:** stdio behaviour unchanged; the 7 framing tests move with the code and still pass.
+### R1 — Extract the JSON-RPC layer and lib-ify the crate
+Move `handle()`/`error()` from `main.rs` into `aula-mcp/src/rpc.rs`; add `src/lib.rs`
+exposing `rpc`, `tools`, `compact`; keep `src/main.rs` as the stdio bin.
+**AC:** stdio behaviour unchanged; the 7 framing tests move with the code and still pass;
+`cargo test -p aula-mcp` green.
 
-### R2 — HTTP transport
-Add `aula-mcp --http <bind>` using `axum` (hyper/tower already in the lockfile via reqwest):
-`POST /mcp` → `rpc::handle`, `GET /healthz` → `ok`. Stateless; no SSE.
-**AC:** `initialize`, `tools/list`, `tools/call` succeed over HTTP against the live account;
-`tools/call` for an unknown tool still returns `-32602`; covered by `tower::ServiceExt::oneshot`
-tests that do not hit the network.
+### R2 — Vercel function adapter
+Add `api/mcp.rs` using `vercel_runtime` v2 (declared as a `[[bin]]`), mapping the incoming
+request body to `rpc::handle` and returning a response with the right status/headers.
+`vercel.json` rewrites `POST /mcp/<secret>` → this function; `GET` answers 405.
+**AC:** `initialize`, `tools/list`, `tools/call` succeed over the deployed URL;
+unknown tool still returns `-32602`; `GET` returns 405.
+**Verify first:** that `vercel_runtime` allows a fully custom `Response` (status + headers) —
+the docs only show returning a JSON `Value`, and JSON-RPC needs error codes.
 
 ### R3 — Endpoint authentication (v1: secret path)
-Require a 32-byte random secret path segment (`/mcp/<secret>`), compared in constant time.
-Reject anything else with 404 (not 401 — no oracle).
-**AC:** missing/wrong secret → 404; correct secret → normal JSON-RPC; unit test for both.
-Note: this is a deliberate v1 shortcut. See "Decisions pending".
+Validate the secret path segment in the handler with a constant-time compare; mismatch → 404
+(not 401 — no oracle). **Deployment Protection must be disabled** on the production domain,
+otherwise Anthropic's servers get a 401 and connectors cannot send a bypass header.
+**AC:** wrong secret → 404; correct secret → normal JSON-RPC; unit test for both;
+`curl` from outside the network reaches the function.
 
-### R4 — Container and configuration
-Multi-stage Dockerfile (rust builder → slim runtime). Env: `AULA_DATA_DIR=/data`,
-`AULA_HTTP_BIND=0.0.0.0:8080`, `AULA_MCP_SECRET`, `AULA_ENV`.
-**AC:** `docker run` with a mounted volume serves `/healthz` and `/mcp/<secret>`;
-image starts in <2s; no tokens or secrets in the image or logs.
+### R4 — Token store backends
+Turn `TokenStore` into a backend enum: `File` (unchanged, CLI/stdio) and `Supabase`
+(PostgREST). Selected by env (`AULA_STORE=supabase`). Same 0600-equivalent care: the secret
+key never leaves the server env, never logged.
+**AC:** `aula auth login` writes to Supabase when configured; a fresh process reads the row,
+refreshes an expired token, and writes it back; round-trip covered by a unit test with a mock
+HTTP server (the repo already uses `wiremock`).
 
-### R5 — Token provisioning (no login UI)
-`aula auth login` on the Mac, then push `tokens.json` to the volume
-(`fly ssh sftp put`, or `fly secrets`-style injection at boot for first run).
-Add a `just push-tokens` recipe that documents the exact command.
-**AC:** after a push, a `tools/call` from Claude mobile returns live data; no Mac dependency.
+### R5 — Provisioning
+Create the table, generate a Supabase secret key, set Vercel env vars
+(`SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `AULA_MCP_SECRET`, `AULA_ENV`), and seed the row once
+by running `aula auth login` locally with `AULA_STORE=supabase`.
+**AC:** after seeding, a `tools/call` from Claude mobile returns live data; no Mac dependency.
 
 ### R6 — Deploy
-Fly.io: shared-cpu-1x 256MB + 1GB volume, TLS and hostname from the platform.
-**AC:** connector added on Desktop answers `aula_whoami`; the same connector works in
-Claude mobile; server survives a redeploy with tokens intact.
+Vercel project (Hobby), region `fra1` (EU, close to `www.aula.dk`), Supabase project in a
+matching EU region. Add the connector on Desktop, confirm it appears on mobile.
+**AC:** `aula_whoami` answers from both surfaces; a redeploy keeps the token row intact.
 
 ### R7 — Re-login page (only if the refresh token expires)
-`GET /login` renders the Aula authorize URL + a paste box; `POST /login` runs
+`/login` renders the Aula authorize URL + a paste box; `POST` runs
 `auth::extract_code_from_redirect` → `auth::exchange_code(redirect_uri = app-private.aula.dk)`
-→ writes tokens to the volume. Reachable only with the admin secret.
-**AC:** a deliberately corrupted refresh token is recoverable end-to-end through `/login`
-without touching the Mac.
-**Trigger:** measure refresh-token lifetime first (see "Open risks"); skip until it bites.
+→ writes the Supabase row. Reachable only with the admin secret.
+**AC:** a deliberately corrupted refresh token is recoverable end-to-end without touching the Mac.
+**Trigger:** measure refresh-token lifetime first; skip until it bites.
 
-Effort: R1–R6 ≈ 1.5 days. R7 +0.5 day. OAuth (v2) +1–2 days.
+### R8 — Optional: cache the onboarding payload
+Every invocation is a fresh process, so `ensure_context_initialized()` costs 2 Aula requests
+per tool call (~400 ms). Cache `OnboardingResponseDto` in the same table with a TTL.
+**AC:** a warm call makes 1 Aula request instead of 3; stale cache older than the TTL is ignored.
+
+Effort: R1–R6 ≈ 2 days. R7 +0.5 day. R8 +0.5 day. OAuth (v2) +1–2 days.
 
 ## Token lifecycle
 
-1. **Initial**: `aula auth login` on the Mac (MitID), tokens land in
-   `~/Library/Application Support/aula/tokens.json`.
-2. **Provision**: file copied to the server volume; the server loads it on first tool call
-   (logged to stderr: `tokens loaded from <path> (expires …)`).
-3. **Refresh**: hourly, automatic, server-side; new tokens persisted back to the volume.
+1. **Initial**: `aula auth login` with `AULA_STORE=supabase` (MitID), writing straight to the row.
+2. **Load**: each invocation reads the row, logs the token path/expiry (never the token).
+3. **Refresh**: hourly, automatic, server-side; the new token is written back to Supabase.
 4. **Recovery**: when refresh fails, tools return an explicit message rather than a bare 403
-   (`not logged in: no Aula tokens at <path>` / refresh error). R7 automates recovery;
-   until then, re-push the file.
+   (`not logged in` / refresh error). R7 automates recovery; until then, re-seed the row.
 
 ## Security and PII
 
 - The endpoint holds tokens for a children's school account. A secret path reduces exposure
-  but leaks through logs, browser history and referrers — acceptable for a single private
-  user, not for anything shared.
-- Tokens are stored `0600` in a volume, never logged (existing behaviour); the server logs
-  the token *path* and expiry only.
+  but leaks through access logs and browser history — acceptable for a single private user,
+  not for anything shared. If this is ever shared, per-user tokens and OAuth 2.1 are required,
+  and that is a different design (multi-tenancy), not a tweak.
+- The Supabase secret key bypasses all RLS. It lives only in Vercel env vars; a leak exposes
+  the whole project, so it must never reach the repo, logs, or the client.
+- Tokens are never logged; only the store kind and expiry are.
 - No IP allow-listing is possible: Anthropic's infrastructure calls the endpoint.
-- If this is ever shared, per-user tokens and OAuth 2.1 (RFC 9728 metadata, PKCE) are
-  required, and that is a different design (multi-tenancy), not a tweak.
+- **Free-tier pause**: a Supabase project unused for a week is paused, and the server starts
+  returning 500s until it is resumed in the dashboard. Normal connector use counts as
+  activity; add a weekly Vercel Cron hitting `/healthz` if the server may sit idle.
 
 ## Decisions pending
 
-1. **Host**: Fly.io (recommended — volume + TLS + `sftp put`), Cloud Run (no disk, scale to
-   zero, harder state), or a small VPS.
-2. **Auth for v1**: secret path (R3 as written) or OAuth 2.1 from the start.
-3. **Scope**: single user (one token store, one session) or eventually multiple guardians
-   (multi-tenant).
+1. **Auth for v1**: secret path (R3 as written) or OAuth 2.1 from the start.
+2. **Scope**: single user (one row, one session) or eventually multiple guardians (multi-tenant).
+3. **Region pairing**: confirm the Supabase project and Vercel function share an EU region.
+
+## Alternative: Fly.io
+
+| | Vercel + Supabase | Fly.io |
+|---|---|---|
+| Cost | free (Hobby + Supabase free) | ~$2–5/month |
+| Process model | per-invocation, cold starts possible | one long-lived process, session reused |
+| Aula calls per tool call | 3 (2 context + 1) unless R8 | 1 |
+| Token storage | Postgres row via PostgREST | file on a persistent volume |
+| Code changes | R1–R5 (Vercel adapter + store backend) | R1 + axum transport + volume |
+| Ops | nothing to babysit | server, volume, redeploys |
+
+Vercel is chosen for cost and zero ops; Fly wins on runtime simplicity (no store rewrite, no
+per-call context init). Moving to Fly later is cheap: the store backend abstraction from R4
+stays useful, and only the transport adapter changes.
 
 ## Out of scope
 
 - Native iOS/Android app (Rust core + `uniffi` + Swift/Kotlin UI) — weeks, and it would
   rebuild UI Claude already provides.
 - Multi-user token stores, per-user rate limits, audit logs.
-- Local Mac + tunnel variant (documented alternative, not chosen).
+- Local Mac + tunnel variant.
 
 ## Verification
 
-- `cargo test --workspace` (currently 8 suites) plus new HTTP transport tests.
+- `cargo test --workspace` plus new tests: HTTP adapter, secret-path rejection, Supabase
+  round-trip against `wiremock`.
 - Live smoke over HTTPS: `initialize` → `tools/list` → `aula_whoami` → `aula_presence`.
 - Connector test from both Claude Desktop and Claude mobile.
-- Restart/redeploy test: tokens and session survive.
-- Failure-path test: wrong secret → 404; expired refresh token → actionable error.
+- Redeploy test: the Supabase row survives; refresh still works.
+- Failure paths: wrong secret → 404; expired refresh token → actionable error; paused
+  Supabase project → error that says so.
 
 ## Open risks
 
+- **`vercel_runtime` custom responses unverified** — if it cannot return a status/header
+  controlled `Response`, JSON-RPC error codes and the 405 for `GET` need another approach.
 - **Refresh-token lifetime is unknown.** "Runs unattended forever" is unproven; measure it
   before deciding whether R7 is optional.
 - **OAuth registrability is unverified.** If Claude's connector flow needs DCR (deprecated),
-  the secret-path variant may be the only option short of running our own authorization
-  server.
-- **Cold starts / timeouts**: Aula calls are fast, but platform request limits (Fly ~60s)
-  should be checked for the largest tool (`aula_thread` on a 49-participant thread).
+  the secret-path variant may be the only option short of running our own authorization server.
+- **Supabase free-tier pause** could look like an outage; needs the cron or manual resume.
 - **Aula rejects a custom `redirect_uri`** — inferred, not tested. If wrong, R7 becomes a
   clean redirect flow instead of a paste box.

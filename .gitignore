@@ -35,5 +35,8 @@ credentials.json
 target/
 Cargo.lock
 
+# CLI state written into the repo when HOME/XDG env is stripped (.local/state/gh/…)
+.local/
+
 # Nix build output
 result

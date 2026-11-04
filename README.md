@@ -4,7 +4,7 @@ Unofficial tools for accessing Denmark's Aula school communication platform. The
 
 1. **`aula-api`** -- Rust library for the Aula REST API (authentication, models, service calls)
 2. **`aula-cli`** -- Command-line interface for reading messages, calendar, posts, gallery, documents, presence, and more
-3. **`aula-fuse`** -- FUSE filesystem that mounts Aula data as a browsable directory tree (photos viewable with any image viewer)
+3. **`aula-mcp`** -- MCP server so an LLM client can read and send Aula data in plain language
 
 ## CLI commands
 
@@ -41,28 +41,22 @@ Read access to most Aula domains. All commands support `--json` for machine-read
 
 Global flags: `--json`, `--env <environment>`, `--verbose`, `--profile <name>`.
 
-## FUSE filesystem
+## MCP server
 
-Mount Aula data as a read-only directory tree. Gallery photos are lazily downloaded on access -- open them directly with `feh`, `eog`, or any image viewer.
-
-```
-/tmp/aula/
-  posts/           institution feed posts
-  messages/        message threads and individual messages
-  calendar/        events with details
-  gallery/         photo albums with lazy-downloaded media
-  documents/       secure documents
-  notifications/   notification items
-  presence/        children's presence status
-```
-
-Pagination appears as nested `page-N/` subdirectories.
+`aula-mcp` exposes Aula to any MCP client over stdio, so you can ask questions instead of memorising CLI flags.
 
 ```bash
-just mount              # mount to /tmp/aula
-just umount             # unmount
-feh /tmp/aula/gallery/*/  # browse album photos
+nix-shell
+just build-release
+# point your MCP client at the binary:
+#   {"mcpServers": {"aula": {"command": "<repo>/aula/target/release/aula-mcp"}}}
 ```
+
+Authentication is shared with the CLI -- run `just run auth login` once and the server picks up the same token store. Set `AULA_ENV` to target a non-production environment.
+
+Tools are read-oriented (`aula_whoami`, `aula_messages`, `aula_thread`, `aula_calendar`, `aula_presence`, `aula_posts`, `aula_notifications`, `aula_gallery`, `aula_documents`, `aula_search`) plus two writes: `aula_send_message` and `aula_reply`. Responses are compact projections of Aula's DTOs -- plain text instead of HTML, only the fields a question can be answered from.
+
+To use it from Claude mobile, the server has to run remotely -- see [`re/remote_mcp_plan.md`](re/remote_mcp_plan.md).
 
 ## Getting started
 
@@ -73,7 +67,6 @@ nix-shell               # enter dev environment
 just build              # build everything
 just run auth login --manual  # authenticate via browser
 just run messages list        # list message threads
-just mount                    # mount as filesystem
 ```
 
 ## Configuration
@@ -104,12 +97,12 @@ Tokens stored at `~/.local/share/aula/tokens.json` with `0600` permissions.
 aula/                    Rust workspace
   aula-api/              API client library (auth, models, services)
   aula-cli/              CLI binary (clap, one module per domain)
-  aula-fuse/             FUSE filesystem binary
+  aula-mcp/              MCP server binary (stdio JSON-RPC, tool projections)
 re/                      Reverse engineering analysis documents
 secrets/                 Gitignored: dev artifacts, HAR dumps, test fixtures
 scripts/                 Helper scripts (login, chrome devtools)
 shell.nix                Nix environment
-Justfile                 Common recipes (build, test, lint, run, mount)
+Justfile                 Common recipes (build, test, lint, run, mcp)
 ```
 
 ## License

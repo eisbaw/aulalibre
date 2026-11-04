@@ -8,6 +8,10 @@ default:
 build:
     cargo build --manifest-path aula/Cargo.toml
 
+# Build optimised binaries (point MCP clients at target/release/aula-mcp)
+build-release:
+    cargo build --release --manifest-path aula/Cargo.toml
+
 # Run all tests
 test:
     cargo test --manifest-path aula/Cargo.toml
@@ -31,14 +35,9 @@ run *ARGS:
 # End-to-end tests (build + test + lint + fmt check)
 e2e: build test lint fmt-check
 
-# Mount Aula data as a FUSE filesystem
-mount mountpoint="/tmp/aula":
-    mkdir -p {{mountpoint}}
-    cargo run --manifest-path aula/Cargo.toml --bin aula-fuse -- {{mountpoint}}
-
-# Unmount the Aula FUSE filesystem
-umount mountpoint="/tmp/aula":
-    fusermount3 -u {{mountpoint}}
+# Run the MCP server over stdio (point your MCP client at this)
+mcp:
+    cargo run --manifest-path aula/Cargo.toml --bin aula-mcp
 
 # Run live E2E tests against the real Aula API (requires auth token)
 # See aula/aula-api/src/e2e.rs for setup instructions.

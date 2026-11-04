@@ -1,4 +1,4 @@
-# default.nix — Build the Aula Rust workspace (aula-cli, aula-fuse).
+# default.nix — Build the Aula Rust workspace (aula-cli, aula-mcp).
 #
 # This is a pure build derivation producing installable binaries.
 # It is intentionally separate from shell.nix:
@@ -38,8 +38,6 @@ pkgs.rustPlatform.buildRustPackage {
   ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
     darwin.apple_sdk.frameworks.Security
     darwin.apple_sdk.frameworks.SystemConfiguration
-  ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [
-    fuse3
   ];
 
   # Build all workspace members
@@ -49,7 +47,7 @@ pkgs.rustPlatform.buildRustPackage {
   cargoTestFlags = [ "--workspace" ];
 
   meta = with pkgs.lib; {
-    description = "CLI and FUSE filesystem for the Aula school platform";
+    description = "CLI and MCP server for the Aula school platform";
     license = licenses.mit;
     platforms = platforms.unix;
   };

@@ -16,7 +16,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::auth::{self, LoginData, OidcEndpoints};
-use crate::client::AulaClient;
+use crate::client::{AulaClient, AulaClientConfig, Environment};
 use crate::error::AulaError;
 use crate::models::onboarding::OnboardingResponseDto;
 use crate::models::profiles::InstitutionProfileId;
@@ -85,6 +85,20 @@ pub struct Session {
     /// initialization. Contains institution profile IDs and children
     /// needed by most API endpoints.
     profile_data: Option<OnboardingResponseDto>,
+}
+
+/// Build a session from the on-disk token store for `environment`.
+///
+/// Shared entry point for binaries (CLI, MCP server): creates the client and
+/// loads persisted tokens without printing or exiting, leaving the failure
+/// policy (exit code, MCP error) to the caller.
+pub fn from_store(environment: Environment) -> crate::Result<Session> {
+    let client = AulaClient::with_config(AulaClientConfig {
+        environment,
+        ..Default::default()
+    })?;
+    let store = TokenStore::default_location().unwrap_or_else(|| TokenStore::new("./aula-data"));
+    Session::new(client, store, SessionConfig::default())
 }
 
 impl Session {
@@ -285,8 +299,33 @@ impl Session {
         let auth_level = login_data.auth_level;
 
         let token_response =
-            auth::refresh_token(self.client.http(), &self.endpoints, auth_level, refresh_tok)
-                .await?;
+            match auth::refresh_token(self.client.http(), &self.endpoints, auth_level, refresh_tok)
+                .await
+            {
+                Ok(response) => response,
+                Err(e) => {
+                    // Two processes can share one token store (e.g. two MCP client
+                    // windows): whoever refreshes second presents a refresh token
+                    // the first one already rotated away. If the store now holds a
+                    // usable token written by the winner, adopt it instead of
+                    // failing - otherwise this process stays broken until restart.
+                    if let Some(fresh) = self.store.load()? {
+                        let already_ours = self
+                            .login_data
+                            .as_ref()
+                            .is_some_and(|mine| mine.access_token == fresh.access_token);
+                        if !already_ours
+                            && !fresh.is_expired_with_buffer(self.config.expiry_buffer_secs)
+                        {
+                            self.client
+                                .set_access_token(Some(fresh.access_token.clone()));
+                            self.login_data = Some(fresh);
+                            return Ok(());
+                        }
+                    }
+                    return Err(e);
+                }
+            };
 
         let new_data = LoginData::from_token_response(token_response, auth_level);
         self.store.save(&new_data)?;
@@ -322,6 +361,12 @@ impl Session {
         if self.context_initialized {
             return Ok(());
         }
+
+        // Refresh before the first direct `client.get` below. Those calls
+        // bypass `pre_request` (which would recurse into this method), so
+        // without this an expired token is sent as-is and Aula answers
+        // 403/code 20 - indistinguishable from a permission error.
+        self.ensure_valid_token().await?;
 
         // Step 1: Call getProfilesByLogin to establish the PHP session.
         // This sets the PHPSESSID cookie in the cookie jar, which is required

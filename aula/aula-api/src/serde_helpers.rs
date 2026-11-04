@@ -15,7 +15,9 @@ use serde::Deserialize;
 /// #[serde(default, deserialize_with = "crate::serde_helpers::deserialize_optional_string_from_any")]
 /// pub some_id: Option<String>,
 /// ```
-pub fn deserialize_optional_string_from_any<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+pub fn deserialize_optional_string_from_any<'de, D>(
+    deserializer: D,
+) -> Result<Option<String>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {

@@ -58,6 +58,11 @@ impl TokenStore {
     ///
     /// Returns `None` if the home directory cannot be determined.
     pub fn default_location() -> Option<Self> {
+        // Escape hatch for launchers whose data directory differs from the
+        // shell's (MCP clients, sandboxed apps, systemd units).
+        if let Some(dir) = std::env::var_os("AULA_DATA_DIR") {
+            return Some(Self::new(PathBuf::from(dir)));
+        }
         let base = dirs::data_dir()?;
         Some(Self::new(base.join(APP_DIR_NAME)))
     }
@@ -68,7 +73,7 @@ impl TokenStore {
     }
 
     /// Full path to the token file.
-    fn token_path(&self) -> PathBuf {
+    pub fn token_path(&self) -> PathBuf {
         self.dir.join(TOKEN_FILE_NAME)
     }
 

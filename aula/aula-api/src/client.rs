@@ -84,6 +84,23 @@ impl Environment {
     pub fn requires_basic_auth(&self) -> bool {
         !matches!(self, Self::Production)
     }
+
+    /// Parse an environment name (`preprod`, `hotfix`, `dev3`, …).
+    ///
+    /// Unrecognised names fall back to production, matching the CLI's
+    /// long-standing behaviour for `--env`.
+    pub fn from_name(name: &str) -> Self {
+        match name {
+            "preprod" => Self::Preprod,
+            "hotfix" => Self::Hotfix,
+            "test1" => Self::Test1,
+            "test3" => Self::Test3,
+            "dev1" => Self::Dev1,
+            "dev3" => Self::Dev3,
+            "dev11" => Self::Dev11,
+            _ => Self::Production,
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -111,15 +128,19 @@ const BASIC_AUTH_PASS: &str = "Aula-1337";
 pub struct AulaClientConfig {
     /// Target environment (default: [`Environment::Production`]).
     pub environment: Environment,
-    /// API version number (default: 23).
+    /// API version number (default: [`DEFAULT_API_VERSION`]).
     pub api_version: u32,
 }
+
+/// API version this crate targets. Aula retires old versions with `410 Gone`,
+/// so this has to be bumped whenever `www.aula.dk/api/v<N>/` stops answering.
+pub const DEFAULT_API_VERSION: u32 = 25;
 
 impl Default for AulaClientConfig {
     fn default() -> Self {
         Self {
             environment: Environment::Production,
-            api_version: 23,
+            api_version: DEFAULT_API_VERSION,
         }
     }
 }
@@ -583,16 +604,19 @@ mod tests {
     // -- AulaClient construction --------------------------------------------
 
     #[test]
-    fn default_config_is_production_v23() {
+    fn default_config_is_production() {
         let cfg = AulaClientConfig::default();
         assert_eq!(cfg.environment, Environment::Production);
-        assert_eq!(cfg.api_version, 23);
+        assert_eq!(cfg.api_version, DEFAULT_API_VERSION);
     }
 
     #[test]
     fn client_base_url_production() {
         let client = AulaClient::new().unwrap();
-        assert_eq!(client.base_url().as_str(), "https://www.aula.dk/api/v23/");
+        assert_eq!(
+            client.base_url().as_str(),
+            format!("https://www.aula.dk/api/v{DEFAULT_API_VERSION}/")
+        );
     }
 
     #[test]
@@ -612,7 +636,7 @@ mod tests {
     fn client_environment_accessor() {
         let client = AulaClient::with_config(AulaClientConfig {
             environment: Environment::Test3,
-            api_version: 23,
+            api_version: DEFAULT_API_VERSION,
         })
         .unwrap();
         assert_eq!(client.environment(), &Environment::Test3);
@@ -634,7 +658,7 @@ mod tests {
         let url = client.url("?method=session.keepAlive");
         assert_eq!(
             url.as_str(),
-            "https://www.aula.dk/api/v23/?method=session.keepAlive"
+            format!("https://www.aula.dk/api/v{DEFAULT_API_VERSION}/?method=session.keepAlive")
         );
     }
 
@@ -644,7 +668,9 @@ mod tests {
         let url = client.url("?method=messaging.getThreads&page=0");
         assert_eq!(
             url.as_str(),
-            "https://www.aula.dk/api/v23/?method=messaging.getThreads&page=0"
+            format!(
+                "https://www.aula.dk/api/v{DEFAULT_API_VERSION}/?method=messaging.getThreads&page=0"
+            )
         );
     }
 
@@ -652,14 +678,20 @@ mod tests {
     fn url_path_style_for_non_rpc() {
         let client = AulaClient::new().unwrap();
         let url = client.url("alivecheck/");
-        assert_eq!(url.as_str(), "https://www.aula.dk/api/v23/alivecheck/");
+        assert_eq!(
+            url.as_str(),
+            format!("https://www.aula.dk/api/v{DEFAULT_API_VERSION}/alivecheck/")
+        );
     }
 
     #[test]
     fn url_path_style_with_leading_slash() {
         let client = AulaClient::new().unwrap();
         let url = client.url("/alivecheck/");
-        assert_eq!(url.as_str(), "https://www.aula.dk/api/v23/alivecheck/");
+        assert_eq!(
+            url.as_str(),
+            format!("https://www.aula.dk/api/v{DEFAULT_API_VERSION}/alivecheck/")
+        );
     }
 
     // -- CSRF token extraction ----------------------------------------------

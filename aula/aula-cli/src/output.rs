@@ -148,25 +148,7 @@ pub fn extract_time(s: &str) -> String {
 ///
 /// Also decodes common HTML entities (&amp;, &lt;, etc.).
 pub fn strip_html_tags(html: &str) -> String {
-    let mut result = String::with_capacity(html.len());
-    let mut in_tag = false;
-
-    for ch in html.chars() {
-        match ch {
-            '<' => in_tag = true,
-            '>' => in_tag = false,
-            _ if !in_tag => result.push(ch),
-            _ => {}
-        }
-    }
-
-    result
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&nbsp;", " ")
+    aula_api::util::strip_html_tags(html)
 }
 
 // ---------------------------------------------------------------------------

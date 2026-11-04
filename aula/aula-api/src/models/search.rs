@@ -17,8 +17,8 @@ use crate::enums::common::{
 use crate::enums::documents::FileScanningStatus;
 use crate::enums::gallery::ConversionStatusEnum;
 use crate::enums::messaging::{SensitivityLevel, ThreadType};
-use crate::serde_helpers::deserialize_optional_string_from_any;
 use crate::enums::profiles::{GroupTypeEnum, InstitutionRole, PortalRole};
+use crate::serde_helpers::deserialize_optional_string_from_any;
 
 use super::files::{AulaFileContent, AulaFileResultProfileDto, MembershipCountResultModel};
 use super::messaging::{

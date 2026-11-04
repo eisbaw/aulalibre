@@ -1,24 +1,17 @@
-//! `aula-mcp` — Model Context Protocol server for the Aula school platform.
+//! `aula-mcp` stdio transport.
 //!
-//! Speaks JSON-RPC 2.0 over stdin/stdout (the transport MCP clients launch
-//! directly). Tools are described in [`tools`]; projections live in
-//! [`compact`]. Authentication is not handled here: tokens come from the same
-//! store `aula auth login` writes.
+//! Reads newline-delimited JSON-RPC from stdin and writes responses to stdout —
+//! the transport MCP clients launch directly. Dispatch lives in
+//! [`aula_mcp::rpc`]; this file only moves bytes.
 //!
 //! ```text
-//! aula-mcp                 # run over stdio
+//! aula-mcp                  # run over stdio
 //! AULA_ENV=preprod aula-mcp # target a non-production environment
 //! ```
 
-mod compact;
-mod tools;
-
 use std::io::{self, BufRead, Write};
 
-use serde_json::{json, Value};
-
-/// Protocol version returned when the client does not ask for one.
-const PROTOCOL_VERSION: &str = "2024-11-05";
+use aula_mcp::{rpc, tools};
 
 #[tokio::main]
 async fn main() {
@@ -32,136 +25,11 @@ async fn main() {
         if line.trim().is_empty() {
             continue;
         }
-        if let Some(response) = handle(&server, &line).await {
+        if let Some(response) = rpc::handle(&server, &line).await {
             if writeln!(out, "{response}").is_err() {
                 break;
             }
             let _ = out.flush();
         }
-    }
-}
-
-/// Handle one JSON-RPC message. Returns `None` for notifications (no `id`).
-async fn handle(server: &tools::Server, line: &str) -> Option<Value> {
-    let request: Value = match serde_json::from_str(line) {
-        Ok(value) => value,
-        Err(e) => return Some(error(Value::Null, -32700, &format!("invalid JSON: {e}"))),
-    };
-
-    // No `id` means a notification (`notifications/initialized`, `cancelled`, …):
-    // the spec forbids replying to those.
-    let id = request.get("id").cloned()?;
-    let method = request
-        .get("method")
-        .and_then(Value::as_str)
-        .unwrap_or_default();
-    let params = request.get("params").cloned().unwrap_or(Value::Null);
-
-    let result = match method {
-        "initialize" => Ok(json!({
-            "protocolVersion": params
-                .get("protocolVersion")
-                .and_then(Value::as_str)
-                .unwrap_or(PROTOCOL_VERSION),
-            "capabilities": {"tools": {}},
-            "serverInfo": {"name": "aula", "version": env!("CARGO_PKG_VERSION")},
-            "instructions": "Aula is a Danish school communication platform. Start with \
-                             aula_whoami: it returns the children, the institutions, and the \
-                             institution profile ids the other tools take as arguments.",
-        })),
-        "ping" => Ok(json!({})),
-        "tools/list" => Ok(json!({"tools": tools::list()})),
-        "tools/call" => tools::call(server, &params).await,
-        other => Err((-32601, format!("method not found: {other}"))),
-    };
-
-    Some(match result {
-        Ok(value) => json!({"jsonrpc": "2.0", "id": id, "result": value}),
-        Err((code, message)) => error(id, code, &message),
-    })
-}
-
-fn error(id: Value, code: i64, message: &str) -> Value {
-    json!({"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}})
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    async fn call(line: &str) -> Option<Value> {
-        handle(&tools::Server::new(), line).await
-    }
-
-    #[tokio::test]
-    async fn initialize_echoes_protocol_version() {
-        let response = call(r#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}"#)
-            .await
-            .expect("initialize must be answered");
-        assert_eq!(response["id"], 1);
-        assert_eq!(response["result"]["protocolVersion"], "2025-06-18");
-        assert_eq!(response["result"]["serverInfo"]["name"], "aula");
-    }
-
-    #[tokio::test]
-    async fn tools_list_exposes_every_tool_with_schema() {
-        let response = call(r#"{"jsonrpc":"2.0","id":2,"method":"tools/list"}"#)
-            .await
-            .expect("tools/list must be answered");
-        let tools = response["result"]["tools"]
-            .as_array()
-            .expect("tools must be an array");
-        assert_eq!(tools.len(), 12);
-        for tool in tools {
-            assert!(tool["name"]
-                .as_str()
-                .is_some_and(|n| n.starts_with("aula_")));
-            assert!(!tool["description"].as_str().unwrap_or("").is_empty());
-            assert_eq!(tool["inputSchema"]["type"], "object");
-        }
-    }
-
-    #[tokio::test]
-    async fn notifications_get_no_response() {
-        assert!(
-            call(r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#)
-                .await
-                .is_none()
-        );
-    }
-
-    #[tokio::test]
-    async fn unknown_method_is_an_error() {
-        let response = call(r#"{"jsonrpc":"2.0","id":3,"method":"resources/list"}"#)
-            .await
-            .expect("errors still carry the id");
-        assert_eq!(response["error"]["code"], -32601);
-    }
-
-    #[tokio::test]
-    async fn unknown_tool_is_an_error() {
-        let response =
-            call(r#"{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"aula_nope"}}"#)
-                .await
-                .expect("errors still carry the id");
-        assert_eq!(response["error"]["code"], -32602);
-    }
-
-    #[tokio::test]
-    async fn invalid_json_is_a_parse_error() {
-        let response = call("{not json").await.expect("parse errors are reported");
-        assert_eq!(response["error"]["code"], -32700);
-    }
-
-    #[tokio::test]
-    async fn write_tools_reject_empty_arguments_before_touching_the_network() {
-        let response = call(r#"{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"aula_send_message","arguments":{"recipients":[]}}}"#)
-            .await
-            .expect("tool errors are content, not protocol errors");
-        assert_eq!(response["result"]["isError"], true);
-        assert!(response["result"]["content"][0]["text"]
-            .as_str()
-            .unwrap_or("")
-            .contains("recipients must not be empty"));
     }
 }

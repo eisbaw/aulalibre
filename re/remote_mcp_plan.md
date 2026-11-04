@@ -1,6 +1,11 @@
 # Remote MCP Server — Plan
 
-Status: **proposal, not started**
+Status: **in progress** — R1 done, R2 de-risked
+Progress:
+
+- **R1 done**: dispatch extracted to `aula-mcp/src/rpc.rs`, crate is now lib + bin, 14 tests green, verified live over stdio.
+- **R2 risk resolved**: `vercel_runtime::Response` is a re-export of `http::Response` (crate 2.4.1), so `Response::builder().status(..).header(..)` works — JSON-RPC error codes and the 405 for `GET` are supported.
+
 Target: **Vercel** (Functions, official Rust runtime) + **Supabase** (Postgres via PostgREST) for token storage.
 Scope: move `aula-mcp` off the Mac so one server serves Claude Desktop and Claude mobile.
 Fly.io is kept as a documented alternative at the end.
@@ -194,8 +199,8 @@ stays useful, and only the transport adapter changes.
 
 ## Open risks
 
-- **`vercel_runtime` custom responses unverified** — if it cannot return a status/header
-  controlled `Response`, JSON-RPC error codes and the 405 for `GET` need another approach.
+- ~~**`vercel_runtime` custom responses unverified**~~ **Resolved**: the runtime re-exports
+  `http::Response`, so status- and header-controlled responses are available.
 - **Refresh-token lifetime is unknown.** "Runs unattended forever" is unproven; measure it
   before deciding whether R7 is optional.
 - **OAuth registrability is unverified.** If Claude's connector flow needs DCR (deprecated),

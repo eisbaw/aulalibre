@@ -5,9 +5,12 @@ Operational runbook for the hosted `aula-mcp`. Design rationale lives in
 
 ## 1. Supabase (already done once)
 
-Project `udmwfkrdwytntnqnhrmv`, region `eu-west-1` (Ireland). The schema is in
-[`supabase_schema.sql`](supabase_schema.sql) — run it in the SQL editor if the
-table is ever missing.
+A Supabase project holds the token row, in an EU region to match the function's `dub1`.
+Use a **free-tier project in its own organization** — the same project inside a paid
+organization is billed per seat. The project URL and secret key live in
+`secrets/supabase.env` (gitignored), not in this document. The schema is in
+[`supabase_schema.sql`](supabase_schema.sql) — run it in the SQL editor of whichever
+project you are using, including after moving to a new one.
 
 The token row is written by the local CLI and pushed:
 
@@ -18,6 +21,17 @@ just push-tokens                            # upserts row 'default'
 
 Repeat that whenever the hosted server reports `not logged in` — that means the
 Aula refresh token expired and only an interactive MitID login can fix it.
+
+### Moving to a different Supabase project
+
+1. Run `re/supabase_schema.sql` in the new project's SQL editor.
+2. Create a secret key there and update `secrets/supabase.env` (URL + key).
+3. Update `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in the Vercel project, then
+   **redeploy** — environment changes do not reach an existing deployment.
+4. `set -a; . secrets/supabase.env; set +a; just push-tokens` to seed the row.
+5. `just verify-deployment` — the `aula_whoami` line proves the new project works.
+6. Delete the old project (or at least its secret key) so it stops counting towards
+   a paid organization. The only data is the token row, which step 4 recreates.
 
 ## 2. Vercel project
 
@@ -55,7 +69,7 @@ Environment variables (Production, and Preview if you use it):
 
 | Variable | Value |
 |---|---|
-| `SUPABASE_URL` | `https://udmwfkrdwytntnqnhrmv.supabase.co` |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co` |
 | `SUPABASE_SECRET_KEY` | project secret key (`sb_secret_…`) — bypasses RLS, server-side only |
 | `AULA_MCP_SECRET` | `openssl rand -hex 24` — the shared secret callers must present |
 | `AULA_ENV` | `production` (optional) |

@@ -6,6 +6,7 @@ description = "Rust client library for the Aula school platform API"
 
 [dependencies]
 base64 = "0.22"
+chrono = { version = "0.4", features = ["clock"] }
 dirs = "6"
 rand = "0.8"
 reqwest = { version = "0.12", features = ["json", "cookies"] }
@@ -18,6 +19,5 @@ thiserror = "2"
 url = "2"
 
 [dev-dependencies]
-chrono = { version = "0.4", features = ["clock"] }
 http = "1"
 wiremock = "0.6"

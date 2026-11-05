@@ -203,6 +203,58 @@ async fn probe_provider_apis() {
                 .header("referer", "https://www.aula.dk/"),
         )
         .await;
+
+        // Structure dump for designing the Rust structs: keys and counts only.
+        if let Ok(response) = http
+            .get(&url)
+            .header("authorization", format!("Bearer {token}"))
+            .header("sessionuuid", &ctx.guardian_user_id)
+            .header("x-version", "1.0")
+            .header("origin", "https://www.aula.dk")
+            .header("referer", "https://www.aula.dk/")
+            .send()
+            .await
+        {
+            let body = response.text().await.unwrap_or_default();
+            if let Ok(serde_json::Value::Array(items)) = serde_json::from_str(&body) {
+                println!("  Meebook shape: array[{}]", items.len());
+                if let Some(first) = items.first().and_then(serde_json::Value::as_object) {
+                    let mut keys: Vec<&String> = first.keys().collect();
+                    keys.sort();
+                    println!("    item keys: {keys:?}");
+                    for (key, value) in first {
+                        if let Some(array) = value.as_array() {
+                            let nested = array
+                                .first()
+                                .and_then(serde_json::Value::as_object)
+                                .map(|m| {
+                                    let mut k: Vec<&String> = m.keys().collect();
+                                    k.sort();
+                                    format!("{k:?}")
+                                })
+                                .unwrap_or_else(|| "-".to_string());
+                            println!("    {key}: array[{}] of {nested}", array.len());
+                            if key == "weekPlan" {
+                                if let Some(tasks) = array
+                                    .first()
+                                    .and_then(|day| day.get("tasks"))
+                                    .and_then(serde_json::Value::as_array)
+                                {
+                                    println!("      tasks: array[{}]", tasks.len());
+                                    if let Some(task) =
+                                        tasks.first().and_then(serde_json::Value::as_object)
+                                    {
+                                        let mut k: Vec<&String> = task.keys().collect();
+                                        k.sort();
+                                        println!("      task keys: {k:?}");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // --- Min Uddannelse (widgets 0030 opgaver, 0029 ugebrev) -------------

@@ -54,7 +54,7 @@ just build-release
 
 Authentication is shared with the CLI -- run `just run auth login` once and the server picks up the same token store. Set `AULA_ENV` to target a non-production environment.
 
-Tools are read-oriented (`aula_whoami`, `aula_messages`, `aula_thread`, `aula_calendar`, `aula_presence`, `aula_posts`, `aula_notifications`, `aula_gallery`, `aula_documents`, `aula_search`) plus two writes: `aula_send_message` and `aula_reply`. Responses are compact projections of Aula's DTOs -- plain text instead of HTML, only the fields a question can be answered from.
+Tools are read-oriented (`aula_whoami`, `aula_messages`, `aula_thread`, `aula_calendar`, `aula_week_plan`, `aula_presence`, `aula_posts`, `aula_notifications`, `aula_gallery`, `aula_documents`, `aula_search`) plus two writes: `aula_send_message` and `aula_reply`. Responses are compact projections of Aula's DTOs -- plain text instead of HTML, only the fields a question can be answered from.
 
 To use it from Claude mobile, the server has to run remotely -- see [`re/remote_mcp_plan.md`](re/remote_mcp_plan.md).
 

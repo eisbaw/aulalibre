@@ -9,6 +9,7 @@ pub mod client;
 pub mod e2e;
 pub mod enums;
 pub mod error;
+pub mod integrations;
 pub mod models;
 pub mod response;
 pub mod serde_helpers;

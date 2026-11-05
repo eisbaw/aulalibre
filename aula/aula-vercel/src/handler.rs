@@ -453,7 +453,7 @@ mod tests {
         assert_eq!(payload["id"], 1);
         assert_eq!(
             payload["result"]["tools"].as_array().map(Vec::len),
-            Some(12),
+            Some(13),
             "all tools must be listed"
         );
     }

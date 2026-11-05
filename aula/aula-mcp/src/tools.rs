@@ -213,6 +213,13 @@ pub fn list() -> Value {
             "inputSchema": schema(json!({}), &[]),
         },
         {
+            "name": "aula_week_plan",
+            "description": "Weekly plan (ugeplan) from the school's plan provider, day by day per child, with the tasks and notes the teachers published. Defaults to the current ISO week.",
+            "inputSchema": schema(json!({
+                "week": text_arg("ISO week as yyyy-Www, e.g. 2026-W45 (default: current week)."),
+            }), &[]),
+        },
+        {
             "name": "aula_posts",
             "description": "Posts from the institution feed (class/school news), with author, timestamp and plain-text body.",
             "inputSchema": schema(json!({
@@ -294,6 +301,7 @@ pub async fn call(server: &Server, params: &Value) -> Result<Value, (i64, String
         "aula_messages" => messages(server, &args).await,
         "aula_thread" => thread(server, &args).await,
         "aula_calendar" => calendar_events(server, &args).await,
+        "aula_week_plan" => week_plan(server, &args).await,
         "aula_presence" => presence_now(server).await,
         "aula_posts" => feed_posts(server, &args).await,
         "aula_notifications" => notification_feed(server, &args).await,
@@ -539,6 +547,45 @@ async fn calendar_events(server: &Server, args: &Value) -> Result<Value, String>
         .collect::<Vec<_>>();
 
     Ok(json!({"from": from, "to": to, "count": items.len(), "events": items}))
+}
+
+async fn week_plan(server: &Server, args: &Value) -> Result<Value, String> {
+    let week =
+        arg_str(args, "week").unwrap_or_else(|| chrono::Local::now().format("%G-W%V").to_string());
+
+    let mut guard = server.lock().await?;
+    let session = guard.as_mut().expect("session initialised by lock()");
+    let children = aula_api::integrations::meebook::week_plan(session, Some(&week))
+        .await
+        .map_err(api_err)?;
+
+    let projected = children
+        .iter()
+        .map(|child| {
+            let days = child
+                .week_plan
+                .iter()
+                .filter(|day| !day.tasks.is_empty())
+                .map(|day| {
+                    json!({
+                        "date": day.date,
+                        "tasks": day.tasks.iter().map(|task| json!({
+                            "content": task.content,
+                            "subject": task.group,
+                            "kind": task.kind,
+                        })).collect::<Vec<_>>(),
+                    })
+                })
+                .collect::<Vec<_>>();
+            json!({"child": child.name, "days": days})
+        })
+        .collect::<Vec<_>>();
+
+    Ok(json!({
+        "provider": "meebook",
+        "week": week,
+        "children": projected,
+    }))
 }
 
 async fn presence_now(server: &Server) -> Result<Value, String> {

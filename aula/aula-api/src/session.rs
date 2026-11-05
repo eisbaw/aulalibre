@@ -85,6 +85,9 @@ pub struct Session {
     /// initialization. Contains institution profile IDs and children
     /// needed by most API endpoints.
     profile_data: Option<OnboardingResponseDto>,
+    /// Guardian user id from `getProfileContext`. Third-party school-platform
+    /// integrations (Meebook, Min Uddannelse, …) send it as their session id.
+    guardian_user_id: Option<String>,
 }
 
 /// Build a session from the on-disk token store for `environment`.
@@ -138,6 +141,7 @@ impl Session {
             login_data,
             context_initialized: false,
             profile_data: None,
+            guardian_user_id: None,
         })
     }
 
@@ -235,6 +239,30 @@ impl Session {
             }
         }
         codes
+    }
+
+    /// Children's per-child user ids (unilogin), in profile order.
+    ///
+    /// Third-party integrations filter on these rather than on the numeric
+    /// profile ids. Empty until context has been initialized.
+    pub fn children_user_ids(&self) -> Vec<String> {
+        self.profile_data
+            .as_ref()
+            .map(|data| {
+                data.profiles
+                    .iter()
+                    .flat_map(|profile| profile.children.as_deref().unwrap_or_default())
+                    .filter_map(|child| child.user_id.clone())
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    /// Guardian user id from `profiles.getProfileContext`.
+    ///
+    /// Available after [`Session::ensure_context_initialized`].
+    pub fn guardian_user_id(&self) -> Option<&str> {
+        self.guardian_user_id.as_deref()
     }
 
     /// Get the children's institution profile IDs.
@@ -392,10 +420,15 @@ impl Session {
         // Step 2: Call getProfileContext with portalrole to activate the
         // profile in the server session. The mobile app passes the current
         // portal role and a device identifier.
-        let _: serde_json::Value = self
+        let context: serde_json::Value = self
             .client
             .get("?method=profiles.getProfileContext&portalrole=guardian&deviceId=aula-cli")
             .await?;
+        // Integrations use this id as their session id; keep it while we have it.
+        self.guardian_user_id = context.get("userId").map(|value| match value {
+            serde_json::Value::String(id) => id.clone(),
+            other => other.to_string(),
+        });
 
         self.context_initialized = true;
         Ok(())

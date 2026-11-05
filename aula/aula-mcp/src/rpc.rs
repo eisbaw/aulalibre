@@ -90,7 +90,7 @@ mod tests {
         let tools = response["result"]["tools"]
             .as_array()
             .expect("tools must be an array");
-        assert_eq!(tools.len(), 12);
+        assert_eq!(tools.len(), 13);
         for tool in tools {
             assert!(tool["name"]
                 .as_str()

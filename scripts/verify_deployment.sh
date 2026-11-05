@@ -60,10 +60,10 @@ body=$(curl -sS -X POST "$url/api/mcp?secret=$AULA_MCP_SECRET" \
   -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
 tools=$(printf '%s' "$body" | jq -r '.result.tools | length' 2>/dev/null)
-if [ "$tools" = "12" ]; then
-  echo "  ok   tools/list returned 12 tools"
+if [ "$tools" = "13" ]; then
+  echo "  ok   tools/list returned 13 tools"
 else
-  echo "  FAIL tools/list did not return 12 tools: $(printf '%s' "$body" | head -c 200)"
+  echo "  FAIL tools/list did not return 13 tools: $(printf '%s' "$body" | head -c 200)"
   fail=1
 fi
 

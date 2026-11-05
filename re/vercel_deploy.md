@@ -21,7 +21,23 @@ Aula refresh token expired and only an interactive MitID login can fix it.
 
 ## 2. Vercel project
 
-Root directory: `aula` (the Rust workspace). Framework preset: other/none.
+**Connect the fork, not the upstream repo.** Vercel must import `BBiering/aulalibre` and
+deploy branch `feat/aula-mcp`; importing `eisbaw/aulalibre` shows the pre-work tree
+(`aula-fuse` present, `aula-mcp`/`aula-vercel` absent). If the fork is missing from the
+import list, grant the Vercel GitHub app access to it (Account Settings → Integrations →
+GitHub → Configure → repository access). Set Production Branch to `feat/aula-mcp` until
+the PR merges, then switch it back to `main`.
+
+Framework preset: **Other**. Root Directory: **`aula/aula-vercel`** — not `aula`.
+The adapter's `api/` directory and its package `Cargo.toml` (with the `[[bin]]`s) live
+there, and `aula/Cargo.toml` is a *virtual* workspace manifest with no `[package]`, which
+the Rust runtime cannot build from. Leave Build/Output/Install commands empty: the Rust
+runtime compiles the `[[bin]]`s itself.
+
+The adapter's path dependencies (`../aula-api`, `../aula-mcp`) sit outside the root
+directory. Vercel clones the whole repo and runs the build with that working directory,
+so they resolve — but if a build fails with "failed to load manifest for workspace
+member", that assumption is the thing to check first.
 
 Environment variables (Production, and Preview if you use it):
 
@@ -32,9 +48,9 @@ Environment variables (Production, and Preview if you use it):
 | `AULA_MCP_SECRET` | `openssl rand -hex 24` — the shared secret callers must present |
 | `AULA_ENV` | `production` (optional) |
 
-Region: `dub1` (Dublin) matches the Supabase `eu-west-1` region; set it in
-`vercel.json` or project settings. Running in `iad1` adds a transatlantic hop
-on every Aula call.
+Region: `dub1` (Dublin) matches the Supabase `eu-west-1` region; it is pinned in
+`aula/aula-vercel/vercel.json` (the file must sit in the project root directory).
+Running in `iad1` adds a transatlantic hop on every Aula call.
 
 ## 3. Deployment Protection must be OFF
 

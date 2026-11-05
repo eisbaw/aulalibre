@@ -32,6 +32,9 @@ Aula refresh token expired and only an interactive MitID login can fix it.
 5. `just verify-deployment` — the `aula_whoami` line proves the new project works.
 6. Delete the old project (or at least its secret key) so it stops counting towards
    a paid organization. The only data is the token row, which step 4 recreates.
+   **Do this before step 5's check**: while the old row still exists and holds a valid
+   token, a passing `verify-deployment` cannot tell you which project the deployment is
+   actually reading. With the old project gone, a pass proves it is on the new one.
 
 ## 2. Vercel project
 

@@ -24,6 +24,12 @@ pub const SECRET_ENV: &str = "AULA_MCP_SECRET";
 /// Query parameter carrying the secret.
 pub const SECRET_PARAM: &str = "secret";
 
+/// Header names Claude connectors can send without asking Anthropic for
+/// approval. Per the connector docs `authorization`, `x-api-key` and
+/// `x-auth-token` work for every connector; any other name must be approved by
+/// Anthropic first and is rejected in the add-connector dialog.
+const SECRET_HEADERS: [&str; 2] = ["x-api-key", "authorization"];
+
 /// Hosted configuration: the shared secret and the token store.
 pub struct HostState {
     secret: String,
@@ -80,6 +86,28 @@ fn secret_matches(provided: &str, expected: &str) -> bool {
         == 0
 }
 
+/// Extract the secret from an approved header, falling back to the query string.
+///
+/// Headers are preferred: a query parameter ends up in access logs and in the
+/// stored connector URL.
+fn secret_from(headers: &http::HeaderMap, uri: &str) -> Option<String> {
+    for name in SECRET_HEADERS {
+        let Some(value) = headers.get(name).and_then(|value| value.to_str().ok()) else {
+            continue;
+        };
+        // `authorization` may carry a scheme; `x-api-key` is the bare secret.
+        let token = value
+            .strip_prefix("Bearer ")
+            .or_else(|| value.strip_prefix("bearer "))
+            .unwrap_or(value)
+            .trim();
+        if !token.is_empty() {
+            return Some(token.to_string());
+        }
+    }
+    secret_from_query(uri)
+}
+
 /// Extract `secret` from a URI's query string.
 fn secret_from_query(uri: &str) -> Option<String> {
     let query = uri.split_once('?')?.1;
@@ -92,7 +120,7 @@ fn secret_from_query(uri: &str) -> Option<String> {
 /// Entry point used by the Vercel function.
 pub async fn respond(request: Request) -> Response<ResponseBody> {
     let method = request.method().as_str().to_string();
-    let secret = secret_from_query(&request.uri().to_string());
+    let secret = secret_from(request.headers(), &request.uri().to_string());
     let state = HostState::from_env();
     let expected = state.as_ref().map(|state| state.secret.as_str());
 
@@ -226,6 +254,43 @@ mod tests {
         assert!(secret_matches("abc123", "abc123"));
         assert!(!secret_matches("abc123", "abc124"));
         assert!(!secret_matches("abc", "abc123"));
+    }
+
+    #[test]
+    fn secret_is_read_from_approved_headers() {
+        let mut headers = http::HeaderMap::new();
+        headers.insert("x-api-key", "from-header".parse().unwrap());
+        assert_eq!(
+            secret_from(&headers, "/api/mcp"),
+            Some("from-header".to_string())
+        );
+
+        let mut headers = http::HeaderMap::new();
+        headers.insert("authorization", "Bearer from-bearer".parse().unwrap());
+        assert_eq!(
+            secret_from(&headers, "/api/mcp"),
+            Some("from-bearer".to_string())
+        );
+    }
+
+    #[test]
+    fn header_secret_wins_over_the_query_string() {
+        let mut headers = http::HeaderMap::new();
+        headers.insert("x-api-key", "from-header".parse().unwrap());
+        assert_eq!(
+            secret_from(&headers, "/api/mcp?secret=from-query"),
+            Some("from-header".to_string())
+        );
+    }
+
+    #[test]
+    fn query_string_is_the_fallback_when_no_header_is_sent() {
+        let headers = http::HeaderMap::new();
+        assert_eq!(
+            secret_from(&headers, "/api/mcp?secret=from-query"),
+            Some("from-query".to_string())
+        );
+        assert_eq!(secret_from(&headers, "/api/mcp"), None);
     }
 
     #[test]

@@ -99,6 +99,18 @@ Add it from Desktop or web — installing connectors from mobile is still beta,
 but once added it works on mobile too. Then ask something like *"what has the
 school sent me this week?"*
 
+In the dialog set **Authentication → "No sign in"**: Claude probes the URL,
+finds no OAuth discovery endpoints, and may otherwise attempt a flow that cannot
+succeed.
+
+If the dialog offers **Request headers** (beta, limited organizations), prefer a
+header over the query parameter so the secret stays out of access logs and the
+stored URL: name `x-api-key` (or `authorization` with value `Bearer <secret>`),
+and drop `?secret=` from the URL. Only those standard names are accepted — a
+custom name like `X-Aula-Secret` is rejected until Anthropic approves it, which
+is not worth requesting for a personal deployment. The handler accepts the header
+or the query parameter, so either works.
+
 ## Known operational notes
 
 - **Secret in the URL** — connectors cannot send headers, so the secret is a

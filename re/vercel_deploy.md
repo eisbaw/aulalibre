@@ -25,8 +25,20 @@ Aula refresh token expired and only an interactive MitID login can fix it.
 deploy branch `feat/aula-mcp`; importing `eisbaw/aulalibre` shows the pre-work tree
 (`aula-fuse` present, `aula-mcp`/`aula-vercel` absent). If the fork is missing from the
 import list, grant the Vercel GitHub app access to it (Account Settings → Integrations →
-GitHub → Configure → repository access). Set Production Branch to `feat/aula-mcp` until
-the PR merges, then switch it back to `main`.
+GitHub → Configure → repository access).
+
+**There is no branch picker at import.** Vercel always creates the project from `main`
+(then `master`, then the repo default), so either:
+
+- *preferred*: set the fork's GitHub default branch to `feat/aula-mcp` first, import, then
+  restore the default after the PRs merge; or
+- import `main` with **Root Directory empty** (typing `aula/aula-vercel` is rejected while
+  `main` is the branch, because that path does not exist there), then Settings →
+  Environments → Production → Branch Tracking → `feat/aula-mcp`, set Root Directory, and
+  **Promote to Production** the newest `feat/aula-mcp` deployment. Changing the production
+  branch does not always redeploy its head commit.
+
+Switch the production branch back to `main` once the PRs merge.
 
 Framework preset: **Other**. Root Directory: **`aula/aula-vercel`** — not `aula`.
 The adapter's `api/` directory and its package `Cargo.toml` (with the `[[bin]]`s) live

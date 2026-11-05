@@ -59,6 +59,23 @@ else
   fail=1
 fi
 
+# 5. A real tool call. tools/list passes even when the token row is missing or
+# Aula is unreachable, so this is the check that proves the deployment works.
+who=$(curl -sS -o /tmp/aula_verify_who.json -w '%{time_total}' \
+  -X POST "$url/api/mcp?secret=$AULA_MCP_SECRET" \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"aula_whoami","arguments":{}}}')
+is_error=$(jq -r '.result.isError' /tmp/aula_verify_who.json 2>/dev/null)
+if [ "$is_error" = "false" ]; then
+  echo "  ok   aula_whoami answered in ${who}s (tokens loaded, Aula reachable)"
+else
+  detail=$(jq -r '.result.content[0].text // .error.message' /tmp/aula_verify_who.json 2>/dev/null | head -c 200)
+  echo "  FAIL aula_whoami: ${detail:-no JSON response}"
+  echo "       'not logged in' means the token row is empty: run 'just push-tokens'."
+  fail=1
+fi
+rm -f /tmp/aula_verify_who.json
+
 if [ "$fail" -ne 0 ]; then
   echo "deployment check FAILED"
   exit 1

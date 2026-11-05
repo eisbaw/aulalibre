@@ -4,6 +4,8 @@ Status: **in progress** — R1 done, R2 de-risked
 Progress:
 
 - **R1 done**: dispatch extracted to `aula-mcp/src/rpc.rs`, crate is now lib + bin, 14 tests green, verified live over stdio.
+- **R3 done**: secret enforced in the handler (constant-time, 404 on mismatch, 405 for non-POST), and `scripts/verify_deployment.sh` checks from outside that Deployment Protection is off — a no-secret request must be 404, not Vercel's 401.
+- **R5 done**: `scripts/push_tokens.sh` seeds the row from the local login. Verified live: forced an expired token in Supabase, the hosted path refreshed it, persisted the new token and kept the refresh token.
 - **R2 done**: new `aula-vercel` crate (bins `mcp` + `healthz`). Endpoint is `POST /api/mcp?secret=<AULA_MCP_SECRET>` — a query param rather than a `vercel.json` rewrite, since each `api/*.rs` file is already its own route. Wrong/missing secret answers 404, non-POST answers 405, and the whole path (Supabase load → dispatch → write-back) is covered by tests with wiremock as the store.
 - **R4 done**: `TokenStore` is a `File | Memory` backend and `aula_api::SupabaseTokens` does async load/save through PostgREST (secret key on the `apikey` header, upsert via `Prefer: resolution=merge-duplicates`); 6 new wiremock tests.
 - **R2 risk resolved**: `vercel_runtime::Response` is a re-export of `http::Response` (crate 2.4.1), so `Response::builder().status(..).header(..)` works — JSON-RPC error codes and the 405 for `GET` are supported.

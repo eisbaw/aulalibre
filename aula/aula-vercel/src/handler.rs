@@ -229,6 +229,49 @@ mod tests {
         assert_eq!(secret_from_query("/api/mcp"), None);
     }
 
+    /// Live check of the hosted path against the real Supabase project and the
+    /// real Aula API (R3/R5 verification).
+    ///
+    /// ```text
+    /// set -a; . secrets/supabase.env; set +a
+    /// cargo test -p aula-vercel -- --ignored --nocapture
+    /// ```
+    #[tokio::test]
+    #[ignore = "needs SUPABASE_URL + SUPABASE_SECRET_KEY and a seeded token row"]
+    async fn live_hosted_path_answers_whoami() {
+        let Some(tokens) = SupabaseTokens::from_env() else {
+            eprintln!("skipping: SUPABASE_URL / SUPABASE_SECRET_KEY not set");
+            return;
+        };
+        let state = HostState {
+            secret: "live-check".to_string(),
+            tokens,
+        };
+
+        let response = dispatch(
+            &state,
+            r#"{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"aula_whoami","arguments":{}}}"#,
+        )
+        .await;
+        assert_eq!(response.status(), 200);
+
+        let body = response
+            .into_body()
+            .collect()
+            .await
+            .expect("body readable")
+            .to_bytes();
+        let payload: Value = serde_json::from_slice(&body).expect("JSON response");
+        let text = payload["result"]["content"][0]["text"]
+            .as_str()
+            .unwrap_or_default();
+        assert_eq!(payload["result"]["isError"], false, "whoami failed: {text}");
+        assert!(
+            text.contains("institution_profile_ids"),
+            "unexpected whoami payload: {text}"
+        );
+    }
+
     #[test]
     fn json_responses_declare_their_content_type() {
         let response = json_response(200, &json!({"ok": true}));

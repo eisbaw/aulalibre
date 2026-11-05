@@ -39,6 +39,14 @@ e2e: build test lint fmt-check
 mcp:
     cargo run --manifest-path aula/Cargo.toml --bin aula-mcp
 
+# Push the local Aula login into the Supabase row used by the hosted server
+push-tokens:
+    ./scripts/push_tokens.sh
+
+# Verify a deployed endpoint (needs AULA_MCP_URL and AULA_MCP_SECRET)
+verify-deployment:
+    ./scripts/verify_deployment.sh
+
 # Run live E2E tests against the real Aula API (requires auth token)
 # See aula/aula-api/src/e2e.rs for setup instructions.
 e2e-live:

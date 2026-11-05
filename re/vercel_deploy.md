@@ -134,8 +134,11 @@ or the query parameter, so either works.
   query parameter and therefore appears in Vercel's access logs. Rotate it by
   changing `AULA_MCP_SECRET` and re-adding the connector URL.
 - **Supabase free tier pauses after a week of inactivity**, after which the
-  server 500s until the project is resumed. Normal use counts as activity; a
-  weekly Vercel Cron hitting `/api/healthz` keeps it awake.
+  server 500s until the project is resumed. `vercel.json` schedules a **daily**
+  cron on `/api/healthz` (Hobby allows daily granularity, UTC), and that handler
+  performs a read against the token row — a cron that only touched Vercel would
+  keep the function warm while the database still slept. `verify-deployment`
+  reports the store state so a paused project is obvious.
 - **Per-invocation cost** — every tool call re-initialises the Aula session
   (2 extra Aula requests, ~400 ms) unless the optional onboarding cache is
   added (R8 in the plan).

@@ -28,8 +28,16 @@ check() { # name expected_status actual_status extra
 
 echo "verifying $url"
 
-status=$(curl -s -o /dev/null -w '%{http_code}' "$url/api/healthz")
+status=$(curl -s -o /tmp/aula_verify_health.json -w '%{http_code}' "$url/api/healthz")
 check "healthz" 200 "$status"
+store=$(jq -r '.store // "?"' /tmp/aula_verify_health.json 2>/dev/null)
+case "$store" in
+  ok) echo "  ok   token store reachable" ;;
+  not-configured) echo "  note token store not configured (SUPABASE_URL / SUPABASE_SECRET_KEY unset)" ;;
+  *) echo "  FAIL token store unreachable (store=$store) - the Supabase project may be paused"
+     fail=1 ;;
+esac
+rm -f /tmp/aula_verify_health.json
 
 status=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url/api/mcp" \
   -H 'content-type: application/json' -d '{}')

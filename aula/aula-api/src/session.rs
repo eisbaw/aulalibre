@@ -93,11 +93,20 @@ pub struct Session {
 /// loads persisted tokens without printing or exiting, leaving the failure
 /// policy (exit code, MCP error) to the caller.
 pub fn from_store(environment: Environment) -> crate::Result<Session> {
+    let store = TokenStore::default_location().unwrap_or_else(|| TokenStore::new("./aula-data"));
+    from_store_with(environment, store)
+}
+
+/// Build a session on top of an explicitly supplied store.
+///
+/// Hosted deployments load tokens from their own storage (e.g. Supabase), put
+/// them in a [`TokenStore::in_memory`], and hand that store here so refreshes
+/// land back in the same place the caller can read afterwards.
+pub fn from_store_with(environment: Environment, store: TokenStore) -> crate::Result<Session> {
     let client = AulaClient::with_config(AulaClientConfig {
         environment,
         ..Default::default()
     })?;
-    let store = TokenStore::default_location().unwrap_or_else(|| TokenStore::new("./aula-data"));
     Session::new(client, store, SessionConfig::default())
 }
 

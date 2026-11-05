@@ -1,0 +1,25 @@
+[package]
+name = "aula-vercel"
+version = "0.1.0"
+edition = "2021"
+description = "Vercel Functions adapter exposing aula-mcp over HTTP"
+
+[dependencies]
+aula-api = { path = "../aula-api" }
+aula-mcp = { path = "../aula-mcp" }
+http-body-util = "0.1"
+hyper = "1"
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+vercel_runtime = { version = "2", default-features = false }
+
+# Vercel turns each file in api/ into a function; every handler needs a [[bin]].
+[[bin]]
+name = "mcp"
+path = "api/mcp.rs"
+[[bin]]
+name = "healthz"
+path = "api/healthz.rs"
+
+[dev-dependencies]
+wiremock = "0.6"

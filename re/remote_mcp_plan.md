@@ -4,6 +4,7 @@ Status: **in progress** — R1 done, R2 de-risked
 Progress:
 
 - **R1 done**: dispatch extracted to `aula-mcp/src/rpc.rs`, crate is now lib + bin, 14 tests green, verified live over stdio.
+- **R2 done**: new `aula-vercel` crate (bins `mcp` + `healthz`). Endpoint is `POST /api/mcp?secret=<AULA_MCP_SECRET>` — a query param rather than a `vercel.json` rewrite, since each `api/*.rs` file is already its own route. Wrong/missing secret answers 404, non-POST answers 405, and the whole path (Supabase load → dispatch → write-back) is covered by tests with wiremock as the store.
 - **R4 done**: `TokenStore` is a `File | Memory` backend and `aula_api::SupabaseTokens` does async load/save through PostgREST (secret key on the `apikey` header, upsert via `Prefer: resolution=merge-duplicates`); 6 new wiremock tests.
 - **R2 risk resolved**: `vercel_runtime::Response` is a re-export of `http::Response` (crate 2.4.1), so `Response::builder().status(..).header(..)` works — JSON-RPC error codes and the 405 for `GET` are supported.
 
@@ -92,11 +93,12 @@ exposing `rpc`, `tools`, `compact`; keep `src/main.rs` as the stdio bin.
 ### R2 — Vercel function adapter
 Add `api/mcp.rs` using `vercel_runtime` v2 (declared as a `[[bin]]`), mapping the incoming
 request body to `rpc::handle` and returning a response with the right status/headers.
-`vercel.json` rewrites `POST /mcp/<secret>` → this function; `GET` answers 405.
+`GET` answers 405; the secret travels as `?secret=` because connectors cannot send headers
+(no `vercel.json` rewrite needed — each `api/*.rs` file is its own route).
 **AC:** `initialize`, `tools/list`, `tools/call` succeed over the deployed URL;
 unknown tool still returns `-32602`; `GET` returns 405.
 **Verify first:** that `vercel_runtime` allows a fully custom `Response` (status + headers) —
-the docs only show returning a JSON `Value`, and JSON-RPC needs error codes.
+confirmed: it re-exports `hyper::Response` and `ResponseBody`, so both are available.
 
 ### R3 — Endpoint authentication (v1: secret path)
 Validate the secret path segment in the handler with a constant-time compare; mismatch → 404

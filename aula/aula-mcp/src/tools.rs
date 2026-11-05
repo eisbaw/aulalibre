@@ -18,7 +18,7 @@ use aula_api::models::search::{GlobalSearchParameters, SearchGroupRequestModel};
 use aula_api::services::{
     calendar, documents, gallery, messaging, notifications, posts, presence, search,
 };
-use aula_api::{Environment, Session};
+use aula_api::{Environment, Session, TokenStore};
 use serde_json::{json, Value};
 use tokio::sync::Mutex;
 
@@ -36,6 +36,10 @@ const BODY_LIMIT: usize = 4000;
 /// created once and reused across tool calls.
 pub struct Server {
     session: Mutex<Option<Session>>,
+    /// Store the session is built on. `None` means the default on-disk store;
+    /// a hosted transport supplies its own (e.g. tokens fetched from Supabase,
+    /// wrapped in a `TokenStore::in_memory`).
+    store: Option<TokenStore>,
 }
 
 impl Default for Server {
@@ -48,6 +52,18 @@ impl Server {
     pub fn new() -> Self {
         Self {
             session: Mutex::new(None),
+            store: None,
+        }
+    }
+
+    /// Build a server whose session reads and writes tokens through `store`.
+    ///
+    /// The caller keeps its own clone of the store to observe refreshed tokens
+    /// afterwards and persist them wherever it likes.
+    pub fn with_store(store: TokenStore) -> Self {
+        Self {
+            session: Mutex::new(None),
+            store: Some(store),
         }
     }
 
@@ -57,29 +73,33 @@ impl Server {
         if guard.is_none() {
             let name = std::env::var("AULA_ENV").unwrap_or_else(|_| "production".to_string());
             let environment = Environment::from_name(&name);
-            let store = aula_api::TokenStore::default_location();
-            let token_path = store
-                .as_ref()
-                .and_then(|s| s.token_path())
+            let store = match self.store.clone() {
+                Some(store) => store,
+                None => {
+                    TokenStore::default_location().unwrap_or_else(|| TokenStore::new("./aula-data"))
+                }
+            };
+            let store_kind = store
+                .token_path()
                 .map(|p| p.display().to_string())
-                .unwrap_or_else(|| "<no data directory>".to_string());
+                .unwrap_or_else(|| "in-memory tokens".to_string());
 
-            let session = aula_api::session::from_store(environment).map_err(|e| {
-                format!("cannot open an Aula session ({e}); token file: {token_path}")
+            let session = aula_api::session::from_store_with(environment, store).map_err(|e| {
+                format!("cannot open an Aula session ({e}); token store: {store_kind}")
             })?;
 
             // No tokens at all means every call would come back as a bare 403
             // from Aula - say what is actually wrong instead.
             let Some(login_data) = session.login_data() else {
-                eprintln!("[aula-mcp] no tokens found at {token_path}");
+                eprintln!("[aula-mcp] no tokens found ({store_kind})");
                 return Err(format!(
-                    "not logged in: no Aula tokens at {token_path}. \
+                    "not logged in: no Aula tokens in {store_kind}. \
                      Run `aula auth login`, or set AULA_DATA_DIR to the directory \
                      that contains tokens.json."
                 ));
             };
             eprintln!(
-                "[aula-mcp] tokens loaded from {token_path} (expires {:?}), env={name}",
+                "[aula-mcp] tokens loaded from {store_kind} (expires {:?}), env={name}",
                 login_data.access_token_expiration
             );
 

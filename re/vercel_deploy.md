@@ -99,7 +99,7 @@ AULA_MCP_SECRET=<secret> ./scripts/verify_deployment.sh
 ```
 
 Checks: `healthz` 200, no-secret 404 (proves protection is off), wrong-secret 404,
-`GET` 405, `tools/list` returning 12 tools, and a real `aula_whoami` call with its
+`GET` 405, `tools/list` returning 13 tools, and a real `aula_whoami` call with its
 latency. The last one is the only check that proves the token row loads and Aula is
 reachable — `tools/list` passes on a hollow deployment. A `not logged in` failure there
 means the row is empty: run `just push-tokens`.

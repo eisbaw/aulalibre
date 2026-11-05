@@ -97,7 +97,7 @@ pub async fn respond(request: Request) -> Response<ResponseBody> {
     let expected = state.as_ref().map(|state| state.secret.as_str());
 
     match verdict(&method, secret.as_deref(), expected) {
-        Verdict::MethodNotAllowed => text_response(405, "method not allowed; use POST"),
+        Verdict::MethodNotAllowed => method_not_allowed(),
         Verdict::NotFound => text_response(404, "not found"),
         Verdict::Misconfigured => text_response(500, "server is not configured"),
         Verdict::Dispatch => {
@@ -166,6 +166,19 @@ fn json_response(status: u16, value: &Value) -> Response<ResponseBody> {
         .header("content-type", "application/json")
         .body(ResponseBody::from(value.to_string()))
         .unwrap_or_else(|_| Response::new(ResponseBody::from("{}")))
+}
+
+fn method_not_allowed() -> Response<ResponseBody> {
+    // The MCP spec requires a server without an SSE stream to answer GET with
+    // 405; the Allow header tells clients what it does accept.
+    Response::builder()
+        .status(405)
+        .header("allow", "POST")
+        .header("content-type", "text/plain; charset=utf-8")
+        .body(ResponseBody::from(
+            "method not allowed; use POST (MCP over Streamable HTTP)",
+        ))
+        .unwrap_or_else(|_| Response::new(ResponseBody::from("")))
 }
 
 fn text_response(status: u16, message: &str) -> Response<ResponseBody> {
@@ -269,6 +282,19 @@ mod tests {
         assert!(
             text.contains("institution_profile_ids"),
             "unexpected whoami payload: {text}"
+        );
+    }
+
+    #[test]
+    fn non_post_advertises_the_allowed_method() {
+        let response = method_not_allowed();
+        assert_eq!(response.status(), 405);
+        assert_eq!(
+            response
+                .headers()
+                .get("allow")
+                .and_then(|v| v.to_str().ok()),
+            Some("POST")
         );
     }
 

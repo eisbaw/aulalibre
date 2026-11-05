@@ -33,7 +33,9 @@ credentials.json
 
 # Rust build artifacts
 target/
-Cargo.lock
+# Cargo.lock is committed on purpose: these are binaries, and Vercel resolves
+# dependencies from scratch on every build. Pinning the lockfile keeps a
+deploy from picking up a breaking minor of vercel_runtime or a transitive dep.
 
 # CLI state written into the repo when HOME/XDG env is stripped (.local/state/gh/…)
 .local/

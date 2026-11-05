@@ -156,8 +156,10 @@ async fn dispatch(state: &HostState, body: &str) -> Response<ResponseBody> {
     let Some(response) = rpc::handle(&server, body).await else {
         // A notification: nothing to say, but a refresh may still have happened.
         persist_if_changed(state, &loaded, &store).await;
+        // The MCP spec requires 202 Accepted with no body for notifications and
+        // responses; 204 makes some clients treat the exchange as failed.
         return Response::builder()
-            .status(204)
+            .status(202)
             .body(ResponseBody::from(""))
             .unwrap_or_else(|_| Response::new(ResponseBody::from("")));
     };
@@ -361,6 +363,33 @@ mod tests {
                 .and_then(|v| v.to_str().ok()),
             Some("POST")
         );
+    }
+
+    /// Notifications must be acknowledged with 202 Accepted and no body, per
+    /// the Streamable HTTP transport rules.
+    #[tokio::test]
+    async fn notifications_are_acknowledged_with_202() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let supabase = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/rest/v1/aula_tokens"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("[]"))
+            .mount(&supabase)
+            .await;
+
+        let state = HostState {
+            secret: "s3cret".to_string(),
+            tokens: SupabaseTokens::new(supabase.uri(), "key"),
+        };
+
+        let response = dispatch(
+            &state,
+            r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#,
+        )
+        .await;
+        assert_eq!(response.status(), 202);
     }
 
     #[test]

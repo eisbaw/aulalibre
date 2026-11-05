@@ -13,6 +13,7 @@
 //!   version control (gitignored).
 
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use crate::auth::LoginData;
 use crate::error::AulaError;
@@ -37,10 +38,20 @@ const APP_DIR_NAME: &str = "aula";
 ///
 /// This is the CLI equivalent of the APK's `SecureStorageHelper.Save<T>()` /
 /// `SecureStorageHelper.FindValueForKey<T>()`.
+/// Where tokens are kept.
+#[derive(Debug, Clone)]
+enum Backend {
+    /// `tokens.json` inside a directory (CLI, local stdio server).
+    File { dir: PathBuf },
+    /// Process memory. Hosted deployments load tokens from their own storage
+    /// (e.g. Supabase) and seed a session with them, then write back whatever
+    /// the session ends up with.
+    Memory(Arc<Mutex<Option<LoginData>>>),
+}
+
 #[derive(Debug, Clone)]
 pub struct TokenStore {
-    /// Directory where `tokens.json` is stored.
-    dir: PathBuf,
+    backend: Backend,
 }
 
 impl TokenStore {
@@ -48,7 +59,16 @@ impl TokenStore {
     ///
     /// The directory is created (with parents) if it does not exist.
     pub fn new(dir: impl Into<PathBuf>) -> Self {
-        Self { dir: dir.into() }
+        Self {
+            backend: Backend::File { dir: dir.into() },
+        }
+    }
+
+    /// Create a store that keeps tokens in memory only.
+    pub fn in_memory(tokens: Option<LoginData>) -> Self {
+        Self {
+            backend: Backend::Memory(Arc::new(Mutex::new(tokens))),
+        }
     }
 
     /// Create a store using the platform-appropriate data directory.
@@ -67,22 +87,34 @@ impl TokenStore {
         Some(Self::new(base.join(APP_DIR_NAME)))
     }
 
-    /// The directory where tokens are stored.
-    pub fn dir(&self) -> &Path {
-        &self.dir
+    /// The directory where tokens are stored, if this store is file-backed.
+    pub fn dir(&self) -> Option<&Path> {
+        match &self.backend {
+            Backend::File { dir } => Some(dir.as_path()),
+            Backend::Memory(_) => None,
+        }
     }
 
-    /// Full path to the token file.
-    pub fn token_path(&self) -> PathBuf {
-        self.dir.join(TOKEN_FILE_NAME)
+    /// Full path to the token file, if this store is file-backed.
+    pub fn token_path(&self) -> Option<PathBuf> {
+        match &self.backend {
+            Backend::File { dir } => Some(dir.join(TOKEN_FILE_NAME)),
+            Backend::Memory(_) => None,
+        }
     }
 
-    /// Load persisted login data from disk.
+    /// Load persisted login data.
     ///
-    /// Returns `Ok(None)` if no token file exists yet.
+    /// Returns `Ok(None)` if no tokens have been stored yet.
     /// Returns `Err` on I/O or deserialization errors.
     pub fn load(&self) -> crate::Result<Option<LoginData>> {
-        let path = self.token_path();
+        let path = match &self.backend {
+            Backend::Memory(tokens) => {
+                return Ok(tokens.lock().expect("token lock").clone());
+            }
+            Backend::File { dir } => dir.join(TOKEN_FILE_NAME),
+        };
+
         match std::fs::read_to_string(&path) {
             Ok(contents) => {
                 let data: LoginData = serde_json::from_str(&contents)?;
@@ -93,18 +125,26 @@ impl TokenStore {
         }
     }
 
-    /// Save login data to disk.
+    /// Save login data.
     ///
-    /// Creates the storage directory if it does not exist. On Unix, the token
-    /// file is written with mode 0600 (owner read/write only).
+    /// File-backed stores create the directory if needed and write the token
+    /// file with mode 0600 (owner read/write only) on Unix.
     pub fn save(&self, data: &LoginData) -> crate::Result<()> {
-        std::fs::create_dir_all(&self.dir)?;
+        let dir = match &self.backend {
+            Backend::Memory(tokens) => {
+                *tokens.lock().expect("token lock") = Some(data.clone());
+                return Ok(());
+            }
+            Backend::File { dir } => dir,
+        };
+
+        std::fs::create_dir_all(dir)?;
 
         let json = serde_json::to_string_pretty(data)?;
-        let path = self.token_path();
+        let path = dir.join(TOKEN_FILE_NAME);
 
         // Write atomically: write to temp file, then rename.
-        let tmp_path = self.dir.join(".tokens.json.tmp");
+        let tmp_path = dir.join(".tokens.json.tmp");
         std::fs::write(&tmp_path, json.as_bytes())?;
 
         // Set restrictive permissions on Unix before renaming.
@@ -119,11 +159,18 @@ impl TokenStore {
         Ok(())
     }
 
-    /// Clear persisted tokens by deleting the token file.
+    /// Clear persisted tokens.
     ///
-    /// Returns `Ok(())` even if the file does not exist (idempotent).
+    /// Idempotent: succeeds even if nothing was stored.
     pub fn clear(&self) -> crate::Result<()> {
-        let path = self.token_path();
+        let path = match &self.backend {
+            Backend::Memory(tokens) => {
+                *tokens.lock().expect("token lock") = None;
+                return Ok(());
+            }
+            Backend::File { dir } => dir.join(TOKEN_FILE_NAME),
+        };
+
         match std::fs::remove_file(&path) {
             Ok(()) => Ok(()),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
@@ -131,9 +178,12 @@ impl TokenStore {
         }
     }
 
-    /// Check whether a token file exists on disk.
+    /// Check whether tokens are available.
     pub fn exists(&self) -> bool {
-        self.token_path().is_file()
+        match &self.backend {
+            Backend::Memory(tokens) => tokens.lock().expect("token lock").is_some(),
+            Backend::File { dir } => dir.join(TOKEN_FILE_NAME).is_file(),
+        }
     }
 }
 
@@ -156,6 +206,22 @@ mod tests {
             error: None,
             error_description: None,
         }
+    }
+
+    #[test]
+    fn memory_store_roundtrips_without_touching_disk() {
+        let store = TokenStore::in_memory(None);
+        assert!(!store.exists());
+        assert!(store.token_path().is_none(), "memory store has no path");
+        assert!(store.dir().is_none());
+
+        store.save(&test_login_data()).unwrap();
+        assert!(store.exists());
+        let loaded = store.load().unwrap().expect("seeded tokens");
+        assert_eq!(loaded.access_token, "test_access_token");
+
+        store.clear().unwrap();
+        assert!(!store.exists());
     }
 
     #[test]
@@ -244,7 +310,7 @@ mod tests {
 
         store.save(&test_login_data()).unwrap();
 
-        let meta = std::fs::metadata(store.token_path()).unwrap();
+        let meta = std::fs::metadata(store.token_path().expect("file-backed store")).unwrap();
         let mode = meta.permissions().mode() & 0o777;
         assert_eq!(mode, 0o600, "token file should be owner-only read/write");
 

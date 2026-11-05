@@ -290,7 +290,13 @@ async fn complete_token_exchange(
     if let Some(exp) = login_data.access_token_expiration {
         eprintln!("  Token expires: {}", format_unix_timestamp(exp));
     }
-    eprintln!("  Tokens saved to: {}", store.dir().display());
+    eprintln!(
+        "  Tokens saved to: {}",
+        store
+            .dir()
+            .map(|d| d.display().to_string())
+            .unwrap_or_else(|| "(in memory)".to_string())
+    );
 }
 
 /// Read a callback URL from stdin.
@@ -449,7 +455,13 @@ fn handle_status() {
         }
     }
 
-    println!("  Token store: {}", store.dir().display());
+    println!(
+        "  Token store: {}",
+        store
+            .dir()
+            .map(|d| d.display().to_string())
+            .unwrap_or_else(|| "(in memory)".to_string())
+    );
 }
 
 // ---------------------------------------------------------------------------

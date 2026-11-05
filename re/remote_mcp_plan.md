@@ -4,6 +4,7 @@ Status: **in progress** — R1 done, R2 de-risked
 Progress:
 
 - **R1 done**: dispatch extracted to `aula-mcp/src/rpc.rs`, crate is now lib + bin, 14 tests green, verified live over stdio.
+- **R4 done**: `TokenStore` is a `File | Memory` backend and `aula_api::SupabaseTokens` does async load/save through PostgREST (secret key on the `apikey` header, upsert via `Prefer: resolution=merge-duplicates`); 6 new wiremock tests.
 - **R2 risk resolved**: `vercel_runtime::Response` is a re-export of `http::Response` (crate 2.4.1), so `Response::builder().status(..).header(..)` works — JSON-RPC error codes and the 405 for `GET` are supported.
 
 Target: **Vercel** (Functions, official Rust runtime) + **Supabase** (Postgres via PostgREST) for token storage.

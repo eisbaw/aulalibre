@@ -14,6 +14,7 @@ pub mod response;
 pub mod serde_helpers;
 pub mod services;
 pub mod session;
+pub mod supabase;
 pub mod token_store;
 pub mod util;
 
@@ -25,6 +26,7 @@ pub use response::{
     WebResponseStatusSubCode,
 };
 pub use session::{Session, SessionConfig};
+pub use supabase::SupabaseTokens;
 pub use token_store::TokenStore;
 
 /// Returns the crate version string.

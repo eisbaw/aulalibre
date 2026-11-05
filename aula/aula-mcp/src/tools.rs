@@ -60,7 +60,8 @@ impl Server {
             let store = aula_api::TokenStore::default_location();
             let token_path = store
                 .as_ref()
-                .map(|s| s.token_path().display().to_string())
+                .and_then(|s| s.token_path())
+                .map(|p| p.display().to_string())
                 .unwrap_or_else(|| "<no data directory>".to_string());
 
             let session = aula_api::session::from_store(environment).map_err(|e| {
